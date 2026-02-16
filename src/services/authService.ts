@@ -13,6 +13,12 @@ export interface AuthResponse {
     message?: string;
 }
 
+export interface GoogleAuthResponse {
+    success: boolean;
+    authUrl?: string;
+    message?: string;
+}
+
 export class AuthService {
     static async register(email: string, password: string, username?: string): Promise<AuthResponse> {
         try {
@@ -211,6 +217,62 @@ export class AuthService {
                 success: data.success,
                 message: data.message,
             };
+        } catch (error) {
+            return {
+                success: false,
+                message: 'Network error. Please try again.',
+            };
+        }
+    }
+
+    // Google Sign In - เริ่มต้น OAuth flow
+    static async initiateGoogleSignIn(): Promise<GoogleAuthResponse> {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/google`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            const data = await response.json();
+            return {
+                success: data.success,
+                authUrl: data.authUrl,
+                message: data.message,
+            };
+        } catch (error) {
+            return {
+                success: false,
+                message: 'Network error. Please try again.',
+            };
+        }
+    }
+
+    // Google Callback - รับ token หลังจาก Google authentication
+    static async handleGoogleCallback(code: string): Promise<AuthResponse> {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/auth/google/callback?code=${code}`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                return {
+                    success: true,
+                    user: data.user,
+                    token: data.token,
+                };
+            } else {
+                return {
+                    success: false,
+                    message: data.message || 'Google authentication failed',
+                };
+            }
         } catch (error) {
             return {
                 success: false,

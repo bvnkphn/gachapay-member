@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import PageTransition from '@/components/PageTransition';
@@ -18,7 +20,9 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { signUp } = useAuth();
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
+  const { signUp, signInWithGoogle } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -28,12 +32,12 @@ const Register = () => {
     uppercase: /[A-Z]/.test(password),
     lowercase: /[a-z]/.test(password),
     number: /[0-9]/.test(password),
-    special: /[!@#$%^&*(),.?":{}|<>]/.test(password),
-    match: password === confirmPassword && confirmPassword.length > 0,
+    special: /[!@#$%^&*(),.?":{}|<>-]/.test(password), // เช็คอักขระพิเศษ
+    match: password === confirmPassword && confirmPassword !== "" // เช็ครหัสผ่านตรงกัน
   };
 
-  const isPasswordValid = passwordChecks.length && passwordChecks.uppercase && passwordChecks.lowercase && passwordChecks.number && passwordChecks.special;
-  const doPasswordsMatch = passwordChecks.match;
+  const isPasswordValid = Object.values(passwordChecks).every(Boolean);
+  const doPasswordsMatch = password === confirmPassword && confirmPassword.length > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +46,15 @@ const Register = () => {
       toast({
         title: 'กรุณากรอกข้อมูล',
         description: 'กรุณากรอกข้อมูลให้ครบทุกช่อง',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!acceptedTerms) {
+      toast({
+        title: 'กรุณายอมรับข้อกำหนด',
+        description: 'กรุณายอมรับข้อกำหนดในการให้บริการและนโยบายความเป็นส่วนตัว',
         variant: 'destructive',
       });
       return;
@@ -85,12 +98,18 @@ const Register = () => {
   };
 
   const handleGoogleSignUp = async () => {
-    // TODO: Implement Google Sign Up
-    toast({
-      title: 'ยังใช้ไม่ได้',
-      description: 'Google Sign Up ยังใช้ไม่ได้',
-      variant: 'destructive',
-    });
+    setIsLoading(true);
+    const { error } = await signInWithGoogle();
+
+    if (error) {
+      setIsLoading(false);
+      toast({
+        title: 'สมัครสมาชิกไม่สำเร็จ',
+        description: error.message,
+        variant: 'destructive',
+      });
+    }
+    // Note: If successful, user will be redirected to Google OAuth
   };
 
   const handleFacebookSignUp = async () => {
@@ -103,9 +122,22 @@ const Register = () => {
   };
 
   const PasswordCheck = ({ valid, text }: { valid: boolean; text: string }) => (
-    <div className={`flex items-center gap-2 text-xs ${valid ? 'text-green-500' : 'text-muted-foreground'}`}>
-      {valid ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-      {text}
+    <div
+      className={`flex items-center gap-2 text-xs transition-all duration-300 ${valid ? 'opacity-100' : 'text-muted-foreground opacity-70'
+        }`}
+      style={{ color: valid ? '#26FF95' : undefined }}
+    >
+      {valid ? (
+        <Check
+          className="w-3.5 h-3.5"
+          style={{ filter: 'drop-shadow(0 0 2px #26FF95)' }}
+        />
+      ) : (
+        <X className="w-3.5 h-3.5 opacity-50" />
+      )}
+      <span className={valid ? "font-medium" : ""}>
+        {text}
+      </span>
     </div>
   );
 
@@ -118,22 +150,23 @@ const Register = () => {
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
-          {/* Logo */}
-          <div className="text-center mb-8">
-            <motion.div
-              initial={{ scale: 0.8 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-              className="inline-flex items-center gap-3 mb-4"
-            >
-              <div className="w-12 h-12 rounded-xl bg-gradient-cyber flex items-center justify-center glow-primary">
-                <Gamepad2 className="w-7 h-7 text-background" />
-              </div>
-              <span className="text-3xl font-bold text-glow">CYBERPAY</span>
-            </motion.div>
-            <p className="text-muted-foreground">สมัครสมาชิกเพื่อรับสิทธิพิเศษ</p>
+          <div className="text-center mb-8 pt-[5vh]">
+            {/* Logo */}
+            <div className="text-center mb-8">
+              <motion.div
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
+                className="inline-flex items-center gap-3 mb-4"
+              >
+                <div className="w-12 h-12 rounded-xl bg-gradient-cyber flex items-center justify-center glow-primary">
+                  <Gamepad2 className="w-7 h-7 text-background" />
+                </div>
+                <span className="text-3xl font-bold text-glow">CYBERPAY</span>
+              </motion.div>
+              <p className="text-muted-foreground">สมัครสมาชิกเพื่อรับสิทธิพิเศษ</p>
+            </div>
           </div>
-
           <Card className="glass-card border-border/50">
             <CardHeader className="space-y-1 pb-4">
               <CardTitle className="text-2xl font-bold text-center">สมัครสมาชิก</CardTitle>
@@ -181,8 +214,8 @@ const Register = () => {
                     >
                       {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
-                 
                   </div>
+
                 </div>
 
                 {/* Confirm Password Input */}
@@ -208,14 +241,15 @@ const Register = () => {
                       {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                     </button>
                   </div>
+
+                  {/* ส่วนแจ้งเตือน Error */}
                   {/* {confirmPassword && !doPasswordsMatch && (
                     <p className="text-xs text-destructive">รหัสผ่านไม่ตรงกัน</p>
                   )} */}
 
-                 
+                  {/* Password Requirements */}
                   {/* Password Requirements */}
                   <div className="flex flex-col gap-1 pt-2">
-                    {/* แถวที่ 1: ความยาว และ พิมพ์ใหญ่/เล็ก */}
                     <div>
                       <PasswordCheck
                         valid={passwordChecks.uppercase && passwordChecks.lowercase}
@@ -244,11 +278,36 @@ const Register = () => {
                   </div>
                 </div>
 
+                {/* Terms and Conditions Checkbox */}
+                <div className="flex items-start space-x-2 pt-2">
+                  <Checkbox
+                    id="terms"
+                    checked={acceptedTerms}
+                    onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
+                    disabled={isLoading}
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor="terms"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                    >
+                      ฉันยอมรับ{' '}
+                      <button
+                        type="button"
+                        onClick={() => setShowTerms(true)}
+                        className="text-primary hover:underline"
+                      >
+                        ข้อกำหนดในการให้บริการและนโยบายความเป็นส่วนตัว
+                      </button>
+                    </label>
+                  </div>
+                </div>
+
                 {/* Register Button */}
                 <Button
                   type="submit"
                   className="w-full bg-gradient-cyber hover:opacity-90 text-background font-semibold h-11 pulse-glow"
-                  disabled={isLoading || !isPasswordValid || !doPasswordsMatch}
+                  disabled={isLoading || !isPasswordValid || !doPasswordsMatch || !acceptedTerms}
                 >
                   {isLoading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -268,16 +327,26 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* 3. กลุ่มปุ่ม Social Login (Google, Facebook, LINE) */}
+              {/* 3. กลุ่มปุ่ม Social Login (Google, Facebook) */}
               <div className="space-y-3">
                 {/* ปุ่ม Google */}
-                <Button variant="outline" className="w-full bg-background hover:bg-muted/50">
+                <Button
+                  variant="outline"
+                  className="w-full bg-background hover:bg-muted/50"
+                  onClick={handleGoogleSignUp}
+                  disabled={isLoading}
+                >
                   <FcGoogle className="mr-2 h-5 w-5" />
                   Google
                 </Button>
 
                 {/* ปุ่ม Facebook */}
-                <Button variant="outline" className="w-full bg-[#1877F2]/10 border-[#1877F2]/30 text-[#1877F2] hover:bg-[#1877F2]/20">
+                <Button
+                  variant="outline"
+                  className="w-full bg-[#1877F2]/10 border-[#1877F2]/30 text-[#1877F2] hover:bg-[#1877F2]/20"
+                  onClick={handleFacebookSignUp}
+                  disabled={isLoading}
+                >
                   <Facebook className="mr-2 h-5 w-5 fill-current" />
                   Facebook
                 </Button>
@@ -294,8 +363,35 @@ const Register = () => {
           </Card>
         </motion.div>
       </div>
+
+      {/* Terms Dialog */}
+      <Dialog open={showTerms} onOpenChange={setShowTerms}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>ข้อกำหนดในการให้บริการ และนโยบายความเป็นส่วนตัว</DialogTitle>
+          </DialogHeader>
+          <DialogDescription asChild>
+            <div className="space-y-4 text-sm text-muted-foreground">
+              <h3 className="font-semibold text-foreground">ข้อกำหนดในการให้บริการ</h3>
+              <p>1. ผู้ใช้งานต้องให้ข้อมูลที่ถูกต้องและเป็นปัจจุบันในการสมัครสมาชิก</p>
+              <p>2. ห้ามใช้บัญชีผู้อื่นในการทำธุรกรรม</p>
+              <p>3. การเติมเงินทุกรายการจะไม่สามารถขอคืนเงินได้หลังจากดำเนินการสำเร็จ</p>
+              <p>4. ทีมงานขอสงวนสิทธิ์ในการระงับบัญชีที่มีพฤติกรรมผิดปกติ</p>
+
+              <h3 className="font-semibold text-foreground pt-2">นโยบายความเป็นส่วนตัว</h3>
+              <p>1. เราเก็บรวบรวมข้อมูลส่วนบุคคลเท่าที่จำเป็นสำหรับการให้บริการ</p>
+              <p>2. ข้อมูลของคุณจะไม่ถูกเปิดเผยต่อบุคคลที่สามโดยไม่ได้รับความยินยอม</p>
+              <p>3. คุณสามารถขอลบข้อมูลส่วนบุคคลได้ตลอดเวลา</p>
+              <p>4. เราใช้มาตรการรักษาความปลอดภัยเพื่อปกป้องข้อมูลของคุณ</p>
+            </div>
+          </DialogDescription>
+        </DialogContent>
+      </Dialog>
     </PageTransition>
   );
+
+
 };
+
 
 export default Register;

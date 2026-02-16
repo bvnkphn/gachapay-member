@@ -16,6 +16,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes); // Add this for Google OAuth callback
 
 // MongoDB Connection
 mongoose.connect(process.env.MONGODB_URI)

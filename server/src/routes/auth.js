@@ -2,11 +2,19 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { google } = require('googleapis');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 const EmailService = require('../services/emailService');
 
 const router = express.Router();
+
+// Google OAuth2 Client
+const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    process.env.GOOGLE_REDIRECT_URI
+);
 
 // Register
 router.post('/register', async (req, res) => {
@@ -239,6 +247,95 @@ router.get('/verify-reset-token/:token', async (req, res) => {
             success: false,
             message: 'เกิดข้อผิดพลาดของเซิร์ฟเวอร์'
         });
+    }
+});
+
+// Google OAuth - Initiate
+router.get('/google', (req, res) => {
+    try {
+        const authUrl = oauth2Client.generateAuthUrl({
+            access_type: 'offline',
+            scope: [
+                'https://www.googleapis.com/auth/userinfo.profile',
+                'https://www.googleapis.com/auth/userinfo.email'
+            ],
+            prompt: 'consent'
+        });
+
+        res.json({
+            success: true,
+            authUrl
+        });
+    } catch (error) {
+        console.error('Google OAuth initiate error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'ไม่สามารถเริ่มต้น Google OAuth ได้'
+        });
+    }
+});
+
+// Google OAuth - Callback
+router.get('/google/callback', async (req, res) => {
+    try {
+        const { code } = req.query;
+
+        if (!code) {
+            // Redirect to frontend with error
+            return res.redirect(`${process.env.FRONTEND_URL}/login?error=no_code`);
+        }
+
+        // Exchange code for tokens
+        const { tokens } = await oauth2Client.getToken(code);
+        oauth2Client.setCredentials(tokens);
+
+        // Get user info from Google
+        const oauth2 = google.oauth2({
+            auth: oauth2Client,
+            version: 'v2'
+        });
+
+        const { data } = await oauth2.userinfo.get();
+
+        // Check if user exists
+        let user = await User.findOne({ email: data.email });
+
+        if (!user) {
+            // Create new user
+            user = new User({
+                email: data.email,
+                profile: {
+                    username: data.name || data.email.split('@')[0],
+                    display_name: data.name || data.email.split('@')[0],
+                    avatar_url: data.picture
+                },
+                googleId: data.id,
+                // No password for Google OAuth users
+                password: crypto.randomBytes(32).toString('hex')
+            });
+
+            await user.save();
+        } else if (!user.googleId) {
+            // Link Google account to existing user
+            user.googleId = data.id;
+            if (data.picture && !user.profile.avatar_url) {
+                user.profile.avatar_url = data.picture;
+            }
+            await user.save();
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { userId: user._id },
+            process.env.JWT_SECRET,
+            { expiresIn: '7d' }
+        );
+
+        // Redirect to frontend with token
+        res.redirect(`${process.env.FRONTEND_URL}/auth/google/callback?token=${token}`);
+    } catch (error) {
+        console.error('Google OAuth callback error:', error);
+        res.redirect(`${process.env.FRONTEND_URL}/login?error=auth_failed`);
     }
 });
 

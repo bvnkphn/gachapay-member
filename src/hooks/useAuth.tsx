@@ -16,6 +16,7 @@ interface AuthContextType {
   loading: boolean;
   signUp: (email: string, password: string, username?: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signInWithGoogle: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   forgotPassword: (email: string) => Promise<{ error: Error | null }>;
   verifyResetOTP: (email: string, otp: string) => Promise<{ error: Error | null; resetToken?: string }>;
@@ -87,6 +88,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const signInWithGoogle = async () => {
+    try {
+      const response = await AuthService.initiateGoogleSignIn();
+
+      if (response.success && response.authUrl) {
+        // Redirect to Google OAuth
+        window.location.href = response.authUrl;
+        return { error: null };
+      } else {
+        return { error: new Error(response.message || 'Failed to initiate Google Sign In') };
+      }
+    } catch (error) {
+      return { error: error as Error };
+    }
+  };
+
   const signOut = async () => {
     localStorage.removeItem('auth_token');
     setUser(null);
@@ -137,6 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         signUp,
         signIn,
+        signInWithGoogle,
         signOut,
         forgotPassword,
         verifyResetOTP,

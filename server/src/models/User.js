@@ -18,6 +18,11 @@ const userSchema = new mongoose.Schema({
         display_name: String,
         avatar_url: String
     },
+    googleId: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
     resetPasswordOTP: String,
     resetPasswordExpires: Date,
     resetPasswordToken: String,
