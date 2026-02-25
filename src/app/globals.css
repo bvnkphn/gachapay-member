@@ -1,0 +1,197 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CYBERPAY Design System - Cyberpunk Gaming Theme */
+
+@layer base {
+    :root {
+        /* Dark cyberpunk backgrounds */
+        --background: 240 20% 4%;
+        --foreground: 210 40% 98%;
+
+        /* Cards with glassmorphism */
+        --card: 240 15% 8%;
+        --card-foreground: 210 40% 98%;
+
+        --popover: 240 15% 8%;
+        --popover-foreground: 210 40% 98%;
+
+        /* Neon Blue Primary */
+        --primary: 190 100% 50%;
+        --primary-foreground: 240 20% 4%;
+
+        /* Electric Purple Secondary */
+        --secondary: 270 91% 65%;
+        --secondary-foreground: 210 40% 98%;
+
+        /* Muted for subtle elements */
+        --muted: 240 15% 15%;
+        --muted-foreground: 215 20% 65%;
+
+        /* Purple accent */
+        --accent: 270 91% 65%;
+        --accent-foreground: 210 40% 98%;
+
+        /* Red for errors/destructive */
+        --destructive: 0 84% 60%;
+        --destructive-foreground: 210 40% 98%;
+
+        /* Success green */
+        --success: 142 76% 36%;
+        --success-foreground: 210 40% 98%;
+
+        /* Warning amber */
+        --warning: 38 92% 50%;
+        --warning-foreground: 240 20% 4%;
+
+        /* Borders and inputs */
+        --border: 240 15% 20%;
+        --input: 240 15% 15%;
+        --ring: 190 100% 50%;
+
+        --radius: 0.75rem;
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+
+    body {
+        @apply bg-background text-foreground antialiased;
+        background: linear-gradient(180deg, hsl(240 20% 6%) 0%, hsl(240 20% 4%) 100%);
+        min-height: 100vh;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: hsl(240 15% 8%);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: hsl(240 15% 25%);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: hsl(190 100% 50%);
+    }
+}
+
+@layer utilities {
+
+    /* Neon glow effects */
+    .glow-primary {
+        box-shadow: 0 0 20px hsl(190 100% 50% / 0.4);
+    }
+
+    .glow-secondary {
+        box-shadow: 0 0 20px hsl(270 91% 65% / 0.4);
+    }
+
+    .glow-intense {
+        box-shadow: 0 0 40px hsl(190 100% 50% / 0.6);
+    }
+
+    /* Text glow */
+    .text-glow {
+        text-shadow: 0 0 10px hsl(190 100% 50% / 0.5), 0 0 20px hsl(190 100% 50% / 0.3);
+    }
+
+    .text-glow-purple {
+        text-shadow: 0 0 10px hsl(270 91% 65% / 0.5), 0 0 20px hsl(270 91% 65% / 0.3);
+    }
+
+    /* Gradient backgrounds */
+    .bg-gradient-cyber {
+        background: linear-gradient(135deg, hsl(190 100% 50%), hsl(270 91% 65%));
+    }
+
+    .bg-gradient-dark {
+        background: linear-gradient(180deg, hsl(240 20% 8%) 0%, hsl(240 20% 4%) 100%);
+    }
+
+    /* Glassmorphism */
+    .glass {
+        background: hsl(240 15% 10% / 0.8);
+        backdrop-filter: blur(12px);
+        border: 1px solid hsl(240 15% 20% / 0.5);
+    }
+
+    .glass-card {
+        background: linear-gradient(145deg, hsl(240 15% 12% / 0.9), hsl(240 15% 6% / 0.9));
+        backdrop-filter: blur(12px);
+        border: 1px solid hsl(240 15% 25% / 0.3);
+    }
+
+    /* Hover scale effect */
+    .hover-lift {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 0 20px hsl(190 100% 50% / 0.4);
+    }
+
+    /* Pulse animation for CTAs */
+    .pulse-glow {
+        animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-glow {
+
+        0%,
+        100% {
+            box-shadow: 0 0 20px hsl(190 100% 50% / 0.4);
+        }
+
+        50% {
+            box-shadow: 0 0 40px hsl(190 100% 50% / 0.6), 0 0 60px hsl(270 91% 65% / 0.3);
+        }
+    }
+
+    /* Shimmer effect for loading */
+    .shimmer {
+        background: linear-gradient(90deg,
+                hsl(240 15% 10%) 0%,
+                hsl(240 15% 20%) 50%,
+                hsl(240 15% 10%) 100%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+    }
+
+    @keyframes shimmer {
+        0% {
+            background-position: 200% 0;
+        }
+
+        100% {
+            background-position: -200% 0;
+        }
+    }
+
+    /* Float animation */
+    .animate-float {
+        animation: float 6s ease-in-out infinite;
+    }
+
+    @keyframes float {
+
+        0%,
+        100% {
+            transform: translateY(0px);
+        }
+
+        50% {
+            transform: translateY(-20px);
+        }
+    }
+}
