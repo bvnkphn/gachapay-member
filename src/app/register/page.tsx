@@ -191,11 +191,11 @@ export default function RegisterPage() {
                                     className="text-sm text-muted-foreground leading-relaxed cursor-pointer"
                                 >
                                     ฉันยอมรับ{" "}
-                                    <Link href="/terms" className="text-primary hover:underline">
+                                    <Link href="/terms-privacy/terms" className="text-primary hover:underline">
                                         ข้อกำหนดในการให้บริการ
                                     </Link>{" "}
                                     และ{" "}
-                                    <Link href="/privacy" className="text-primary hover:underline">
+                                    <Link href="/terms-privacy/privacy" className="text-primary hover:underline">
                                         นโยบายความเป็นส่วนตัว
                                     </Link>
                                 </label>
