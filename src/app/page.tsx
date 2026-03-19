@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/search-bar";
 import { GameCard } from "@/components/game-card";
 import { useLanguage } from "@/components/language-context";
+import BannerSlider from "@/components/BannerSlider";
 
 const features = [
     {
@@ -45,6 +46,10 @@ export default function Home() {
     const { t } = useLanguage();
     return (
         <div className="min-h-screen">
+            {/* Banner Slider */}
+            <div className="container mx-auto px-4 pt-8">
+                <BannerSlider />
+            </div>
             {/* Hero Section */}
             <section className="relative overflow-hidden pt-20 pb-12 md:pt-28 md:pb-20">
                 {/* Gradient Orbs */}
