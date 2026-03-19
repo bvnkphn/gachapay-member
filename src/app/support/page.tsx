@@ -2,17 +2,21 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useRouter } from "next/navigation";
 import {
     MessageCircle,
+    Send,
     Phone,
     Mail,
+    Facebook,
+    MessageSquare,
     HelpCircle,
     ExternalLink,
     PlayCircle,
-    Ticket,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import {
     Accordion,
     AccordionContent,
@@ -21,14 +25,27 @@ import {
 } from "@/components/ui/accordion";
 import { faqCategories, faqItems } from "@/data/supportFaqs";
 import { cn } from "@/lib/utils";
-import { useLanguage } from "@/components/language-context";
 
 const contactChannels = [
     {
+        name: "Line Official",
+        icon: MessageSquare,
+        url: "#",
+        description: "แชทกับเจ้าหน้าที่ตลอด 24 ชม.",
+        gradient: "from-[hsl(142,76%,36%)] to-[hsl(142,76%,28%)]",
+    },
+    {
+        name: "Facebook",
+        icon: Facebook,
+        url: "#",
+        description: "ส่งข้อความผ่าน Messenger",
+        gradient: "from-[hsl(220,80%,50%)] to-[hsl(220,80%,38%)]",
+    },
+    {
         name: "อีเมล",
         icon: Mail,
-        url: "mailto:support@gachapay.com",
-        description: "support@gachapay.com",
+        url: "mailto:support@cyberpay.com",
+        description: "support@cyberpay.com",
         gradient: "from-primary to-primary/70",
     },
     {
@@ -41,14 +58,30 @@ const contactChannels = [
 ];
 
 export default function SupportPage() {
-    const router = useRouter();
     const [activeCategoryId, setActiveCategoryId] = useState<string>("all");
-    const { lang, t } = useLanguage();
+    const [formData, setFormData] = useState({
+        name: "",
+        email: "",
+        subject: "",
+        message: "",
+    });
 
     const filteredFaqs =
         activeCategoryId === "all"
             ? faqItems
             : faqItems.filter((f) => f.categoryId === activeCategoryId);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+
+        if (!formData.name || !formData.email || !formData.message) {
+            alert("กรุณากรอกข้อมูลให้ครบ\nชื่อ, อีเมล และข้อความ เป็นข้อมูลที่จำเป็น");
+            return;
+        }
+
+        alert("ส่งข้อความสำเร็จ! ✉️\nทีมงานจะติดต่อกลับภายใน 24 ชั่วโมง");
+        setFormData({ name: "", email: "", subject: "", message: "" });
+    };
 
     return (
         <div className="min-h-screen pt-20 pb-24">
@@ -62,9 +95,9 @@ export default function SupportPage() {
                     >
                         <HelpCircle className="w-10 h-10 text-foreground" />
                     </motion.div>
-                    <h1 className="text-2xl font-bold">{t.supportTitle}</h1>
+                    <h1 className="text-2xl font-bold">ศูนย์ช่วยเหลือ</h1>
                     <p className="text-muted-foreground mt-1">
-                        {t.supportSubtitle}
+                        ค้นหาคำตอบด้วยตนเอง หรือติดต่อทีมงานได้ตลอด 24 ชม.
                     </p>
                 </div>
 
@@ -77,7 +110,7 @@ export default function SupportPage() {
                 >
                     <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                         <MessageCircle className="w-5 h-5 text-primary" />
-                        {t.faqTitle}
+                        คำถามที่พบบ่อย (FAQ)
                     </h2>
 
                     {/* Category Tabs */}
@@ -91,11 +124,10 @@ export default function SupportPage() {
                                     : "bg-muted/50 text-muted-foreground border-border hover:bg-muted"
                             )}
                         >
-                            {t.allCategories}
+                            ทั้งหมด
                         </button>
                         {faqCategories.map((cat) => {
                             const Icon = cat.icon;
-                            const label = t.faqCategories[cat.id as keyof typeof t.faqCategories];
                             return (
                                 <button
                                     key={cat.id}
@@ -108,7 +140,7 @@ export default function SupportPage() {
                                     )}
                                 >
                                     <Icon className="w-3.5 h-3.5" />
-                                    {label}
+                                    {cat.label}
                                 </button>
                             );
                         })}
@@ -125,40 +157,20 @@ export default function SupportPage() {
                                 transition={{ duration: 0.2 }}
                             >
                                 <Accordion type="single" collapsible className="w-full">
-                                    {filteredFaqs.map((faq, index) => {
-                                        const question = typeof faq.question === 'string' ? faq.question : faq.question[lang];
-                                        const answer = typeof faq.answer === 'string' ? faq.answer : faq.answer[lang];
-                                        return (
-                                            <AccordionItem key={index} value={`faq-${index}`}>
-                                                <AccordionTrigger className="text-left hover:text-primary text-sm">
-                                                    {question}
-                                                </AccordionTrigger>
-                                                <AccordionContent className="text-muted-foreground text-sm whitespace-pre-line">
-                                                    <div className="space-y-4">
-                                                        <p>{answer}</p>
-                                                        <div className="pt-2 border-t border-border/50 text-center">
-                                                            <p className="text-sm text-foreground mb-3">
-                                                                {t.stillHaveQuestion}
-                                                            </p>
-                                                            <Button
-                                                                onClick={() => router.push("/support/create-ticket")}
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="w-full sm:w-auto"
-                                                            >
-                                                                <Ticket className="w-4 h-4 mr-2" />
-                                                                {t.createTicket}
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                        );
-                                    })}
+                                    {filteredFaqs.map((faq, index) => (
+                                        <AccordionItem key={index} value={`faq-${index}`}>
+                                            <AccordionTrigger className="text-left hover:text-primary text-sm">
+                                                {faq.question}
+                                            </AccordionTrigger>
+                                            <AccordionContent className="text-muted-foreground text-sm whitespace-pre-line">
+                                                {faq.answer}
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    ))}
                                 </Accordion>
                                 {filteredFaqs.length === 0 && (
                                     <p className="text-center text-muted-foreground py-6 text-sm">
-                                        {t.noFaqFound}
+                                        ไม่พบคำถามในหมวดนี้
                                     </p>
                                 )}
                             </motion.div>
@@ -175,14 +187,14 @@ export default function SupportPage() {
                 >
                     <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                         <PlayCircle className="w-5 h-5 text-secondary" />
-                        {t.videoTitle}
+                        วิดีโอแนะนำการใช้งาน
                     </h2>
                     <div className="glass-card rounded-xl p-8 flex flex-col items-center justify-center text-center">
                         <div className="w-16 h-16 rounded-full bg-muted/60 flex items-center justify-center mb-3">
                             <PlayCircle className="w-8 h-8 text-muted-foreground" />
                         </div>
                         <p className="text-muted-foreground text-sm">
-                            {t.videoPlaceholder}
+                            วิดีโอแนะนำขั้นตอนการเติมเงินและใช้งานระบบ — เร็วๆ นี้
                         </p>
                     </div>
                 </motion.section>
@@ -196,10 +208,10 @@ export default function SupportPage() {
                 >
                     <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
                         <Phone className="w-5 h-5 text-primary" />
-                        {t.contactTitle}
+                        ช่องทางติดต่อเจ้าหน้าที่
                     </h2>
                     <p className="text-muted-foreground text-sm mb-4">
-                        {t.contactSubtitle}
+                        หาก FAQ ไม่สามารถแก้ปัญหาได้ สามารถติดต่อทีมงานผ่านช่องทางด้านล่าง
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {contactChannels.map((ch, i) => (
@@ -235,7 +247,76 @@ export default function SupportPage() {
                     </div>
                 </motion.section>
 
+                {/* Contact Form */}
+                <motion.section
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                >
+                    <div className="glass-card rounded-xl p-6">
+                        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <Send className="w-5 h-5 text-primary" />
+                            ส่งข้อความถึงทีมงาน
+                        </h2>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="name">ชื่อ *</Label>
+                                    <Input
+                                        id="name"
+                                        placeholder="ชื่อของคุณ"
+                                        value={formData.name}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, name: e.target.value })
+                                        }
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="email">อีเมล *</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        placeholder="email@example.com"
+                                        value={formData.email}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, email: e.target.value })
+                                        }
+                                    />
+                                </div>
+                            </div>
 
+                            <div className="space-y-2">
+                                <Label htmlFor="subject">หัวข้อ</Label>
+                                <Input
+                                    id="subject"
+                                    placeholder="หัวข้อที่ต้องการสอบถาม"
+                                    value={formData.subject}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, subject: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="message">ข้อความ *</Label>
+                                <Textarea
+                                    id="message"
+                                    placeholder="รายละเอียดปัญหาหรือข้อสงสัยของคุณ..."
+                                    rows={4}
+                                    value={formData.message}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, message: e.target.value })
+                                    }
+                                />
+                            </div>
+
+                            <Button type="submit" className="w-full bg-gradient-cyber">
+                                <Send className="w-4 h-4 mr-2" />
+                                ส่งข้อความ
+                            </Button>
+                        </form>
+                    </div>
+                </motion.section>
             </div>
         </div>
     );

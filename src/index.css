@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  .font-kanit {
+    font-family: 'Kanit', sans-serif;
+  }
+}
+
+@layer base {
+  :root {
+    --background: 222 84% 5%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 50% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 50% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 185 100% 50%;
+    --primary-foreground: 222 84% 5%;
+
+    --secondary: 222 30% 14%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 222 30% 14%;
+    --muted-foreground: 215 20% 55%;
+
+    --accent: 270 80% 65%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 222 30% 18%;
+    --input: 222 30% 14%;
+    --ring: 185 100% 50%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 222 50% 6%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 185 100% 50%;
+    --sidebar-primary-foreground: 222 84% 5%;
+    --sidebar-accent: 222 30% 14%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 30% 18%;
+    --sidebar-ring: 185 100% 50%;
+
+    /* Custom tokens */
+    --gradient-cyber: linear-gradient(135deg, hsl(185, 100%, 50%), hsl(270, 80%, 65%));
+    --gradient-cyber-hover: linear-gradient(135deg, hsl(185, 100%, 55%), hsl(270, 80%, 70%));
+    --shadow-cyber: 0 0 20px hsl(185 100% 50% / 0.15);
+    --shadow-card: 0 4px 20px hsl(0 0% 0% / 0.3);
+
+    --success: 145 70% 45%;
+    --success-foreground: 210 40% 98%;
+    --warning: 40 100% 50%;
+    --warning-foreground: 222 84% 5%;
+    --info: 200 80% 55%;
+    --info-foreground: 210 40% 98%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-kanit;
+  }
+}
+
+@layer utilities {
+  .gradient-cyber {
+    background: var(--gradient-cyber);
+  }
+
+  .gradient-cyber-hover:hover {
+    background: var(--gradient-cyber-hover);
+  }
+
+  .shadow-cyber {
+    box-shadow: var(--shadow-cyber);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .text-gradient-cyber {
+    background: var(--gradient-cyber);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}

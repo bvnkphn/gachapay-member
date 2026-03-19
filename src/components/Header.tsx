@@ -14,7 +14,6 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useLanguage } from "@/components/language-context";
 
 const navLinks = [
     { path: "/", label: "หน้าแรก" },
@@ -26,7 +25,6 @@ const navLinks = [
 export function Header() {
     const pathname = usePathname();
     const { user, logout } = useAuth();
-    const { lang, setLang, t } = useLanguage();
 
     const getUserInitials = () => {
         if (!user?.email) return 'U';
@@ -47,12 +45,10 @@ export function Header() {
                                 CYBERPAY
                             </h1>
                             <p className="text-[10px] text-muted-foreground -mt-1">
-                                {t.platform}
+                                Game Top-up Platform
                             </p>
                         </div>
                     </Link>
-
-                    
 
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex items-center gap-6">
@@ -87,20 +83,6 @@ export function Header() {
                                 </div>
                             </Link>
                         )}
-
-                        {/* Language Toggle */}
-                    <div className="flex items-center gap-2">
-                        <button
-                            className={`px-2 py-1 rounded text-sm font-medium ${lang === 'th' ? 'bg-primary text-background' : 'bg-muted text-foreground'} mr-1`}
-                            onClick={() => setLang('th')}
-                            type="button"
-                        >TH</button>
-                        <button
-                            className={`px-2 py-1 rounded text-sm font-medium ${lang === 'en' ? 'bg-primary text-background' : 'bg-muted text-foreground'}`}
-                            onClick={() => setLang('en')}
-                            type="button"
-                        >EN</button>
-                    </div>
 
                         {/* Search Button */}
                         <Button
