@@ -7,6 +7,8 @@ import { SearchBar } from "@/components/search-bar";
 import { GameCard } from "@/components/game-card";
 import { useLanguage } from "@/components/language-context";
 import BannerSlider from "@/components/BannerSlider";
+import Footer from "@/components/Footer";
+
 
 const features = [
     {
@@ -208,6 +210,7 @@ export default function Home() {
 
             {/* Bottom padding for mobile nav */}
             <div className="h-20 md:h-0" />
+            <Footer />
         </div>
     );
 }
