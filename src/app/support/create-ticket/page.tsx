@@ -60,7 +60,7 @@ export default function CreateTicketPage() {
 
     const handleSuccessClose = () => {
         setShowSuccess(false);
-        router.push("/support");
+        router.push("/support/tickets");
     };
 
     if (showSuccess) {
