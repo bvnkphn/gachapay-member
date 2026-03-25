@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Zap, ArrowRight, Shield, Clock, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/search-bar";
-import { GameCard } from "@/components/game-card";
+import { GameCard, GamesSection, games } from "@/components/game-card";
 import { useLanguage } from "@/components/language-context";
 import BannerSlider from "@/components/BannerSlider";
 import Footer from "@/components/Footer";
@@ -33,16 +33,6 @@ const features = [
     },
 ];
 
-const games = [
-    { id: 1, name: "Free Fire", slug: "free-fire", image: "/placeholder.svg" },
-    { id: 2, name: "Mobile Legends", slug: "mobile-legends", image: "/placeholder.svg" },
-    { id: 3, name: "PUBG Mobile", slug: "pubg-mobile", image: "/placeholder.svg" },
-    { id: 4, name: "Genshin Impact", slug: "genshin-impact", image: "/placeholder.svg" },
-    { id: 5, name: "Roblox", slug: "roblox", image: "/placeholder.svg" },
-    { id: 6, name: "Valorant", slug: "valorant", image: "/placeholder.svg" },
-    { id: 7, name: "Garena RoV", slug: "rov", image: "/placeholder.svg" },
-    { id: 8, name: "Honkai Star Rail", slug: "honkai", image: "/placeholder.svg" },
-];
 
 export default function Home() {
     const { t } = useLanguage();
@@ -140,40 +130,7 @@ export default function Home() {
             </section>
 
             {/* Games Section */}
-            <section className="py-12">
-                <div className="container mx-auto px-4">
-                    {/* Section Header */}
-                    <div className="flex items-center justify-between mb-8">
-                        <div>
-                            <h2 className="text-2xl md:text-3xl font-bold text-foreground">
-                                เกมยอดนิยม
-                            </h2>
-                            <p className="text-muted-foreground mt-1">
-                                เลือกเกมที่ต้องการเติมได้เลย
-                            </p>
-                        </div>
-                        <Link
-                            href="/"
-                            className="text-sm text-primary hover:underline flex items-center gap-1"
-                        >
-                            ดูทั้งหมด
-                            <ArrowRight className="w-4 h-4" />
-                        </Link>
-                    </div>
-
-                    {/* Games Grid */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-                        {games.map((game) => (
-                            <GameCard
-                                key={game.id}
-                                name={game.name}
-                                image={game.image}
-                                slug={game.slug}
-                            />
-                        ))}
-                    </div>
-                </div>
-            </section>
+            <GamesSection games={games} />
 
             {/* Promo Banner */}
             <section className="py-12">
