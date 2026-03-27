@@ -50,7 +50,10 @@ export default function CreateTicketPage() {
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!formData.problemType || !formData.userId || !formData.email || !formData.description) {
+        const needsOrderId = ["missing-payment", "incorrect-amount", "wrong-user-id", "payment-gateway"]
+            .includes(formData.problemType);
+
+        if (!formData.problemType || (needsOrderId && !formData.userId) || !formData.email || !formData.description) {
             alert(t.fillAllFields);
             return;
         }
@@ -173,25 +176,29 @@ export default function CreateTicketPage() {
                             </Select>
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="userId" className="text-sm">
-                                {t.userId} *
-                            </Label>
-                            <Input
-                                id="userId"
-                                placeholder={t.userIdPlaceholder}
-                                value={formData.userId}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, userId: e.target.value })
-                                }
-                                className="h-11"
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                {t.userIdHelper}
-                            </p>
-                        </div>
-
-                        {/* Payment Method - Only show for payment-related issues */}
+                        {/* Order ID - show for order/payment related issues */}
+                        {(formData.problemType === "missing-payment" ||
+                            formData.problemType === "incorrect-amount" ||
+                            formData.problemType === "wrong-user-id" ||
+                            formData.problemType === "payment-gateway") && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="userId" className="text-sm">
+                                        {t.userId} *
+                                    </Label>
+                                    <Input
+                                        id="userId"
+                                        placeholder={t.userIdPlaceholder}
+                                        value={formData.userId}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, userId: e.target.value })
+                                        }
+                                        className="h-11"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        {t.userIdHelper}
+                                    </p>
+                                </div>
+                            )}
                         {(formData.problemType === "missing-payment" ||
                             formData.problemType === "payment-gateway") && (
                                 <div className="space-y-2">

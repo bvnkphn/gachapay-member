@@ -4,6 +4,7 @@ import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/Header";
 import { BottomNav } from "@/components/bottom-nav";
+import { AccountSidebar } from "@/components/AccountSidebar";
 import { LanguageProvider } from "@/components/language-context";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -24,6 +25,7 @@ export default function RootLayout({
                 <LanguageProvider>
                     <Providers>
                         <Header />
+                        <AccountSidebar />
                         <main className="pt-16">{children}</main>
                         <BottomNav />
                     </Providers>

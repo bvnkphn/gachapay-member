@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Zap, Search, User, Crown, LogOut, LogIn } from "lucide-react";
+import { Zap, Search, User, Crown, LogOut, LogIn, Ticket, PanelLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useLanguage } from "@/components/language-context";
+import { useSidebar } from "@/components/sidebar-context";
 
 const navLinks = [
     { path: "/", label: "หน้าแรก" },
@@ -27,6 +28,10 @@ export function Header() {
     const pathname = usePathname();
     const { user, logout } = useAuth();
     const { lang, setLang, t } = useLanguage();
+    const { open, toggle } = useSidebar();
+
+    // pages that have the account sidebar
+    const hasSidebar = pathname.startsWith("/account") || pathname.startsWith("/support/tickets");
 
     const getUserInitials = () => {
         if (!user?.email) return 'U';
@@ -35,24 +40,39 @@ export function Header() {
 
     return (
         <header className="fixed top-0 left-0 right-0 z-50 glass border-b border-border/50">
-            <div className="container mx-auto px-4">
+            <div className="px-4 w-full">
                 <div className="flex items-center justify-between h-16">
-                    {/* Logo */}
-                    <Link href="/" className="flex items-center gap-2 group">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-cyber flex items-center justify-center transition-transform hover:rotate-180 duration-500">
-                            <Zap className="w-6 h-6 text-primary-foreground" />
-                        </div>
-                        <div className="hidden sm:block">
-                            <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                                CYBERPAY
-                            </h1>
-                            <p className="text-[10px] text-muted-foreground -mt-1">
-                                {t.platform}
-                            </p>
-                        </div>
-                    </Link>
+                    {/* Left: Toggle (on sidebar pages) + Logo */}
+                    <div className="flex items-center gap-2">
+                        {hasSidebar && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={toggle}
+                                className="hidden lg:flex hover:bg-muted shrink-0"
+                                aria-label="Toggle sidebar"
+                            >
+                                <PanelLeft className={cn("w-5 h-5 transition-transform duration-300", !open && "rotate-180")} />
+                            </Button>
+                        )}
 
-                    
+                        {/* Logo */}
+                        <Link href="/" className="flex items-center gap-2 group">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-cyber flex items-center justify-center transition-transform hover:rotate-180 duration-500">
+                                <Zap className="w-6 h-6 text-primary-foreground" />
+                            </div>
+                            <div className="hidden sm:block">
+                                <h1 className="text-xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                                    CYBERPAY
+                                </h1>
+                                <p className="text-[10px] text-muted-foreground -mt-1">
+                                    {t.platform}
+                                </p>
+                            </div>
+                        </Link>
+                    </div>
+
+
 
                     {/* Desktop Navigation */}
                     <nav className="hidden md:flex items-center gap-6">
@@ -89,18 +109,18 @@ export function Header() {
                         )}
 
                         {/* Language Toggle */}
-                    <div className="flex items-center gap-2">
-                        <button
-                            className={`px-2 py-1 rounded text-sm font-medium ${lang === 'th' ? 'bg-primary text-background' : 'bg-muted text-foreground'} mr-1`}
-                            onClick={() => setLang('th')}
-                            type="button"
-                        >TH</button>
-                        <button
-                            className={`px-2 py-1 rounded text-sm font-medium ${lang === 'en' ? 'bg-primary text-background' : 'bg-muted text-foreground'}`}
-                            onClick={() => setLang('en')}
-                            type="button"
-                        >EN</button>
-                    </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                className={`px-2 py-1 rounded text-sm font-medium ${lang === 'th' ? 'bg-primary text-background' : 'bg-muted text-foreground'} mr-1`}
+                                onClick={() => setLang('th')}
+                                type="button"
+                            >TH</button>
+                            <button
+                                className={`px-2 py-1 rounded text-sm font-medium ${lang === 'en' ? 'bg-primary text-background' : 'bg-muted text-foreground'}`}
+                                onClick={() => setLang('en')}
+                                type="button"
+                            >EN</button>
+                        </div>
 
                         {/* Search Button */}
                         <Button
@@ -126,9 +146,21 @@ export function Header() {
                                 <DropdownMenuContent align="end" className="w-56 glass-card border-border/50">
                                     <div className="px-2 py-1.5">
                                         <p className="text-sm font-medium">{user.email}</p>
-                                        <p className="text-xs text-muted-foreground">บัญชีของฉัน</p>
+                                        <Link href="/account" className="text-xs text-primary hover:underline">บัญชีของฉัน</Link>
                                     </div>
                                     <DropdownMenuSeparator />
+                                    <DropdownMenuItem asChild>
+                                        <Link href="/account" className="flex items-center gap-2 cursor-pointer">
+                                            <User className="w-4 h-4" />
+                                            บัญชีของฉัน
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                        <Link href="/support/tickets" className="flex items-center gap-2 cursor-pointer">
+                                            <Ticket className="w-4 h-4" />
+                                            ตั๋วของฉัน
+                                        </Link>
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem asChild>
                                         <Link href="/history" className="flex items-center gap-2 cursor-pointer">
                                             <User className="w-4 h-4" />
@@ -136,7 +168,7 @@ export function Header() {
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem asChild>
-                                        <Link href="/vip" className="flex items-center gap-2 cursor-pointer">
+                                        <Link href="/account/vip-tier" className="flex items-center gap-2 cursor-pointer">
                                             <Crown className="w-4 h-4" />
                                             VIP Membership
                                         </Link>

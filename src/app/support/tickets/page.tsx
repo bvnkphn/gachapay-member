@@ -4,7 +4,6 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
-    ArrowLeft,
     ChevronRight,
     Ticket,
     SortAsc,
@@ -14,6 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/language-context";
+import { useSidebar } from "@/components/sidebar-context";
 
 export type TicketStatus = "queue" | "active" | "closed";
 
@@ -115,8 +115,8 @@ const SIDEBAR_ITEMS = [
 export default function TicketsPage() {
     const router = useRouter();
     const { lang } = useLanguage();
+    const { open } = useSidebar();
     const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
-    const [sidebarOpen, setSidebarOpen] = useState(true);
 
     const sorted = [...MOCK_TICKETS].sort((a, b) => {
         const diff = a.createdAt.getTime() - b.createdAt.getTime();
@@ -132,55 +132,11 @@ export default function TicketsPage() {
     };
 
     return (
-        <div className="min-h-screen pt-20 pb-24 bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex">
-            {/* Sidebar — fixed to left edge */}
-            <aside
-                className={cn(
-                    "hidden md:flex flex-col shrink-0 fixed left-0 top-16 bottom-0 z-40 border-r border-border/50 bg-background/80 backdrop-blur-md transition-all duration-300",
-                    sidebarOpen ? "w-56" : "w-10"
-                )}
-            >
-                {/* Toggle button */}
-                <button
-                    onClick={() => setSidebarOpen(!sidebarOpen)}
-                    className="w-full text-left px-3 py-3 text-xs text-muted-foreground hover:text-foreground transition-colors border-b border-border/40 select-none"
-                >
-                    {sidebarOpen ? "◀" : "▶"}
-                </button>
+        <div className="min-h-screen pt-16 pb-24">
 
-                {sidebarOpen && (
-                    <div className="p-3 pt-3">
-                        {SIDEBAR_ITEMS.map((item) => (
-                            <button
-                                key={item.key}
-                                onClick={() => router.push(item.href)}
-                                className={cn(
-                                    "w-full text-left px-4 py-2.5 rounded-xl text-sm font-medium transition-colors",
-                                    item.key === "tickets"
-                                        ? "bg-primary/15 text-primary"
-                                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                                )}
-                            >
-                                {lang === "th" ? item.labelTh : item.labelEn}
-                            </button>
-                        ))}
-                    </div>
-                )}
-            </aside>
-
-            {/* Main Content — offset by sidebar width on md+ */}
-            <div className={cn("flex-1 transition-all duration-300", sidebarOpen ? "md:ml-56" : "md:ml-10")}>
-                <div className="container mx-auto px-4 max-w-3xl">
+            <div className={open ? "lg:ml-48 transition-all duration-300" : "lg:ml-14 transition-all duration-300"}>
+                <div className="container mx-auto px-4 max-w-3xl pt-8">
                     <main className="min-w-0">
-                        {/* Mobile back */}
-                        <Button
-                            variant="ghost"
-                            onClick={() => router.push("/support")}
-                            className="mb-4 -ml-2 md:hidden"
-                        >
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            {lang === "th" ? "กลับ" : "Back"}
-                        </Button>
 
                         {/* Header */}
                         <div className="flex items-center justify-between mb-6">

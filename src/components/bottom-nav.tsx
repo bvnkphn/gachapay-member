@@ -9,7 +9,7 @@ const navItems = [
     { href: "/", label: "หน้าหลัก", icon: Home },
     { href: "/history", label: "ประวัติ", icon: History },
     { href: "/topup", label: "เติมเงิน", icon: CreditCard },
-    { href: "/profile", label: "โปรไฟล์", icon: User },
+    { href: "/account", label: "บัญชี", icon: User },
 ];
 
 export function BottomNav() {
