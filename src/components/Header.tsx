@@ -17,18 +17,19 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useLanguage } from "@/components/language-context";
 import { useSidebar } from "@/components/sidebar-context";
 
-const navLinks = [
-    { path: "/", label: "หน้าแรก" },
-    { path: "/history", label: "ประวัติการเติม" },
-    { path: "/vip", label: "VIP" },
-    { path: "/support", label: "ช่วยเหลือ" },
-];
+
 
 export function Header() {
     const pathname = usePathname();
     const { user, logout } = useAuth();
     const { lang, setLang, t } = useLanguage();
     const { open, toggle } = useSidebar();
+    const navLinks = [
+    { path: "/", label: t.headerHome },
+    { path: "/history", label: t.headerTopUp },
+    { path: "/vip", label: t.headerVip },
+    { path: "/support", label: t.headerSupport },
+];
 
     // pages that have the account sidebar
     const hasSidebar = pathname.startsWith("/account") || pathname.startsWith("/support/tickets");
