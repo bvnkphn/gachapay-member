@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { ChevronRight, History, Crown, Settings, LogOut, User, Ticket } from "lucide-react";
+import { ChevronRight, History, Crown, Settings, LogOut, User, Ticket, Wallet, ShoppingCart } from "lucide-react";
 import { useLanguage } from "@/components/language-context";
 import { useAuth } from "@/hooks/use-auth";
 import { useSidebar } from "@/components/sidebar-context";
@@ -23,8 +23,9 @@ export function AccountSidebar() {
 
     const items = [
         { icon: User, label: t.myAccount, path: "/account" },
+        { icon: Wallet, label: t.sidebarBalance, path: "/account/balance" },
+        { icon: ShoppingCart, label: t.sidebarOrders, path: "/history" },
         { icon: Ticket, label: t.sidebarTickets, path: "/support/tickets" },
-        { icon: History, label: t.orderHistory, path: "/history" },
         { icon: Crown, label: t.vipPrivileges, path: "/account/vip-tier" },
         { icon: Settings, label: t.accountSettings, path: "/account/settings" },
     ];

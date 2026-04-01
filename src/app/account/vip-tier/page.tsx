@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/components/language-context";
+import { useSidebar } from "@/components/sidebar-context";
 import { Crown, Gem, Check, ChevronLeft, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -59,6 +60,7 @@ export default function VipTierPage() {
     const router = useRouter();
     const { user } = useAuth();
     const { t } = useLanguage();
+    const { open } = useSidebar();
 
     const userVipLevel = user?.vipLevel ?? MOCK_VIP_LEVEL;
     const userDiamonds = MOCK_DIAMONDS;
@@ -88,175 +90,177 @@ export default function VipTierPage() {
 
     return (
         <div className="min-h-screen pt-20 pb-24">
-            <div className="container mx-auto px-4 max-w-4xl">
+            <div className={open ? "lg:ml-48 transition-all duration-300" : "lg:ml-14 transition-all duration-300"}>
+                <div className="container mx-auto px-4 max-w-4xl">
 
-                {/* Top bar */}
-                <div className="flex items-center justify-between mb-6">
-                    <button
-                        onClick={() => router.push("/account")}
-                        className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                        <ChevronLeft className="w-4 h-4" />
-                        {t.backToOverview}
-                    </button>
+                    {/* Top bar */}
+                    <div className="flex items-center justify-between mb-6">
+                        <button
+                            onClick={() => router.push("/account")}
+                            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            {t.backToOverview}
+                        </button>
 
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-                        style={{
-                            background: `${currentTierData.color}22`,
-                            color: currentTierData.color,
-                            border: `1px solid ${currentTierData.color}44`,
-                        }}>
-                        <Crown className="w-3.5 h-3.5" />
-                        {t.yourCurrentLevel}: {currentTierData.name}
-                    </span>
-                </div>
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
+                            style={{
+                                background: `${currentTierData.color}22`,
+                                color: currentTierData.color,
+                                border: `1px solid ${currentTierData.color}44`,
+                            }}>
+                            <Crown className="w-3.5 h-3.5" />
+                            {t.yourCurrentLevel}: {currentTierData.name}
+                        </span>
+                    </div>
 
-                <h1 className="text-2xl font-extrabold mb-6">{t.vipTierDetails}</h1>
+                    <h1 className="text-2xl font-extrabold mb-6">{t.vipTierDetails}</h1>
 
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
+                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
 
-                    {/* LEFT — Status Card */}
-                    <div className="lg:col-span-3 space-y-4">
+                        {/* LEFT — Status Card */}
+                        <div className="lg:col-span-3 space-y-4">
 
-                        {/* Status Card */}
-                        <div className="glass-card rounded-2xl p-5 border transition-all duration-300"
-                            style={{ borderColor: selectedTier.borderColor }}>
-                            <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-2">
-                                {t.statusOverview}
-                            </p>
-                            <div className="flex items-start justify-between mb-4">
-                                <h2 className="text-3xl font-extrabold" style={{ color: selectedTier.color }}>
-                                    {selectedTier.name}
-                                </h2>
-                                <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-                                    style={{ background: `${selectedTier.color}22` }}>
-                                    <Gem className="w-5 h-5" style={{ color: selectedTier.color }} />
+                            {/* Status Card */}
+                            <div className="glass-card rounded-2xl p-5 border transition-all duration-300"
+                                style={{ borderColor: selectedTier.borderColor }}>
+                                <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-2">
+                                    {t.statusOverview}
+                                </p>
+                                <div className="flex items-start justify-between mb-4">
+                                    <h2 className="text-3xl font-extrabold" style={{ color: selectedTier.color }}>
+                                        {selectedTier.name}
+                                    </h2>
+                                    <div className="w-10 h-10 rounded-xl flex items-center justify-center"
+                                        style={{ background: `${selectedTier.color}22` }}>
+                                        <Gem className="w-5 h-5" style={{ color: selectedTier.color }} />
+                                    </div>
+                                </div>
+
+                                {/* Progress */}
+                                <div className="mb-1">
+                                    <div className="flex justify-between text-[10px] text-muted-foreground mb-1.5">
+                                        <span>{t.progressLabel}</span>
+                                        <span style={{ color: selectedTier.color }}>
+                                            {isHighest ? t.highestRank : `NEXT: ${TIERS[selectedLevel].name}`}
+                                        </span>
+                                    </div>
+                                    <div className="h-2.5 rounded-full bg-muted/60 overflow-hidden">
+                                        <div className="h-full rounded-full transition-all duration-700"
+                                            style={{
+                                                width: `${progress}%`,
+                                                background: `linear-gradient(90deg, ${selectedTier.gradientFrom}, ${selectedTier.gradientTo})`,
+                                            }} />
+                                    </div>
+                                    <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
+                                        <span>{userDiamonds.toLocaleString()} Diamond</span>
+                                        {!isHighest && (
+                                            <span>{selectedTier.nextGoal!.toLocaleString()} Diamond</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Info Box */}
+                                <div className="mt-4 rounded-xl px-4 py-3 text-xs"
+                                    style={{ background: `${selectedTier.color}11`, border: `1px solid ${selectedTier.color}33` }}>
+                                    <p className="text-muted-foreground">
+                                        {isHighest
+                                            ? t.infoHighest
+                                            : isLowerTier
+                                                ? t.infoLower(selectedTier.name)
+                                                : t.infoNeedDiamonds(
+                                                    diamondsNeeded.toLocaleString(),
+                                                    TIERS[selectedLevel]?.name ?? ""
+                                                )}
+                                    </p>
                                 </div>
                             </div>
 
-                            {/* Progress */}
-                            <div className="mb-1">
-                                <div className="flex justify-between text-[10px] text-muted-foreground mb-1.5">
-                                    <span>{t.progressLabel}</span>
-                                    <span style={{ color: selectedTier.color }}>
-                                        {isHighest ? t.highestRank : `NEXT: ${TIERS[selectedLevel].name}`}
-                                    </span>
+                            {/* Tier Selector */}
+                            <div className="glass-card rounded-2xl p-5">
+                                <h3 className="text-sm font-semibold mb-4">{t.allTierDetails}</h3>
+                                <div className="flex gap-2">
+                                    {TIERS.map(tier => {
+                                        const isSelected = selectedLevel === tier.level;
+                                        const isMyTier = userVipLevel === tier.level;
+                                        return (
+                                            <button
+                                                key={tier.level}
+                                                onClick={() => setSelectedLevel(tier.level)}
+                                                className={cn(
+                                                    "relative flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border",
+                                                    isSelected
+                                                        ? "text-white"
+                                                        : "text-muted-foreground hover:text-foreground bg-muted/30"
+                                                )}
+                                                style={isSelected ? {
+                                                    background: `linear-gradient(135deg, ${tier.gradientFrom}, ${tier.gradientTo})`,
+                                                    borderColor: tier.color,
+                                                } : {
+                                                    borderColor: "transparent",
+                                                }}
+                                            >
+                                                {isMyTier && (
+                                                    <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white"
+                                                        style={{ background: tier.color }}>
+                                                        My Tier
+                                                    </span>
+                                                )}
+                                                {tier.name}
+                                            </button>
+                                        );
+                                    })}
                                 </div>
-                                <div className="h-2.5 rounded-full bg-muted/60 overflow-hidden">
-                                    <div className="h-full rounded-full transition-all duration-700"
-                                        style={{
-                                            width: `${progress}%`,
-                                            background: `linear-gradient(90deg, ${selectedTier.gradientFrom}, ${selectedTier.gradientTo})`,
-                                        }} />
-                                </div>
-                                <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                                    <span>{userDiamonds.toLocaleString()} Diamond</span>
+                            </div>
+                        </div>
+
+                        {/* RIGHT — Benefits */}
+                        <div className="lg:col-span-2">
+                            <div className="glass-card rounded-2xl p-5 h-full">
+                                <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+                                    <Trophy className="w-4 h-4" style={{ color: selectedTier.color }} />
+                                    {t.tierBenefits}
+                                </h3>
+                                <ul className="space-y-3">
+                                    {benefits.map((benefit, i) => (
+                                        <li key={i} className="flex items-start gap-2.5 text-sm">
+                                            <span className="mt-0.5 w-4 h-4 rounded-full flex items-center justify-center shrink-0"
+                                                style={{ background: `${selectedTier.color}22` }}>
+                                                <Check className="w-2.5 h-2.5" style={{ color: selectedTier.color }} />
+                                            </span>
+                                            <span className="text-muted-foreground">{benefit}</span>
+                                        </li>
+                                    ))}
+                                </ul>
+
+                                {/* Tier requirement summary */}
+                                <div className="mt-6 pt-4 border-t border-border/30">
+                                    <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-2">
+                                        {t.tierCondition}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {t.minDiamondsText("")
+                                            .split(selectedTier.minDiamonds.toLocaleString())[0]}
+                                        <span className="font-semibold" style={{ color: selectedTier.color }}>
+                                            {selectedTier.minDiamonds.toLocaleString()}
+                                        </span>
+                                        {t.minDiamondsText("")
+                                            .split(selectedTier.minDiamonds.toLocaleString())[1]}
+                                    </p>
                                     {!isHighest && (
-                                        <span>{selectedTier.nextGoal!.toLocaleString()} Diamond</span>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            {t.nextTierText("").split(selectedTier.nextGoal!.toLocaleString())[0]}
+                                            <span className="font-semibold" style={{ color: selectedTier.color }}>
+                                                {selectedTier.nextGoal!.toLocaleString()}
+                                            </span>
+                                            {t.nextTierText("").split(selectedTier.nextGoal!.toLocaleString())[1]}
+                                        </p>
                                     )}
                                 </div>
                             </div>
-
-                            {/* Info Box */}
-                            <div className="mt-4 rounded-xl px-4 py-3 text-xs"
-                                style={{ background: `${selectedTier.color}11`, border: `1px solid ${selectedTier.color}33` }}>
-                                <p className="text-muted-foreground">
-                                    {isHighest
-                                        ? t.infoHighest
-                                        : isLowerTier
-                                            ? t.infoLower(selectedTier.name)
-                                            : t.infoNeedDiamonds(
-                                                diamondsNeeded.toLocaleString(),
-                                                TIERS[selectedLevel]?.name ?? ""
-                                            )}
-                                </p>
-                            </div>
                         </div>
 
-                        {/* Tier Selector */}
-                        <div className="glass-card rounded-2xl p-5">
-                            <h3 className="text-sm font-semibold mb-4">{t.allTierDetails}</h3>
-                            <div className="flex gap-2">
-                                {TIERS.map(tier => {
-                                    const isSelected = selectedLevel === tier.level;
-                                    const isMyTier = userVipLevel === tier.level;
-                                    return (
-                                        <button
-                                            key={tier.level}
-                                            onClick={() => setSelectedLevel(tier.level)}
-                                            className={cn(
-                                                "relative flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all border",
-                                                isSelected
-                                                    ? "text-white"
-                                                    : "text-muted-foreground hover:text-foreground bg-muted/30"
-                                            )}
-                                            style={isSelected ? {
-                                                background: `linear-gradient(135deg, ${tier.gradientFrom}, ${tier.gradientTo})`,
-                                                borderColor: tier.color,
-                                            } : {
-                                                borderColor: "transparent",
-                                            }}
-                                        >
-                                            {isMyTier && (
-                                                <span className="absolute -top-2 left-1/2 -translate-x-1/2 px-1.5 py-0.5 rounded-full text-[9px] font-bold text-white"
-                                                    style={{ background: tier.color }}>
-                                                    My Tier
-                                                </span>
-                                            )}
-                                            {tier.name}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </div>
                     </div>
-
-                    {/* RIGHT — Benefits */}
-                    <div className="lg:col-span-2">
-                        <div className="glass-card rounded-2xl p-5 h-full">
-                            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-                                <Trophy className="w-4 h-4" style={{ color: selectedTier.color }} />
-                                {t.tierBenefits}
-                            </h3>
-                            <ul className="space-y-3">
-                                {benefits.map((benefit, i) => (
-                                    <li key={i} className="flex items-start gap-2.5 text-sm">
-                                        <span className="mt-0.5 w-4 h-4 rounded-full flex items-center justify-center shrink-0"
-                                            style={{ background: `${selectedTier.color}22` }}>
-                                            <Check className="w-2.5 h-2.5" style={{ color: selectedTier.color }} />
-                                        </span>
-                                        <span className="text-muted-foreground">{benefit}</span>
-                                    </li>
-                                ))}
-                            </ul>
-
-                            {/* Tier requirement summary */}
-                            <div className="mt-6 pt-4 border-t border-border/30">
-                                <p className="text-[10px] font-bold tracking-widest uppercase text-muted-foreground mb-2">
-                                    {t.tierCondition}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                    {t.minDiamondsText("")
-                                        .split(selectedTier.minDiamonds.toLocaleString())[0]}
-                                    <span className="font-semibold" style={{ color: selectedTier.color }}>
-                                        {selectedTier.minDiamonds.toLocaleString()}
-                                    </span>
-                                    {t.minDiamondsText("")
-                                        .split(selectedTier.minDiamonds.toLocaleString())[1]}
-                                </p>
-                                {!isHighest && (
-                                    <p className="text-xs text-muted-foreground mt-1">
-                                        {t.nextTierText("").split(selectedTier.nextGoal!.toLocaleString())[0]}
-                                        <span className="font-semibold" style={{ color: selectedTier.color }}>
-                                            {selectedTier.nextGoal!.toLocaleString()}
-                                        </span>
-                                        {t.nextTierText("").split(selectedTier.nextGoal!.toLocaleString())[1]}
-                                    </p>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
             </div>
         </div>
