@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
-import { ChevronRight, History, Crown, Settings, LogOut, User, Ticket, Wallet, ShoppingCart } from "lucide-react";
+import { ChevronRight, Crown, Settings, LogOut, User, Ticket, Wallet, ShoppingCart } from "lucide-react";
 import { useLanguage } from "@/components/language-context";
 import { useAuth } from "@/hooks/use-auth";
 import { useSidebar } from "@/components/sidebar-context";
@@ -17,7 +17,8 @@ export function AccountSidebar() {
     // Only show on account/tickets pages
     const shouldShow =
         pathname.startsWith("/account") ||
-        pathname.startsWith("/support/tickets");
+        pathname.startsWith("/support/tickets") ||
+        pathname.startsWith("/history");
 
     if (!shouldShow) return null;
 
@@ -50,7 +51,9 @@ export function AccountSidebar() {
                         (item.path === "/account" &&
                             pathname.startsWith("/account") &&
                             pathname !== "/account/vip-tier" &&
-                            pathname !== "/account/settings");
+                            pathname !== "/account/settings" &&
+                            pathname !== "/account/balance") ||
+                        (item.path === "/history" && pathname.startsWith("/history"));
                     return (
                         <button
                             key={item.path}

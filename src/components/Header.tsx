@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Zap, Search, User, Crown, LogOut, LogIn, Ticket, PanelLeft } from "lucide-react";
+import { Zap, Search, User, Crown, LogOut, LogIn, Ticket, PanelLeft, ShoppingCart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -25,11 +25,10 @@ export function Header() {
     const { lang, setLang, t } = useLanguage();
     const { open, toggle } = useSidebar();
     const navLinks = [
-    { path: "/", label: t.headerHome },
-    { path: "/history", label: t.headerTopUp },
-    { path: "/vip", label: t.headerVip },
-    { path: "/support", label: t.headerSupport },
-];
+        { path: "/", label: t.headerHome },
+        { path: "/games", label: t.headerGames },
+        { path: "/support", label: t.headerSupport },
+    ];
 
     // pages that have the account sidebar
     const hasSidebar = pathname.startsWith("/account") || pathname.startsWith("/support/tickets");
@@ -147,31 +146,31 @@ export function Header() {
                                 <DropdownMenuContent align="end" className="w-56 glass-card border-border/50">
                                     <div className="px-2 py-1.5">
                                         <p className="text-sm font-medium">{user.email}</p>
-                                        <Link href="/account" className="text-xs text-primary hover:underline">บัญชีของฉัน</Link>
+                                        <Link href="/account" className="text-xs text-primary hover:underline">{t.myAccount}</Link>
                                     </div>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem asChild>
                                         <Link href="/account" className="flex items-center gap-2 cursor-pointer">
                                             <User className="w-4 h-4" />
-                                            บัญชีของฉัน
+                                            {t.myAccount}
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem asChild>
                                         <Link href="/support/tickets" className="flex items-center gap-2 cursor-pointer">
                                             <Ticket className="w-4 h-4" />
-                                            ตั๋วของฉัน
+                                            {t.sidebarTickets}
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem asChild>
                                         <Link href="/history" className="flex items-center gap-2 cursor-pointer">
-                                            <User className="w-4 h-4" />
-                                            ประวัติการเติม
+                                            <ShoppingCart className="w-4 h-4" />
+                                            {t.sidebarOrders}
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem asChild>
                                         <Link href="/account/vip-tier" className="flex items-center gap-2 cursor-pointer">
                                             <Crown className="w-4 h-4" />
-                                            VIP Membership
+                                            {t.vipPrivileges}
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuSeparator />

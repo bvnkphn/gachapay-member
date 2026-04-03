@@ -10,7 +10,7 @@ const translations = {
     playNow: "เล่นเลย",
     viewDetails: "ดูรายละเอียด",
     startFrom: "เริ่มต้นที่",
-    availablePackages: "แพ็กเกจที่มีให้เลือก", 
+    availablePackages: "แพ็กเกจที่มีให้เลือก",
     package: "แพ็กเกจ",
     price: "ราคา",
     buyNow: "ซื้อเลย",
@@ -32,10 +32,11 @@ const translations = {
     footerPromptPay: "พร้อมเพย์",
     //Header
 
-      headerHome: "หน้าแรก",
-      headerTopUp: "เติมเงิน",
-      headerVip: "VIP",
-      headerSupport: "ช่วยเหลือ",
+    headerHome: "หน้าแรก",
+    headerGames: "เกม",
+    headerTopUp: "เติมเงิน",
+    headerVip: "VIP",
+    headerSupport: "ช่วยเหลือ",
     // search page
     search: "ค้นหาเกม...",
     noGamesFound: "ไม่พบเกมที่ค้นหา",
@@ -52,10 +53,10 @@ const translations = {
     always: "24/7",
     alwaysDesc: "บริการตลอด 24 ชั่วโมง",
     showMore: "ดูเพิ่มเติม",
-    
-    
-    
-    
+
+
+
+
     login: "เข้าสู่ระบบ",
     register: "สมัครสมาชิก",
     noAccount: "ยังไม่มีบัญชี?",
@@ -233,6 +234,11 @@ const translations = {
     personalInfo: "ข้อมูลส่วนตัว",
     editProfile: "แก้ไขโปรไฟล์",
     orderHistory: "ประวัติการสั่งซื้อ",
+    searchOrders: "ค้นหาเลขที่คำสั่งซื้อ",
+    orderDate: "วันที่",
+    orderName: "ชื่อรายการคำสั่งซื้อ",
+    orderId: "ไอดีคำสั่งซื้อ",
+    viewDetail: "รายละเอียด",
     vipPrivileges: "VIP & สิทธิพิเศษ",
     accountSettings: "ตั้งค่าบัญชี",
     logout: "ออกจากระบบ",
@@ -283,7 +289,7 @@ const translations = {
     package: "Package",
     price: "Price",
     buyNow: "Buy Now",
-    
+
     // Footer
     footerAboutUs: "About Us",
     footerAboutDesc: "CYBERPAY is a trusted platform for game top-up and online item purchase. Fast and secure service.",
@@ -299,10 +305,11 @@ const translations = {
     footerTrueMoney: "TrueMoney Wallet",
     footerPromptPay: "PromptPay",
     // Header
-      headerHome: "Home",
-      headerTopUp: "Top-up",
-      headerVip: "VIP",
-      headerSupport: "Support",
+    headerHome: "Home",
+    headerGames: "Games",
+    headerTopUp: "Top-up",
+    headerVip: "VIP",
+    headerSupport: "Support",
     // search page
     search: "Search games...",
     noGamesFound: "No games found matching your search",
@@ -318,7 +325,7 @@ const translations = {
     always: "24/7",
     alwaysDesc: "Service available 24/7",
     showMore: "Show more",
-    
+
     login: "Login",
     register: "Register",
     noAccount: "Don't have an account?",
@@ -496,6 +503,11 @@ const translations = {
     personalInfo: "Personal Info",
     editProfile: "Edit Profile",
     orderHistory: "Order History",
+    searchOrders: "Search orders",
+    orderDate: "Date",
+    orderName: "Order Name",
+    orderId: "Order ID",
+    viewDetail: "Details",
     vipPrivileges: "VIP & Privileges",
     accountSettings: "Account Settings",
     logout: "Logout",

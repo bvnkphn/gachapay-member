@@ -73,8 +73,8 @@ function PaymentFlowModal({
     const mm = String(Math.floor(countdown / 60)).padStart(2, "0");
     const ss = String(countdown % 60).padStart(2, "0");
 
-    const overlay = "fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#3730a3]/80 backdrop-blur-sm";
-    const card = "bg-[#1e1b4b] rounded-2xl w-full max-w-sm shadow-2xl border border-white/10 overflow-hidden max-h-[90vh] overflow-y-auto";
+    const overlay = "fixed inset-0 z-50 bg-[#2d2a6e] overflow-y-auto";
+    const card = "w-full max-w-lg mx-auto px-6 py-8";
 
     const DevNav = () => (
         <div className="flex justify-center gap-2 pt-2 pb-1">
@@ -182,8 +182,9 @@ function PaymentFlowModal({
 
     if (step === "success") return (
         <div className={overlay}>
-            <div className={cn(card, "border-t-4 border-t-green-400")}>
-                <div className="px-7 py-7 flex flex-col items-center text-center">
+            <div className={card}>
+                <div className="h-1 w-full bg-green-400 -mx-6 mb-6" style={{ width: "calc(100% + 3rem)" }} />
+                <div className="flex flex-col items-center text-center">
                     <div className="w-14 h-14 rounded-full border-2 border-green-400 flex items-center justify-center mb-4">
                         <Check className="w-7 h-7 text-green-400" />
                     </div>
@@ -220,7 +221,7 @@ function PaymentFlowModal({
                         {t.viewReceipt}
                     </button>
                 </div>
-                <div className="mx-5 mb-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center gap-2">
+                <div className="mt-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0" />
                     <div className="text-[11px] text-white/50 flex-1">{t.haveIssue}</div>
                     <button onClick={() => router.push("/support/create-ticket")} className="text-[11px] text-primary border border-primary/40 px-2 py-1 rounded-lg hover:bg-primary/10">{t.createTicket}</button>
@@ -232,8 +233,9 @@ function PaymentFlowModal({
 
     return (
         <div className={overlay}>
-            <div className={cn(card, "border-t-4 border-t-red-500")}>
-                <div className="px-7 py-7 flex flex-col items-center text-center">
+            <div className={card}>
+                <div className="h-1 w-full bg-red-500 -mx-6 mb-6" style={{ width: "calc(100% + 3rem)" }} />
+                <div className="flex flex-col items-center text-center">
                     <div className="w-14 h-14 rounded-full border-2 border-red-500 flex items-center justify-center mb-4">
                         <X className="w-7 h-7 text-red-500" />
                     </div>
@@ -267,7 +269,7 @@ function PaymentFlowModal({
                         {t.contactSupport}
                     </button>
                 </div>
-                <div className="mx-5 mb-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center gap-2">
+                <div className="mt-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 flex items-center gap-2">
                     <AlertTriangle className="w-4 h-4 text-yellow-400 shrink-0" />
                     <div className="text-[11px] text-white/50 flex-1">{t.haveIssue}</div>
                     <button onClick={() => router.push("/support/create-ticket")} className="text-[11px] text-primary border border-primary/40 px-2 py-1 rounded-lg hover:bg-primary/10">{t.createTicket}</button>

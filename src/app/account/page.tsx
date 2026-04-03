@@ -127,7 +127,7 @@ export default function AccountPage() {
                                         {t.topUp}
                                     </Button>
                                     <button className="text-xs text-white/70 hover:text-white flex items-center gap-1"
-                                        onClick={() => router.push("/history")}>
+                                        onClick={() => router.push("/account/balance")}>
                                         <History className="w-3.5 h-3.5" />
                                         {t.transactionHistory}
                                     </button>
@@ -181,7 +181,7 @@ export default function AccountPage() {
                                         </div>
                                     ))}
                                 </div>
-                                <Button variant="outline" size="sm" className="w-full mt-5 text-xs border-border/50">
+                                <Button variant="outline" size="sm" className="w-full mt-5 text-xs border-border/50" onClick={() => router.push("/history")}>
                                     {t.viewAllHistory}
                                 </Button>
                             </div>
