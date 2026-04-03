@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Zap, ArrowRight, Shield, Clock, Headphones } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchBar } from "@/components/search-bar";
-import { GameCard, GamesSection, games } from "@/components/game-card";
+import { GamesSection } from "@/components/game-card";
 import { useLanguage } from "@/components/language-context";
 import BannerSlider from "@/components/BannerSlider";
 import Footer from "@/components/Footer";
@@ -61,7 +61,7 @@ export default function Home() {
 
                         {/* Title */}
                         <h1 className="text-4xl md:text-6xl font-bold mb-6">
-                            <span className="text-foreground">{t.topup}</span>
+                            <span className="text-foreground">{t.Topup}</span>
                             <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                                 {" "}ง่าย รวดเร็ว{" "}
                             </span>
@@ -130,7 +130,7 @@ export default function Home() {
                 </div>
             </section>
 
-            <GamesSection games={games} />
+            <GamesSection />
 
             {/* Promo Banner */}
             <section className="py-12">
