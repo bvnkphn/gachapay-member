@@ -57,6 +57,11 @@ const translations = {
 
 
 
+    Topup: "เติมเงิน",
+    
+    
+    
+    
     login: "เข้าสู่ระบบ",
     register: "สมัครสมาชิก",
     noAccount: "ยังไม่มีบัญชี?",
@@ -352,6 +357,8 @@ const translations = {
     alwaysDesc: "Service available 24/7",
     showMore: "Show more",
 
+    Topup: "Top-up",
+    
     login: "Login",
     register: "Register",
     noAccount: "Don't have an account?",

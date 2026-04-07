@@ -26,7 +26,23 @@ export async function apiRequest(
         throw new Error(error.message || "Request failed");
     }
 
-    return response.json();
+    // Handle empty responses (204 No Content, etc.)
+    const contentLength = response.headers.get('content-length');
+    if (response.status === 204 || contentLength === '0') {
+        return null;
+    }
+
+    const text = await response.text();
+    if (!text) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch (error) {
+        console.error('Failed to parse JSON response:', text);
+        throw new Error('Invalid JSON response from server');
+    }
 }
 
 export const api = {
