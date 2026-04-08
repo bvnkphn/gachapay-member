@@ -162,10 +162,10 @@ export default function GameTopupPage() {
                 if (gameData) {
                     setGame(gameData);
                 } else {
-                    setError("Game not found");
+                    setError(t.gameNotFound);
                 }
             } catch (err) {
-                setError(err instanceof Error ? err.message : "Failed to load game");
+                setError(err instanceof Error ? err.message : t.failedLoadGame);
                 console.error("Error loading game:", err);
             } finally {
                 setLoading(false);
@@ -190,19 +190,19 @@ export default function GameTopupPage() {
         }
 
         if (!selectedPackage) {
-            setError("Please select a package");
+            setError(t.pleaseSelectPackage);
             return;
         }
 
         // Check email for guest checkout
         if (!isLoggedIn && !formData.email.trim()) {
-            setError("Email is required for e-receipt");
+            setError(t.emailRequired);
             return;
         }
 
         // Basic email validation
         if (!isLoggedIn && !formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-            setError("Please enter a valid email address");
+            setError(t.invalidEmail);
             return;
         }
 
@@ -224,7 +224,7 @@ export default function GameTopupPage() {
                 }
             }, 2000);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to create order");
+            setError(err instanceof Error ? err.message : t.failedCreateOrder);
         } finally {
             setSubmitting(false);
         }
@@ -232,7 +232,7 @@ export default function GameTopupPage() {
 
     const handleApplyCoupon = () => {
         if (!couponCode.trim()) {
-            setError("Please enter a coupon code");
+            setError(t.enterCouponError);
             return;
         }
 
@@ -250,7 +250,7 @@ export default function GameTopupPage() {
             setCouponCode("");
             setError(null);
         } else {
-            setError("Invalid coupon code");
+            setError(t.invalidCouponError);
             setAppliedCoupon(null);
         }
     };
@@ -260,7 +260,7 @@ export default function GameTopupPage() {
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
                     <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-muted-foreground">Loading game...</p>
+                    <p className="text-muted-foreground">{t.loadingGame}</p>
                 </div>
             </div>
         );
@@ -288,8 +288,8 @@ export default function GameTopupPage() {
                             <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                                 <CheckCircle2 className="w-8 h-8 text-green-500" />
                             </div>
-                            <h2 className="text-2xl font-bold mb-2">สำเร็จ!</h2>
-                            <p className="text-muted-foreground">คำสั่งซื้อของคุณได้รับการสร้างแล้ว</p>
+                            <h2 className="text-2xl font-bold mb-2">{t.Success}</h2>
+                            <p className="text-muted-foreground">{t.orderCreatedSuccess}</p>
                         </div>
 
                         <div className="bg-primary/10 rounded-lg p-4 mb-6 text-left">
@@ -298,7 +298,7 @@ export default function GameTopupPage() {
                         </div>
 
                         <Button asChild className="w-full">
-                            <Link href="/account/balance">ไปยังบัญชี</Link>
+                            <Link href="/account/balance">{t.goToAccount}</Link>
                         </Button>
                     </Card>
                 </div>
@@ -393,7 +393,7 @@ export default function GameTopupPage() {
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-bold text-sm">
                                     1
                                 </div>
-                                <h2 className="text-lg font-bold">ข้อมูลการเติม</h2>
+                                <h2 className="text-lg font-bold">{t.Topupinfo}</h2>
                             </div>
                             <div className={`grid gap-4 ${game.fields.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                                 {game.fields.map((field) => (
@@ -443,7 +443,7 @@ export default function GameTopupPage() {
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-bold text-sm">
                                     2
                                 </div>
-                                <h2 className="text-lg font-bold">เลือกแพคเกจ</h2>
+                                <h2 className="text-lg font-bold">{t.Choosepackage}</h2>
                             </div>
                             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                 {game.packages.map((pkg) => (
@@ -491,12 +491,12 @@ export default function GameTopupPage() {
                     <div className="lg:col-span-1">
                         <Card className="glass-card p-6 sticky top-24">
                             <div className="mb-4 pb-4 border-b border-border/50">
-                                <p className="text-xs text-muted-foreground">ประเภทการสั่ง</p>
+                                <p className="text-xs text-muted-foreground">{t.orderType}</p>
                                 <p className="text-sm font-semibold">
                                     {isLoggedIn ? (
-                                        <span className="text-green-500">✓ เข้าสู่ระบบแล้ว</span>
+                                        <span className="text-green-500">{t.alreadyLoggedIn}</span>
                                     ) : (
-                                        <span className="text-amber-500">ซื้อโดยไม่เข้าสู่ระบบ</span>
+                                        <span className="text-amber-500">{t.buyWithoutLogin}</span>
                                     )}
                                 </p>
                                 {!isLoggedIn && user && (
@@ -509,18 +509,18 @@ export default function GameTopupPage() {
                                         }}
                                         className="w-full mt-2 text-xs"
                                     >
-                                        เปลี่ยนไปรูปแบบสมาชิก
+                                        {t.switchToMember}
                                     </Button>
                                 )}
                             </div>
 
                             {/* Coupon Section */}
                             <div className="mb-6 pb-6 border-b border-border/50">
-                                <p className="text-sm font-semibold mb-3">คูปองส่วนลด</p>
+                                <p className="text-sm font-semibold mb-3">{t.discountCoupon}</p>
                                 <div className="flex gap-2">
                                     <Input
                                         type="text"
-                                        placeholder="ป้อนรหัสคูปอง"
+                                        placeholder={t.enterCouponCode}
                                         value={couponCode}
                                         onChange={(e) => setCouponCode(e.target.value)}
                                         className="glass-input text-sm"
@@ -531,15 +531,15 @@ export default function GameTopupPage() {
                                         disabled={submitting || !couponCode.trim()}
                                         className="px-4 bg-primary hover:bg-primary/90 text-sm"
                                     >
-                                        ใช้
+                                        {t.useCoupon}
                                     </Button>
                                 </div>
                                 {appliedCoupon && (
                                     <div className="mt-2 p-2 bg-green-500/10 border border-green-500/30 rounded-md">
-                                        <p className="text-xs text-green-500">✓ ใช้คูปอง {appliedCoupon.code} ประหยัด {appliedCoupon.discount}%</p>
+                                        <p className="text-xs text-green-500">{`✓ ใช้คูปอง ${appliedCoupon.code} ประหยัด ${appliedCoupon.discount}%`}</p>
                                     </div>
                                 )}
-                                <p className="text-xs text-muted-foreground mt-2">ลองใช้: SAVE10, SAVE20, WELCOME</p>
+                                <p className="text-xs text-muted-foreground mt-2">{t.tryCoupons}</p>
                             </div>
 
                             <h2 className="text-lg font-bold mb-4">
@@ -547,27 +547,27 @@ export default function GameTopupPage() {
                                     <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-bold text-sm">
                                         3
                                     </div>
-                                    สรุปการสั่ง
+                                    {t.orderSummary}
                                 </div>
                             </h2>
                             <div className="bg-primary/10 rounded-lg p-4 mb-6">
-                                <p className="text-xs text-muted-foreground mb-1">แพคเกจที่เลือก</p>
+                                <p className="text-xs text-muted-foreground mb-1">{t.selectedPackage}</p>
                                 <p className="font-bold text-foreground">
-                                    {selectedPackage ? selectedPackage.count : "ยังไม่มีการเลือก"}
+                                    {selectedPackage ? selectedPackage.count : t.noSelection}
                                 </p>
                                 <div className="space-y-2 mt-4 pt-4 border-t border-primary/20">
                                     <div className="flex justify-between text-sm">
-                                        <span className="text-muted-foreground">ราคา:</span>
+                                        <span className="text-muted-foreground">{t.priceLabel}</span>
                                         <span className="font-semibold">฿ {selectedPackage ? selectedPackage.price.toFixed(2) : "0.00"}</span>
                                     </div>
                                     {appliedCoupon && selectedPackage && (
                                         <div className="flex justify-between text-sm text-green-500">
-                                            <span>ส่วนลด ({appliedCoupon.discount}%):</span>
+                                            <span>{`ส่วนลด (${appliedCoupon.discount}%):`}</span>
                                             <span>-฿ {(selectedPackage.price * appliedCoupon.discount / 100).toFixed(2)}</span>
                                         </div>
                                     )}
                                     <div className="flex justify-between text-lg font-bold pt-2 border-t border-primary/20">
-                                        <span>รวม:</span>
+                                        <span>{t.totalLabel}</span>
                                         <span className="text-primary">
                                             ฿ {selectedPackage ? (selectedPackage.price * (1 - (appliedCoupon?.discount ?? 0) / 100)).toFixed(2) : "0.00"}
                                         </span>
@@ -581,7 +581,7 @@ export default function GameTopupPage() {
                                 {!isLoggedIn && (
                                     <div>
                                         <label className="block text-sm font-medium mb-2">
-                                            อีเมลสำหรับใบเสร็จ <span className="text-red-500">*</span>
+                                            {t.emailForReceipt} <span className="text-red-500">*</span>
                                         </label>
                                         <Input
                                             type="email"
@@ -595,7 +595,7 @@ export default function GameTopupPage() {
                                             disabled={submitting}
                                         />
                                         <p className="text-xs text-muted-foreground mt-1">
-                                            ใบเสร็จจะถูกส่งไปที่อีเมลนี้
+                                            {t.receiptNote}
                                         </p>
                                     </div>
                                 )}
@@ -610,18 +610,18 @@ export default function GameTopupPage() {
                                 {submitting ? (
                                     <>
                                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
-                                        กำลังประมวลผล...
+                                        {t.processing}
                                     </>
                                 ) : (
                                     <>
-                                        สั่ง
+                                        {t.orderButton}
                                         <ShoppingCart className="w-5 h-5 ml-2" />
                                     </>
                                 )}
                             </Button>
 
                             <p className="text-xs text-center text-muted-foreground mt-4">
-                                คลิกเลือกแพคเกจเพื่อเริ่มสั่ง
+                                {t.selectPackageHint}
                             </p>
                         </Card>
                     </div>
