@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/components/language-context";
 import { useSidebar } from "@/components/sidebar-context";
+import { api } from "@/lib/api";
 import { ChevronRight, Wallet, Info, X, Search, FileText, ChevronLeft, Download, Copy, Check, AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -27,7 +28,6 @@ const MOCK_TOPUP_HISTORY = [
 ];
 
 const PAGE_SIZE = 4;
-const MOCK_BALANCE = 0.0;
 const FEE = 0.0;
 
 type PayStep = "qr" | "processing" | "success" | "failed";
@@ -448,13 +448,20 @@ export default function BalancePage() {
     const { t } = useLanguage();
     const { open } = useSidebar();
 
+    const [walletBalance, setWalletBalance] = useState<number>(0);
     const [selectedMethod, setSelectedMethod] = useState("promptpay");
     const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
     const [customAmount, setCustomAmount] = useState("");
     const [showHistory, setShowHistory] = useState(false);
     const [showPayment, setShowPayment] = useState(false);
 
-    const balance = user?.balance ?? MOCK_BALANCE;
+    useEffect(() => {
+        if (!user) return;
+        api.getWalletBalance().then((data) => {
+            setWalletBalance(parseFloat(data?.amount ?? "0"));
+        });
+    }, [user]);
+
     const topupAmount = selectedAmount ?? (customAmount ? parseFloat(customAmount) || 0 : 0);
     const total = topupAmount + FEE;
 
@@ -488,7 +495,7 @@ export default function BalancePage() {
                         style={{ background: "linear-gradient(135deg, #16a34a 0%, #15803d 100%)" }}>
                         <div>
                             <p className="text-xs font-semibold opacity-80 tracking-widest uppercase mb-1">{t.availableBalance}</p>
-                            <p className="text-4xl font-extrabold mb-1">฿{balance.toFixed(2)}</p>
+                            <p className="text-4xl font-extrabold mb-1">฿{walletBalance.toFixed(2)}</p>
                             <p className="text-xs opacity-60">{t.lastUpdated}</p>
                         </div>
                         <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center">

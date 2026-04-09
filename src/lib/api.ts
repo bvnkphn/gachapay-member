@@ -96,4 +96,10 @@ export const api = {
             method: "POST",
             body: JSON.stringify(data),
         }),
+
+    // Account Overview
+    getMe: () => apiRequest("/users/me"),
+    getLoyalty: () => apiRequest("/users/me/loyalty"),
+    getWalletBalance: () => apiRequest("/wallets/me/balance"),
+    getRecentOrders: () => apiRequest("/orders/me/recent"),
 };

@@ -1,16 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useLanguage } from "@/components/language-context";
 import { useSidebar } from "@/components/sidebar-context";
-import { Crown, Gem, Check, ChevronLeft, Trophy } from "lucide-react";
+import { api } from "@/lib/api";
+import { Crown, Gem, Check, ChevronLeft, Trophy, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Mock user data — replace with real API
-const MOCK_DIAMONDS = 5000;
-const MOCK_VIP_LEVEL = 1;
+// Tier mapping: backend tier string → TIERS index (level)
+const TIER_LEVEL_MAP: Record<string, number> = {
+    BRONZE: 1, SILVER: 2, GOLD: 3, PLATINUM: 3,
+};
 
 interface TierConfig {
     level: number;
@@ -62,31 +64,43 @@ export default function VipTierPage() {
     const { t } = useLanguage();
     const { open } = useSidebar();
 
-    const userVipLevel = user?.vipLevel ?? MOCK_VIP_LEVEL;
-    const userDiamonds = MOCK_DIAMONDS;
+    const [loyalty, setLoyalty] = useState<{ tier: string; current_points: number; next_tier_threshold: number | null } | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!user) return;
+        api.getLoyalty().then(setLoyalty).finally(() => setLoading(false));
+    }, [user]);
+
+    const tierKey = loyalty?.tier?.toUpperCase() ?? "BRONZE";
+    const userVipLevel = TIER_LEVEL_MAP[tierKey] ?? 1;
+    const userPoints = loyalty?.current_points ?? 0;
 
     const [selectedLevel, setSelectedLevel] = useState(userVipLevel);
-    const selectedTier = TIERS.find(tier => tier.level === selectedLevel)!;
 
+    // Sync selectedLevel when loyalty loads
+    useEffect(() => { setSelectedLevel(userVipLevel); }, [userVipLevel]);
+
+    const selectedTier = TIERS.find(tier => tier.level === selectedLevel)!;
     const isHighest = selectedTier.nextGoal === null;
     const isLowerTier = selectedLevel < userVipLevel;
-    const progress = isHighest
-        ? 100
-        : Math.min((userDiamonds / selectedTier.nextGoal!) * 100, 100);
-
+    const progress = isHighest ? 100 : Math.min((userPoints / selectedTier.nextGoal!) * 100, 100);
     const diamondsNeeded = !isHighest && selectedLevel >= userVipLevel
-        ? Math.max((selectedTier.nextGoal ?? 0) - userDiamonds, 0)
-        : 0;
+        ? Math.max((selectedTier.nextGoal ?? 0) - userPoints, 0) : 0;
 
-    // Map tier level to benefits key
     const benefitsMap: Record<number, string[]> = {
         1: t.vipBenefits.vip1,
         2: t.vipBenefits.vip2,
         3: t.vipBenefits.vip3,
     };
     const benefits = benefitsMap[selectedLevel] ?? [];
-
     const currentTierData = TIERS[userVipLevel - 1];
+
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+    );
 
     return (
         <div className="min-h-screen pt-20 pb-24">
@@ -153,7 +167,7 @@ export default function VipTierPage() {
                                             }} />
                                     </div>
                                     <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
-                                        <span>{userDiamonds.toLocaleString()} Diamond</span>
+                                        <span>{userPoints.toLocaleString()} pts</span>
                                         {!isHighest && (
                                             <span>{selectedTier.nextGoal!.toLocaleString()} Diamond</span>
                                         )}

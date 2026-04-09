@@ -3,7 +3,7 @@
 import { useRouter, useParams } from "next/navigation";
 import { useLanguage } from "@/components/language-context";
 import { useSidebar } from "@/components/sidebar-context";
-import { ChevronLeft, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { ChevronLeft, CheckCircle, XCircle, AlertTriangle, CreditCard } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const MOCK_ORDERS = [
@@ -158,6 +158,11 @@ export default function OrderDetailPage() {
                             )}>
                                 {isSuccess ? (
                                     <>
+                                        <div className="flex flex-col items-center text-center mb-4">
+                                            <div className="w-14 h-14 rounded-full bg-primary/20 flex items-center justify-center mb-3">
+                                                <CreditCard className="w-7 h-7 text-primary" />
+                                            </div>
+                                        </div>
                                         <p className="text-sm font-semibold mb-4 text-center">{t.orderCheckTitle}</p>
                                         <button
                                             onClick={() => router.push("/support/create-ticket")}
@@ -172,8 +177,8 @@ export default function OrderDetailPage() {
                                 ) : (
                                     <>
                                         <div className="flex flex-col items-center text-center mb-4">
-                                            <div className="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center mb-3">
-                                                <AlertTriangle className="w-6 h-6 text-red-400" />
+                                            <div className="w-14 h-14 rounded-full bg-red-500/20 flex items-center justify-center mb-3">
+                                                <AlertTriangle className="w-7 h-7 text-red-400" />
                                             </div>
                                             <p className="text-sm font-bold text-red-400 mb-2">{t.orderPendingTitle}</p>
                                             <p className="text-xs text-muted-foreground leading-relaxed">{t.orderPendingDesc}</p>
