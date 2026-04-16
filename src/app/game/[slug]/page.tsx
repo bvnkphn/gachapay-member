@@ -143,8 +143,9 @@ export default function GameTopupPage() {
             setError(null);
 
             // Create order via backend API
+            // Use slug for gameId and sku/id for packageId
             const orderData = {
-                gameId: game.id,
+                gameId: game.slug || String(game.id),
                 packageId: selectedPackage.id,
                 userInput: formData,
                 email: isLoggedIn ? user?.email : formData.email,
@@ -153,19 +154,21 @@ export default function GameTopupPage() {
 
             const response = await api.createOrder(orderData);
             
-            if (response && response.data) {
+            // Response is the order object directly, not wrapped in { data: ... }
+            if (response && response.id) {
                 setSuccess(true);
-                setOrderId(response.data.id || `ORD-${Date.now()}`);
+                setOrderId(String(response.id));
 
                 setTimeout(() => {
                     if (isLoggedIn) {
-                        router.push(`/account/balance?order=${response.data.id}`);
+                        router.push(`/account/balance?order=${response.id}`);
                     } else {
-                        router.push(`/?order=${response.data.id}`);
+                        router.push(`/?order=${response.id}`);
                     }
                 }, 2000);
             } else {
-                throw new Error("Failed to create order");
+                console.error("Unexpected response structure:", response);
+                throw new Error("Invalid response from server");
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : t.failedCreateOrder || "Failed to create order");

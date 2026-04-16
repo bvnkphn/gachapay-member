@@ -23,7 +23,9 @@ export async function apiRequest(
 
     if (!response.ok) {
         const error = await response.json().catch(() => ({ message: "Request failed" }));
-        throw new Error(error.message || "Request failed");
+        const errorMessage = error.message || `HTTP ${response.status}: ${response.statusText}`;
+        console.error('API Error Response:', { status: response.status, error });
+        throw new Error(errorMessage);
     }
 
     // Handle empty responses (204 No Content, etc.)
