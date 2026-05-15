@@ -99,15 +99,20 @@ function AdminSidebar() {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { token, _hydrated } = useAdminAuth();
+  const { token, _hydrated, admin } = useAdminAuth();
 
   useEffect(() => {
-    if (!_hydrated) return; // รอ zustand โหลดจาก localStorage ก่อน
+    if (!_hydrated) return;
     const isLoginPage = pathname === '/admin/login-admin' || pathname === '/admin/verify-otp';
     if (!token && !isLoginPage) {
       router.replace('/admin/login-admin');
+      return;
     }
-  }, [token, pathname, _hydrated]);
+    // RBAC — เช็ค role ต้องเป็น ADMIN เท่านั้น
+    if (_hydrated && token && admin && admin.role !== 'ADMIN' && !isLoginPage) {
+      router.replace('/');
+    }
+  }, [token, pathname, _hydrated, admin]);
 
   const isLoginPage = pathname === '/admin/login-admin' || pathname === '/admin/verify-otp';
 
