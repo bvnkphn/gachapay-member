@@ -1,0 +1,11 @@
+services:
+  gachapay-member:
+    image: gachapay-member
+    container_name: gachapay-member
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    env_file:
+      - .env
+    ports:
+      - 3000:3000
