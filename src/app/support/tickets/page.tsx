@@ -133,8 +133,6 @@ export default function TicketsPage() {
 
     return (
         <div className="min-h-screen pt-16 pb-24">
-
-            <div className={open ? "lg:ml-48 transition-all duration-300" : "lg:ml-14 transition-all duration-300"}>
                 <div className="container mx-auto px-4 max-w-3xl pt-8">
                     <main className="min-w-0">
 
@@ -233,7 +231,6 @@ export default function TicketsPage() {
                         )}
                     </main>
                 </div>
-            </div>
         </div>
     );
 }

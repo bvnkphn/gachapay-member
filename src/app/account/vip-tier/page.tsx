@@ -104,8 +104,7 @@ export default function VipTierPage() {
 
     return (
         <div className="min-h-screen pt-20 pb-24">
-            <div className={open ? "lg:ml-48 transition-all duration-300" : "lg:ml-14 transition-all duration-300"}>
-                <div className="container mx-auto px-4 max-w-4xl">
+            <div className="container mx-auto px-4 max-w-4xl">
 
                     {/* Top bar */}
                     <div className="flex items-center justify-between mb-6">
@@ -276,7 +275,6 @@ export default function VipTierPage() {
 
                     </div>
                 </div>
-            </div>
         </div>
     );
 }

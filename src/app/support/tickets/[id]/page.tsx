@@ -287,9 +287,8 @@ export default function TicketDetailPage() {
                 )}
             </AnimatePresence>
 
-            <div className={open ? "lg:ml-48 transition-all duration-300" : "lg:ml-14 transition-all duration-300"}>
-                <div className="min-h-screen pt-20 pb-24 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
-                    <div className="container mx-auto px-4 max-w-5xl">
+            <div className="min-h-screen pt-20 pb-24 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
+                <div className="container mx-auto px-4 max-w-5xl">
                         {/* Back */}
                         <Button
                             variant="ghost"
@@ -527,10 +526,8 @@ export default function TicketDetailPage() {
                                     )}
                                 </div>
                             </aside>
-                        </div>
                     </div>
                 </div>
-            </div>
         </>
     );
 }

@@ -617,8 +617,7 @@ export default function BalancePage() {
                     t={t}
                 />
             )}
-            <div className={open ? "lg:ml-48 transition-all duration-300" : "lg:ml-14 transition-all duration-300"}>
-                <div className="container mx-auto px-6 max-w-5xl pt-8">
+            <div className="container mx-auto px-6 max-w-5xl pt-8">
 
                     {/* Breadcrumb */}
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground mb-6">
@@ -842,7 +841,6 @@ export default function BalancePage() {
                     </div>
 
                 </div>
-            </div>
         </div>
     );
 }

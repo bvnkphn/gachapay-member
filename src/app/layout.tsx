@@ -3,16 +3,14 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/Header";
-import { BottomNav } from "@/components/bottom-nav";
-import { AccountSidebar } from "@/components/AccountSidebar";
 import { LanguageProvider } from "@/components/language-context";
 import { MainWrapper } from "@/components/MainWrapper";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-    title: "CYBERPAY - Game Top-up Platform",
-    description: "บริการเติมเกมออนไลน์ที่ไว้วางใจได้ รองรับทุกเกมยอดนิยม",
+    title: "GACHAPAY - Game Top-up Platform",
+    description: "บริการเติมเกมออนไลน์ที่ไว้วางใจได้ รองรับทุกเกมยอดนิยม พร้อมโปรโมชันพิเศษสำหรับสมาชิก VIP",
 };
 
 export default function RootLayout({
@@ -26,9 +24,7 @@ export default function RootLayout({
                 <LanguageProvider>
                     <Providers>
                         <Header />
-                        <AccountSidebar />
                         <MainWrapper>{children}</MainWrapper>
-                        <BottomNav />
                     </Providers>
                 </LanguageProvider>
             </body>

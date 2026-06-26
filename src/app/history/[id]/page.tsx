@@ -58,8 +58,7 @@ export default function OrderDetailPage() {
 
     return (
         <div className="min-h-screen pt-16 pb-24">
-            <div className={open ? "lg:ml-48 transition-all duration-300" : "lg:ml-14 transition-all duration-300"}>
-                <div className="container mx-auto px-6 max-w-4xl pt-8">
+            <div className="container mx-auto px-6 max-w-4xl pt-8">
 
                     {/* Back */}
                     <button
@@ -206,7 +205,6 @@ export default function OrderDetailPage() {
                     </div>
 
                 </div>
-            </div>
         </div>
     );
 }
