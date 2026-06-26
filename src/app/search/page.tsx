@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { GameCard } from "@/components/game-card";
@@ -22,7 +22,7 @@ interface Game {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
-export default function SearchPage() {
+function SearchContent() {
     const { t } = useLanguage();
     const searchParams = useSearchParams();
     const urlQuery = searchParams?.get("q") || "";
@@ -122,3 +122,16 @@ export default function SearchPage() {
         </div>
     );
 }
+
+export default function SearchPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <p className="text-muted-foreground">กำลังโหลด...</p>
+            </div>
+        }>
+            <SearchContent />
+        </Suspense>
+    );
+}
+

@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import { ShieldCheck, Gamepad2 } from 'lucide-react';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 
-export default function VerifyAdminOtpPage() {
+function VerifyAdminOtpContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const userId = searchParams.get('userId');
@@ -103,3 +103,16 @@ export default function VerifyAdminOtpPage() {
     </div>
   );
 }
+
+export default function VerifyAdminOtpPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0f0f1a] flex items-center justify-center">
+        <p className="text-white text-lg">กำลังโหลด...</p>
+      </div>
+    }>
+      <VerifyAdminOtpContent />
+    </Suspense>
+  );
+}
+
