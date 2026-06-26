@@ -528,6 +528,7 @@ export default function TicketDetailPage() {
                             </aside>
                     </div>
                 </div>
+            </div>
         </>
     );
 }
