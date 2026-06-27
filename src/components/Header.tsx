@@ -85,8 +85,9 @@ export function Header() {
     // Always use resolvedTheme for display — it reads from localStorage correctly
     const currentTheme = mounted ? (resolvedTheme ?? "dark") : "dark";
 
-    // ซ่อน Header ของ user เมื่ออยู่ในหน้า admin
-    if (pathname.startsWith("/admin")) return null;
+    // ซ่อน Header ของ user เมื่ออยู่ในหน้า admin หรือหน้า auth
+    const isAuthPage = ["/login", "/register", "/forgot-password", "/verify-otp", "/reset-password"].includes(pathname);
+    if (pathname.startsWith("/admin") || isAuthPage) return null;
 
     // pages that have the account sidebar
     const hasSidebar = pathname.startsWith("/account") || pathname.startsWith("/support/tickets");

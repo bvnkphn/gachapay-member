@@ -3,25 +3,31 @@
 import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Lock, Gamepad2, Loader2, Eye, EyeOff, Check, X } from "lucide-react";
+import { Lock, Gamepad2, Loader2, Eye, EyeOff, Check, X, Sun, Moon } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
+import { useTheme } from "next-themes";
 
 function ResetPasswordContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const emailParam = searchParams.get("email");
 
+    const { setTheme, resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [otpData, setOtpData] = useState<{ email: string; otp: string; timestamp: number } | null>(null);
+
+    useEffect(() => { setMounted(true); }, []);
+    const currentTheme = mounted ? (resolvedTheme ?? "dark") : "dark";
 
     useEffect(() => {
         // Get OTP data from sessionStorage
@@ -100,10 +106,22 @@ function ResetPasswordContent() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 py-12 pb-24">
+        <div className="min-h-screen flex items-center justify-center px-4 relative">
+            {/* Theme Toggle Button */}
+            <div className="fixed top-4 right-4 z-50">
+                <Button
+                    variant="outline"
+                    size="icon"
+                    type="button"
+                    className="w-9 h-9 rounded-full bg-background/50 backdrop-blur-md border-primary/20 hover:border-primary/40 text-foreground transition-all duration-300 shadow-md shadow-primary/5"
+                    onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
+                >
+                    {currentTheme === "dark" ? <Sun className="w-4 h-4 text-primary animate-pulse" /> : <Moon className="w-4 h-4 text-secondary" />}
+                </Button>
+            </div>
             <div className="w-full max-w-md">
-                <div className="text-center mb-8 pt-20">
-                    <div className="inline-flex items-center gap-3 mb-4 select-none">
+                <div className="text-center mb-6">
+                    <Link href="/" className="inline-flex items-center gap-3 mb-4 select-none hover:opacity-90 transition-opacity">
                         {/* Glowing Icon Badge */}
                         <div className="relative flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-primary/15 to-secondary/15 border border-primary/30 shadow-[0_0_15px_rgba(6,182,212,0.25)]">
                             <Gamepad2 className="w-7 h-7 text-primary drop-shadow-[0_0_6px_rgba(6,182,212,0.5)]" />
@@ -112,7 +130,7 @@ function ResetPasswordContent() {
                         <span className="text-3xl font-black tracking-widest text-primary drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]">
                             GACHA<span className="text-foreground dark:text-white drop-shadow-none">PAY</span>
                         </span>
-                    </div>
+                    </Link>
                     <p className="text-muted-foreground">ตั้งรหัสผ่านใหม่</p>
                 </div>
 
@@ -187,7 +205,7 @@ function ResetPasswordContent() {
 
                             <Button
                                 type="submit"
-                                className="w-full bg-gradient-cyber hover:opacity-90 text-background font-semibold h-11 pulse-glow"
+                                className="w-full bg-foreground hover:bg-foreground/90 text-background font-semibold h-11 transition-all"
                                 disabled={isLoading || !isPasswordValid}
                             >
                                 {isLoading ? (

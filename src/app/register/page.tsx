@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, Mail, Lock, Gamepad2, Loader2, Check, X, Facebook } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, Gamepad2, Loader2, Check, X, Facebook, Sun, Moon } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -13,16 +13,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { api } from "@/lib/api";
 import { useAuth } from "@/hooks/use-auth";
+import { useTheme } from "next-themes";
 
 export default function RegisterPage() {
     const router = useRouter();
     const { setAuth } = useAuth();
+    const { setTheme, resolvedTheme } = useTheme();
+    const [mounted, setMounted] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => { setMounted(true); }, []);
+    const currentTheme = mounted ? (resolvedTheme ?? "dark") : "dark";
     const [acceptedTerms, setAcceptedTerms] = useState(false);
 
     // Password validation
@@ -77,11 +83,24 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 py-12 pb-24">
+        <div className="min-h-screen flex items-center justify-center px-4 relative">
+            {/* Theme Toggle Button */}
+            <div className="fixed top-4 right-4 z-50">
+                <Button
+                    variant="outline"
+                    size="icon"
+                    type="button"
+                    className="w-9 h-9 rounded-full bg-background/50 backdrop-blur-md border-primary/20 hover:border-primary/40 text-foreground transition-all duration-300 shadow-md shadow-primary/5"
+                    onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
+                >
+                    {currentTheme === "dark" ? <Sun className="w-4 h-4 text-primary animate-pulse" /> : <Moon className="w-4 h-4 text-secondary" />}
+                </Button>
+            </div>
+
             <div className="w-full max-w-md">
                 {/* Logo */}
-                <div className="text-center mb-8 pt-20">
-                    <div className="inline-flex items-center gap-3 mb-4 select-none">
+                <div className="text-center mb-5">
+                    <Link href="/" className="inline-flex items-center gap-3 mb-4 select-none hover:opacity-90 transition-opacity">
                         {/* Glowing Icon Badge */}
                         <div className="relative flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-primary/15 to-secondary/15 border border-primary/30 shadow-[0_0_15px_rgba(6,182,212,0.25)]">
                             <Gamepad2 className="w-7 h-7 text-primary drop-shadow-[0_0_6px_rgba(6,182,212,0.5)]" />
@@ -90,16 +109,12 @@ export default function RegisterPage() {
                         <span className="text-3xl font-black tracking-widest text-primary drop-shadow-[0_0_8px_rgba(6,182,212,0.4)]">
                             GACHA<span className="text-foreground dark:text-white drop-shadow-none">PAY</span>
                         </span>
-                    </div>
-                    <p className="text-muted-foreground">สมัครสมาชิกเพื่อเริ่มเติมเกม</p>
+                    </Link>
                 </div>
 
                 <Card className="glass-card border-border/50">
-                    <CardHeader className="space-y-1 pb-4">
+                    <CardHeader className="pt-5 pb-2 px-6 space-y-1">
                         <CardTitle className="text-2xl font-bold text-center">สมัครสมาชิก</CardTitle>
-                        <CardDescription className="text-center">
-                            สร้างบัญชีใหม่เพื่อเริ่มใช้งาน
-                        </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <form onSubmit={handleSubmit} className="space-y-4">
@@ -208,7 +223,7 @@ export default function RegisterPage() {
                             {/* Register Button */}
                             <Button
                                 type="submit"
-                                className="w-full bg-gradient-cyber hover:opacity-90 text-background font-semibold h-11 pulse-glow"
+                                className="w-full bg-foreground hover:bg-foreground/90 text-background font-semibold h-11 transition-all"
                                 disabled={isLoading || !isPasswordValid || !acceptedTerms}
                             >
                                 {isLoading ? (
@@ -230,27 +245,27 @@ export default function RegisterPage() {
                         </div>
 
                         {/* Social Login Buttons */}
-                        <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3">
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="w-full bg-background hover:bg-muted/50"
+                                className="w-full bg-background/40 hover:bg-muted/50 border-border/50 text-foreground transition-all"
                                 onClick={handleGoogleSignUp}
                                 disabled={isLoading}
                             >
-                                <FcGoogle className="mr-2 h-5 w-5" />
-                                Google
+                                <FcGoogle className="mr-2 h-5 w-5 shrink-0" />
+                                <span className="truncate">Google</span>
                             </Button>
 
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="w-full bg-[#1877F2]/10 border-[#1877F2]/30 text-[#1877F2] hover:bg-[#1877F2]/20"
+                                className="w-full bg-background/40 hover:bg-muted/50 border-border/50 text-foreground transition-all"
                                 onClick={handleFacebookSignUp}
                                 disabled={isLoading}
                             >
-                                <Facebook className="mr-2 h-5 w-5 fill-current" />
-                                Facebook
+                                <Facebook className="mr-2 h-5 w-5 fill-[#1877F2] text-[#1877F2] shrink-0" />
+                                <span className="truncate">Facebook</span>
                             </Button>
                         </div>
 
