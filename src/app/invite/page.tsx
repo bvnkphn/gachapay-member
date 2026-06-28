@@ -1,23 +1,32 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Copy, Share2, Users, ChevronLeft, CheckCircle2, Clock, Gift } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/use-auth";
 import { useRouter } from "next/navigation";
-
-// Mock Referrals List with pending and completed statuses
-const MOCK_REFERRALS = [
-    { id: 1, email: "m***y@gmail.com", joinedAt: "28/06/2026", status: "pending", reward: 10 },
-    { id: 2, email: "som***.k@hotmail.com", joinedAt: "27/06/2026", status: "completed", reward: 10 },
-    { id: 3, email: "ch***.dev@gmail.com", joinedAt: "25/06/2026", status: "pending", reward: 10 },
-];
+import { api } from "@/lib/api";
 
 export default function AccountInvitePage() {
     const { user } = useAuth();
     const router = useRouter();
     const [copied, setCopied] = useState(false);
+    const [referrals, setReferrals] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        api.getReferrals()
+            .then((data) => {
+                setReferrals(data || []);
+            })
+            .catch((err) => {
+                console.error("Failed to load referrals:", err);
+            })
+            .finally(() => {
+                setLoading(false);
+            });
+    }, []);
 
     const referralLink = useMemo(() => {
         if (!user?.id) return "";
@@ -46,12 +55,12 @@ export default function AccountInvitePage() {
     };
 
     const stats = useMemo(() => {
-        const total = MOCK_REFERRALS.length;
-        const completed = MOCK_REFERRALS.filter(r => r.status === "completed").length;
+        const total = referrals.length;
+        const completed = referrals.filter(r => r.status === "completed").length;
         const pending = total - completed;
-        const totalReward = MOCK_REFERRALS.filter(r => r.status === "completed").reduce((sum, r) => sum + r.reward, 0);
+        const totalReward = referrals.filter(r => r.status === "completed").reduce((sum, r) => sum + r.reward, 0);
         return { total, completed, pending, totalReward };
-    }, []);
+    }, [referrals]);
 
     return (
         <div className="min-h-screen pt-20 pb-24 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
@@ -173,32 +182,52 @@ export default function AccountInvitePage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border/30">
-                                    {MOCK_REFERRALS.map((ref) => (
-                                        <tr key={ref.id} className="hover:bg-muted/10 transition-colors">
-                                            <td className="py-3.5 font-medium text-foreground whitespace-nowrap">{ref.email}</td>
-                                            <td className="py-3.5 text-muted-foreground whitespace-nowrap">{ref.joinedAt}</td>
-                                            <td className="py-3.5 whitespace-nowrap">
-                                                {ref.status === "completed" ? (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 whitespace-nowrap">
-                                                        <CheckCircle2 className="w-3 h-3" />
-                                                        สำเร็จ
-                                                    </span>
-                                                ) : (
-                                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground border border-border whitespace-nowrap">
-                                                        <Clock className="w-3 h-3" />
-                                                        รอดำเนินการ
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="py-3.5 text-right font-bold whitespace-nowrap">
-                                                {ref.status === "completed" ? (
-                                                    <span className="text-amber-500">+{ref.reward} COIN</span>
-                                                ) : (
-                                                    <span className="text-muted-foreground/60">+{ref.reward} COIN</span>
-                                                )}
+                                    {loading ? (
+                                        <tr>
+                                            <td colSpan={4} className="py-8 text-center text-muted-foreground">
+                                                กำลังโหลดข้อมูล...
                                             </td>
                                         </tr>
-                                    ))}
+                                    ) : referrals.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={4} className="py-8 text-center text-muted-foreground">
+                                                ยังไม่มีการเชิญเพื่อนในขณะนี้
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        referrals.map((ref) => (
+                                            <tr key={ref.id} className="hover:bg-muted/10 transition-colors">
+                                                <td className="py-3.5 font-medium text-foreground whitespace-nowrap">{ref.email}</td>
+                                                <td className="py-3.5 text-muted-foreground whitespace-nowrap">
+                                                    {new Date(ref.joinedAt).toLocaleDateString("th-TH", {
+                                                        day: "numeric",
+                                                        month: "numeric",
+                                                        year: "numeric",
+                                                    })}
+                                                </td>
+                                                <td className="py-3.5 whitespace-nowrap">
+                                                    {ref.status === "completed" ? (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 whitespace-nowrap">
+                                                            <CheckCircle2 className="w-3 h-3" />
+                                                            สำเร็จ
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-muted text-muted-foreground border border-border whitespace-nowrap">
+                                                            <Clock className="w-3 h-3" />
+                                                            รอดำเนินการ
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="py-3.5 text-right font-bold whitespace-nowrap">
+                                                    {ref.status === "completed" ? (
+                                                        <span className="text-amber-500">+{ref.reward} COIN</span>
+                                                    ) : (
+                                                        <span className="text-muted-foreground/60">+{ref.reward} COIN</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
                                 </tbody>
                             </table>
                         </div>

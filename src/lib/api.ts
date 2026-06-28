@@ -49,11 +49,13 @@ export async function apiRequest(
 
 export const api = {
     // Auth
-    register: (data: { email: string; password: string; name?: string }) =>
+    register: (data: { email: string; password: string; name?: string; referredBy?: string }) =>
         apiRequest("/auth/register", {
             method: "POST",
             body: JSON.stringify(data),
         }),
+
+    getReferrals: () => apiRequest("/users/me/referrals"),
 
     login: (data: { email: string; password: string }) =>
         apiRequest("/auth/login", {

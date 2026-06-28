@@ -156,7 +156,11 @@ export default function RegisterPage() {
 
         setIsLoading(true);
         try {
-            const response = await api.register({ email, password });
+            const referredBy = localStorage.getItem("referredBy") || undefined;
+            const response = await api.register({ email, password, referredBy });
+            if (referredBy) {
+                localStorage.removeItem("referredBy");
+            }
             setAuth(response.user, response.token);
             toast.success("สมัครสมาชิกสำเร็จ!");
             router.push("/");
