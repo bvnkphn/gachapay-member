@@ -1,20 +1,26 @@
 "use client";
 
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function PrivacyPage() {
+    const router = useRouter();
+
     return (
         <div className="min-h-screen px-4 py-12 pb-24">
             <div className="max-w-4xl mx-auto">
-                <Link href="/register">
-                    <Button variant="ghost" className="mb-6">
-                        <ArrowLeft className="w-4 h-4 mr-2" />
-                        กลับ
-                    </Button>
-                </Link>
+                <Button variant="ghost" className="mb-6" onClick={() => {
+                    if (typeof window !== "undefined" && window.history.length > 1) {
+                        router.back();
+                    } else {
+                        router.push("/");
+                    }
+                }}>
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    กลับ
+                </Button>
 
                 <Card className="glass-card border-border/50">
                     <CardHeader>

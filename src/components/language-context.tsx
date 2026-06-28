@@ -113,6 +113,22 @@ const translations = {
     errorPassword: "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร",
     errorLogin: "Email หรือรหัสผ่านไม่ถูกต้อง",
     success: "เข้าสู่ระบบสำเร็จ",
+    errorMap: {
+      "Email already registered": "อีเมลนี้ได้รับการลงทะเบียนแล้ว",
+      "Invalid credentials": "อีเมลหรือรหัสผ่านไม่ถูกต้อง",
+      "No valid OTP found. Please login again": "ไม่พบรหัส OTP ที่ถูกต้อง กรุณาเข้าสู่ระบบอีกครั้ง",
+      "Too many failed attempts. Please login again": "ป้อนรหัสผิดเกินจำนวนครั้งที่กำหนด กรุณาเข้าสู่ระบบอีกครั้ง",
+      "Invalid OTP": "รหัส OTP ไม่ถูกต้อง",
+      "Invalid or expired reset token": "ลิงก์รีเซ็ตรหัสผ่านไม่ถูกต้องหรือหมดอายุแล้ว",
+      "Invalid email or OTP": "อีเมลหรือรหัส OTP ไม่ถูกต้อง",
+      "No valid OTP found. Please request a new one": "ไม่พบรหัส OTP ที่ใช้งานได้ กรุณาขอรหัส OTP ใหม่",
+      "Too many failed attempts. Please request a new OTP": "ป้อนรหัสผิดเกินจำนวนครั้งที่กำหนด กรุณาขอรหัส OTP ใหม่",
+      "User not found": "ไม่พบผู้ใช้ในระบบ",
+      "Ticket ถูกปิดแล้ว": "ตั๋วนี้ถูกปิดแล้ว",
+      "เฉพาะ Super Admin เท่านั้น": "เฉพาะผู้ดูแลระบบขั้นสูงเท่านั้น",
+      "Insufficient permissions": "สิทธิ์การเข้าใช้งานไม่เพียงพอ",
+      "Request failed": "การส่งคำขอไม่สำเร็จ",
+    },
     // Support Page
     supportTitle: "ศูนย์ช่วยเหลือ",
     supportSubtitle: "ค้นหาคำตอบด้วยตนเอง หรือติดต่อทีมงานได้ตลอด 24 ชม.",
@@ -124,7 +140,7 @@ const translations = {
     contactTitle: "ช่องทางติดต่อเจ้าหน้าที่",
     contactSubtitle: "หาก FAQ ไม่สามารถแก้ปัญหาได้ สามารถติดต่อทีมงานผ่านช่องทางด้านล่าง",
     stillHaveQuestion: "หากยังมีข้อสงสัย?",
-    createTicket: "สร้างตั๋ว",
+    createTicket: "แจ้งปัญหา",
     // Create Ticket Page
     back: "กลับ",
     createTicketTitle: "ติดต่อฝ่ายบริการลูกค้า",
@@ -147,11 +163,11 @@ const translations = {
     selectImage: "เลือกรูปภาพ",
     supportedFormats: "รูปแบบที่รองรับ: PNG, JPG, JPEG",
     infoText: "ภาพหน้าจอการโอนเงิน หรือ ไอดีผู้ใช้ในเกม จะช่วยให้เราสามารถแก้ไขปัญหาได้เร็วขึ้น",
-    submit: "สร้างตั๋ว",
-    successTitle: "สร้างตั๋วแล้ว",
+    submit: "แจ้งปัญหา",
+    successTitle: "แจ้งปัญหาสำเร็จ",
     successMessage: "เราจะตรวจสอบปัญหาและแก้ไขโดยเร็วที่สุด",
     successSubMessage: "คุณจะได้รับการอัปเดตเพิ่มเติมทางอีเมล",
-    viewTicket: "ดูตั๋ว",
+    viewTicket: "ดูรายละเอียดคำร้อง",
     backToSupport: "กลับไปที่ช่วยเหลือ",
     fillAllFields: "กรุณากรอกข้อมูลให้ครบถ้วน",
     invalidFileType: "กรุณาอัปโหลดไฟล์ภาพเท่านั้น (PNG, JPG, JPEG)",
@@ -200,7 +216,7 @@ const translations = {
     invalidAttachType: "รองรับเฉพาะไฟล์ .jpg, .png, .pdf เท่านั้น",
     attachFile: "แนบไฟล์",
     sidebarMyAccount: "บัญชีของฉัน",
-    sidebarBalance: "ยอดคงเหลือ",
+    sidebarBalance: "กระเป๋าคอยน์",
     sidebarOrders: "คำสั่งซื้อ",
     sidebarTickets: "ตั๋ว",
     sidebarSettings: "การตั้งค่า",
@@ -312,34 +328,34 @@ const translations = {
     // VIP Tier Details
     backToOverview: "กลับไปหน้าภาพรวม",
     yourCurrentLevel: "ระดับปัจจุบันของคุณ",
-    vipTierDetails: "VIP TIER DETAILS",
+    vipTierDetails: "ระดับสมาชิก & สิทธิพิเศษ",
     statusOverview: "STATUS OVERVIEW",
     highestRank: "HIGHEST RANK",
     infoHighest: "🏆 คุณอยู่ในระดับสูงสุดแล้ว สิทธิพิเศษทั้งหมดพร้อมใช้งาน",
     infoLower: (tier: string) => `✅ คุณได้รับสิทธิพิเศษของ ${tier} แล้ว`,
     infoNeedDiamonds: (amount: string, tier: string) =>
-      `💎 คุณต้องการอีก ${amount} Diamond เพื่อเลื่อนระดับเป็น ${tier} และรับสิทธิพิเศษเพิ่มเติม`,
+      `✨ คุณต้องการอีก ${amount} EXP เพื่อเลื่อนระดับเป็น ${tier} และรับสิทธิพิเศษเพิ่มเติม`,
     allTierDetails: "รายละเอียดการเลื่อนระดับทั้งหมด",
     tierBenefits: "สิทธิพิเศษประจำระดับ",
     tierCondition: "เงื่อนไขระดับ",
-    minDiamondsText: (amount: string) => `สะสม Diamond ขั้นต่ำ ${amount} เพื่อเข้าสู่ระดับนี้`,
-    nextTierText: (amount: string) => `เลื่อนระดับถัดไปที่ ${amount} Diamond`,
+    minDiamondsText: (amount: string) => `สะสม EXP ขั้นต่ำ ${amount} เพื่อเข้าสู่ระดับนี้`,
+    nextTierText: (amount: string) => `เลื่อนระดับถัดไปที่ ${amount} EXP`,
     // VIP Benefits
     vipBenefits: {
       vip1: [
         "ส่วนลดค่าเติมเกม 2% ทุกรายการ",
-        "รับ Diamond โบนัส 5% เมื่อเติมครบ ฿100",
+        "รับ EXP โบนัส 5% เมื่อเติมครบ ฿100",
         "แจ้งเตือนโปรโมชันผ่านอีเมล",
       ],
       vip2: [
         "ส่วนลดค่าเติมเกม 5% ทุกรายการ",
-        "รับ Diamond โบนัส 10% เมื่อเติมครบ ฿100",
+        "รับ EXP โบนัส 10% เมื่อเติมครบ ฿100",
         "ช่องทาง Support ด่วน (ตอบภายใน 2 ชม.)",
         "เข้าถึงโปรโมชันพิเศษก่อนสมาชิกทั่วไป",
       ],
       vip3: [
         "ส่วนลดค่าเติมเกม 10% ทุกรายการ",
-        "รับ Diamond โบนัส 20% เมื่อเติมครบ ฿100",
+        "รับ EXP โบนัส 20% เมื่อเติมครบ ฿100",
         "ช่องทาง Support ด่วนสุด (ตอบภายใน 30 นาที)",
         "เข้าถึงโปรโมชันและไอเทมพิเศษก่อนใคร",
         "รับของรางวัลพิเศษทุกเดือน",
@@ -449,6 +465,22 @@ const translations = {
     errorPassword: "Password must be at least 8 characters",
     errorLogin: "Incorrect Email or Password",
     success: "Login successful",
+    errorMap: {
+      "Email already registered": "This email is already registered",
+      "Invalid credentials": "Incorrect email or password",
+      "No valid OTP found. Please login again": "No valid OTP found. Please login again",
+      "Too many failed attempts. Please login again": "Too many failed attempts. Please login again",
+      "Invalid OTP": "Invalid OTP code",
+      "Invalid or expired reset token": "Invalid or expired password reset link",
+      "Invalid email or OTP": "Invalid email or OTP",
+      "No valid OTP found. Please request a new one": "No valid OTP found. Please request a new OTP",
+      "Too many failed attempts. Please request a new OTP": "Too many failed attempts. Please request a new OTP",
+      "User not found": "User not found",
+      "Ticket ถูกปิดแล้ว": "Ticket is closed",
+      "เฉพาะ Super Admin เท่านั้น": "Super Admin only",
+      "Insufficient permissions": "Insufficient permissions",
+      "Request failed": "Request failed",
+    },
     // Support Page
     supportTitle: "Help Center",
     supportSubtitle: "Find answers yourself or contact our team 24/7",
@@ -460,7 +492,7 @@ const translations = {
     contactTitle: "Contact Support Team",
     contactSubtitle: "If FAQ cannot solve your problem, you can contact our team through the channels below",
     stillHaveQuestion: "Still have questions?",
-    createTicket: "Create Ticket",
+    createTicket: "Report Issue",
     // Create Ticket Page
     back: "Back",
     createTicketTitle: "Contact Customer Service",
@@ -483,11 +515,11 @@ const translations = {
     selectImage: "Select Image",
     supportedFormats: "Supported formats: PNG, JPG, JPEG",
     infoText: "Screenshot of money transfer or user ID in game will help us fix the problem faster",
-    submit: "Create Ticket",
-    successTitle: "Ticket Created",
+    submit: "Report Issue",
+    successTitle: "Report Submitted",
     successMessage: "We will review the issue and fix it as soon as possible",
     successSubMessage: "You will receive updates via email",
-    viewTicket: "View Ticket",
+    viewTicket: "View Details",
     backToSupport: "Back to Support",
     fillAllFields: "Please fill in all required fields",
     invalidFileType: "Please upload image files only (PNG, JPG, JPEG)",
@@ -536,7 +568,7 @@ const translations = {
     invalidAttachType: "Only .jpg, .png, .pdf files are supported",
     attachFile: "Attach File",
     sidebarMyAccount: "My Account",
-    sidebarBalance: "Balance",
+    sidebarBalance: "Coin Wallet",
     sidebarOrders: "Orders",
     sidebarTickets: "Tickets",
     sidebarSettings: "Settings",
@@ -648,34 +680,34 @@ const translations = {
     // VIP Tier Details
     backToOverview: "Back to Overview",
     yourCurrentLevel: "Your Current Level",
-    vipTierDetails: "VIP TIER DETAILS",
+    vipTierDetails: "Membership Tiers & Privileges",
     statusOverview: "STATUS OVERVIEW",
     highestRank: "HIGHEST RANK",
     infoHighest: "🏆 You are at the highest rank. All privileges are active.",
     infoLower: (tier: string) => `✅ You already have ${tier} privileges.`,
     infoNeedDiamonds: (amount: string, tier: string) =>
-      `💎 You need ${amount} more Diamonds to reach ${tier} and unlock more privileges.`,
+      `✨ You need ${amount} more EXP to reach ${tier} and unlock more privileges.`,
     allTierDetails: "All Tier Details",
     tierBenefits: "Tier Benefits",
     tierCondition: "Tier Condition",
-    minDiamondsText: (amount: string) => `Accumulate at least ${amount} Diamonds to reach this tier.`,
-    nextTierText: (amount: string) => `Upgrade to next tier at ${amount} Diamonds.`,
+    minDiamondsText: (amount: string) => `Accumulate at least ${amount} EXP to reach this tier.`,
+    nextTierText: (amount: string) => `Upgrade to next tier at ${amount} EXP.`,
     // VIP Benefits
     vipBenefits: {
       vip1: [
         "2% discount on every top-up",
-        "5% bonus Diamonds when topping up ฿100+",
+        "5% bonus EXP when topping up ฿100+",
         "Promotion alerts via email",
       ],
       vip2: [
         "5% discount on every top-up",
-        "10% bonus Diamonds when topping up ฿100+",
+        "10% bonus EXP when topping up ฿100+",
         "Priority Support (response within 2 hrs)",
         "Early access to exclusive promotions",
       ],
       vip3: [
         "10% discount on every top-up",
-        "20% bonus Diamonds when topping up ฿100+",
+        "20% bonus EXP when topping up ฿100+",
         "VIP Support (response within 30 min)",
         "First access to exclusive items & promotions",
         "Monthly special rewards",
@@ -702,5 +734,45 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useLanguage() {
-  return useContext(LanguageContext);
+  const context = useContext(LanguageContext);
+  
+  const translateError = (errorMessage: string | undefined | null): string => {
+    if (!errorMessage) return context.lang === "th" ? "เกิดข้อผิดพลาด" : "An error occurred";
+    
+    // Check direct mapping
+    const errorMap = (context.t as any).errorMap;
+    if (errorMap && errorMap[errorMessage]) {
+      return errorMap[errorMessage];
+    }
+    
+    const lowerMessage = errorMessage.toLowerCase();
+    if (lowerMessage.includes("credentials")) {
+      return context.t.errorLogin || (context.lang === "th" ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง" : "Incorrect email or password");
+    }
+    if (lowerMessage.includes("email already") || lowerMessage.includes("registered") || lowerMessage.includes("conflict")) {
+      return context.lang === "th" ? "อีเมลนี้ได้รับการลงทะเบียนแล้ว" : "Email already registered";
+    }
+    if (lowerMessage.includes("otp")) {
+      if (lowerMessage.includes("attempt") || lowerMessage.includes("limit") || lowerMessage.includes("too many")) {
+        return context.lang === "th" ? "ป้อนรหัส OTP ผิดเกินจำนวนครั้งที่กำหนด" : "Too many attempts. Please request a new OTP";
+      }
+      if (lowerMessage.includes("expired")) {
+        return context.lang === "th" ? "รหัส OTP หมดอายุแล้ว" : "OTP code has expired";
+      }
+      return context.lang === "th" ? "รหัส OTP ไม่ถูกต้อง" : "Invalid OTP";
+    }
+    if (lowerMessage.includes("expired") || lowerMessage.includes("token")) {
+      return context.lang === "th" ? "ลิงก์หรือโทเคนหมดอายุแล้ว" : "Link or token has expired";
+    }
+    if (lowerMessage.includes("not found")) {
+      return context.lang === "th" ? "ไม่พบข้อมูลที่ระบุ" : "Not found";
+    }
+    
+    return errorMessage;
+  };
+
+  return {
+    ...context,
+    translateError
+  };
 }

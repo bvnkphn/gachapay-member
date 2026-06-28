@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Header } from "@/components/Header";
+import FooterWrapper from "@/components/FooterWrapper";
 import { LanguageProvider } from "@/components/language-context";
 import { MainWrapper } from "@/components/MainWrapper";
 
@@ -25,6 +26,7 @@ export default function RootLayout({
                     <Providers>
                         <Header />
                         <MainWrapper>{children}</MainWrapper>
+                        <FooterWrapper />
                     </Providers>
                 </LanguageProvider>
             </body>

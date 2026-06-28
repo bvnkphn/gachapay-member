@@ -115,7 +115,7 @@ function PackageFormModal({ gameId, token, pkg, onClose, onSuccess }: {
           {/* แต้มสะสม + โปรโมชั่น */}
           <div className="grid grid-cols-2 gap-3">
             {/* แต้มสะสม — แก้ได้ (UI only) */}
-            <Field label="แต้มสะสม (DIAMOND)" prefix="◆">
+            <Field label="แต้มสะสม (EXP)" prefix="◆">
               <TextInput noBg type="number" min="0" value={form.diamond}
                 onChange={e => setForm(f => ({ ...f, diamond: Number(e.target.value) }))} placeholder="0" />
             </Field>

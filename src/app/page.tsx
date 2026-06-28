@@ -6,7 +6,6 @@ import { Zap, ArrowRight, Star, ChevronRight, ChevronLeft } from "lucide-react";
 import { GamesSection } from "@/components/game-card";
 import { useLanguage } from "@/components/language-context";
 import BannerSlider from "@/components/BannerSlider";
-import Footer from "@/components/Footer";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 // ---- Types ----
@@ -40,7 +39,7 @@ function useCountdown(target: Date) {
 
 function Digit({ n }: { n: number }) {
     return (
-        <span className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-md sm:rounded-lg bg-muted border border-border text-foreground text-sm sm:text-lg font-semibold tabular-nums">
+        <span className="inline-flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 text-sm sm:text-base font-black tabular-nums shadow-[0_0_10px_rgba(239,68,68,0.05)]">
             {String(n).padStart(2, "0")}
         </span>
     );
@@ -61,34 +60,76 @@ const discountLabel: Record<string, string> = {
     NONE: "-22% OFF",
 };
 
+function getFlashSalePrices(name: string) {
+    const lower = name.toLowerCase();
+    if (lower.includes("valorant")) return { original: 350, sale: 289 };
+    if (lower.includes("genshin")) return { original: 180, sale: 139 };
+    if (lower.includes("roblox")) return { original: 150, sale: 119 };
+    if (lower.includes("free fire") || lower.includes("freefire")) return { original: 90, sale: 69 };
+    if (lower.includes("pubg")) return { original: 220, sale: 169 };
+    if (lower.includes("rov") || lower.includes("arena of valor")) return { original: 120, sale: 89 };
+    if (lower.includes("mobile legends")) return { original: 160, sale: 129 };
+    const val = (name.length * 7) % 150 + 49;
+    return { original: Math.round(val * 1.3), sale: val };
+}
+
+function getFlashSaleStock(name: string) {
+    const percent = (name.length * 13) % 40 + 55;
+    const remaining = (name.length * 3) % 15 + 3;
+    return { percent, remaining };
+}
+
 // ---- Flash Sale Card ----
 function FlashCard({ game }: { game: Game }) {
-    const color = discountColor[game.label] || discountColor.NONE;
     const badge = discountLabel[game.label] || discountLabel.NONE;
+    const { original, sale } = getFlashSalePrices(game.name);
+    const { percent, remaining } = getFlashSaleStock(game.name);
+
     return (
-        <Link href={`/game/${game.slug}`} className="group">
-            <div className="glass-card rounded-xl overflow-hidden hover:glow-primary transition-all duration-300 hover:-translate-y-1">
-                <div className="relative h-36 overflow-hidden bg-muted">
+        <Link href={`/game/${game.slug}`} className="group block relative">
+            <div className="relative overflow-hidden rounded-2xl bg-card border border-border/80 dark:bg-gradient-to-b dark:from-[#18181b]/90 dark:to-[#09090b]/90 dark:border-white/10 p-3 hover:border-red-500/50 hover:shadow-[0_0_25px_rgba(239,68,68,0.2)] transition-all duration-300 group-hover:-translate-y-1">
+                {/* Neon glow effect behind card on hover */}
+                <div className="absolute -inset-px bg-gradient-to-t from-red-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none" />
+
+                {/* Image Section */}
+                <div className="relative h-40 w-full overflow-hidden rounded-xl bg-muted mb-3">
                     {game.image ? (
                         <img
                             src={game.image}
                             alt={game.name}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                             onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder.svg'; }}
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">No Image</div>
                     )}
-                    <div className="absolute inset-0 bg-gradient-to-t from-card/80 via-transparent to-transparent" />
-                    <span className={`absolute top-2 left-2 text-[10px] font-bold text-white px-2 py-0.5 rounded ${color}`}>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/25 to-transparent" />
+
+                    {/* Badge */}
+                    <span className="absolute top-2 left-2 text-[10px] font-black text-white px-2.5 py-1 rounded bg-gradient-to-r from-red-600 to-orange-500 shadow-lg animate-pulse uppercase tracking-wider">
                         {badge}
                     </span>
+
+                    {/* Remaining Stock Indicator */}
+                    <span className="absolute bottom-2 right-2 text-[9px] font-bold bg-black/70 text-orange-400 backdrop-blur-md px-2 py-0.5 rounded border border-orange-500/30">
+                        🔥 เหลือ {remaining} ชิ้นสุดท้าย
+                    </span>
                 </div>
-                <div className="px-3 py-2.5">
-                    <p className="text-sm font-semibold text-foreground line-clamp-1">{game.name}</p>
-                    <div className="flex items-center gap-1 mt-1">
-                        <span className="text-primary font-bold text-sm">฿29</span>
-                        <span className="text-muted-foreground text-xs line-through">฿35</span>
+
+                {/* Info Section */}
+                <div className="space-y-2">
+                    <p className="text-sm font-bold text-foreground line-clamp-1 group-hover:text-red-400 transition-colors">
+                        {game.name}
+                    </p>
+
+                    {/* Pricing */}
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-red-500 font-extrabold text-base sm:text-lg">
+                            ฿{sale.toLocaleString()}
+                        </span>
+                        <span className="text-muted-foreground text-xs line-through">
+                            ฿{original.toLocaleString()}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -199,6 +240,9 @@ function TopupCard({ game }: { game: Game }) {
 export default function Home() {
     const { t } = useLanguage();
 
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+    const reviewsContainerRef = useRef<HTMLDivElement>(null);
+
     // Flash sale ends in a few hours
     const flashEnd = useRef(new Date(Date.now() + 12 * 3600 * 1000 + 45 * 60 * 1000 + 8 * 1000));
     const countdown = useCountdown(flashEnd.current);
@@ -208,6 +252,8 @@ export default function Home() {
     const [loadingGames, setLoadingGames] = useState(true);
     const [activeTab, setActiveTab] = useState("all");
     const [visibleGamesCount, setVisibleGamesCount] = useState(12);
+
+    const flashGames = games.slice(0, 10);
 
     useEffect(() => {
         setVisibleGamesCount(12);
@@ -221,17 +267,70 @@ export default function Home() {
             .finally(() => setLoadingGames(false));
     }, []);
 
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
-    const reviewsContainerRef = useRef<HTMLDivElement>(null);
+    // Autoplay looping slide for Flash Sale
+    useEffect(() => {
+        const container = scrollContainerRef.current;
+        if (!container || loadingGames || games.length === 0) return;
+        
+        let intervalId: any;
+        let isHovered = false;
+        
+        const handleMouseEnter = () => { isHovered = true; };
+        const handleMouseLeave = () => { isHovered = false; };
+        
+        container.addEventListener("mouseenter", handleMouseEnter);
+        container.addEventListener("mouseleave", handleMouseLeave);
+        
+        intervalId = setInterval(() => {
+            if (isHovered) return;
+            const { scrollLeft, scrollWidth, clientWidth } = container;
+            if (scrollLeft + clientWidth >= scrollWidth - 50) {
+                container.scrollTo({ left: 0, behavior: "smooth" });
+            } else {
+                container.scrollBy({ left: 280, behavior: "smooth" });
+            }
+        }, 3000);
+        
+        return () => {
+            clearInterval(intervalId);
+            if (container) {
+                container.removeEventListener("mouseenter", handleMouseEnter);
+                container.removeEventListener("mouseleave", handleMouseLeave);
+            }
+        };
+    }, [loadingGames, games]);
 
     const scroll = (direction: "left" | "right") => {
         if (scrollContainerRef.current) {
-            const { scrollLeft, clientWidth } = scrollContainerRef.current;
-            const scrollAmount = clientWidth * 0.75;
-            scrollContainerRef.current.scrollTo({
-                left: direction === "left" ? scrollLeft - scrollAmount : scrollLeft + scrollAmount,
-                behavior: "smooth",
-            });
+            const container = scrollContainerRef.current;
+            const { scrollLeft, scrollWidth, clientWidth } = container;
+            const scrollAmount = 300;
+            
+            if (direction === "left") {
+                if (scrollLeft <= 5) {
+                    container.scrollTo({
+                        left: scrollWidth - clientWidth,
+                        behavior: "smooth"
+                    });
+                } else {
+                    container.scrollBy({
+                        left: -scrollAmount,
+                        behavior: "smooth",
+                    });
+                }
+            } else {
+                if (scrollLeft + clientWidth >= scrollWidth - 10) {
+                    container.scrollTo({
+                        left: 0,
+                        behavior: "smooth"
+                    });
+                } else {
+                    container.scrollBy({
+                        left: scrollAmount,
+                        behavior: "smooth",
+                    });
+                }
+            }
         }
     };
 
@@ -246,7 +345,6 @@ export default function Home() {
         }
     };
 
-    const flashGames = games.slice(0, 10);
     const filteredGames = activeTab === "all"
         ? games
         : games.filter((g) =>
@@ -265,36 +363,19 @@ export default function Home() {
                 {/* Header row */}
                 <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="flex items-center gap-1.5 sm:gap-2 bg-[#2a1616] border border-[#3a1a1a] text-[#fc5555] text-xs sm:text-base font-bold px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-lg">
-                            <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
+                        <div className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-red-500 via-red-600 to-red-500 text-white border-transparent dark:from-red-950 dark:via-red-900 dark:to-red-950 dark:border-red-500/30 dark:text-red-500 text-xs sm:text-base font-black px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl shadow-[0_0_15px_rgba(239,68,68,0.15)] uppercase tracking-wider">
+                            <Zap className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 fill-current animate-bounce text-yellow-300 dark:text-yellow-500" />
                             Flash Sale
                         </div>
                         {/* Countdown */}
-                        <div className="flex items-center gap-1 sm:gap-2 text-muted-foreground ml-1.5 sm:ml-3">
-                            <span className="text-xs sm:text-base text-muted-foreground mr-0.5 sm:mr-1">จบใน</span>
+                        <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground ml-1.5 sm:ml-4">
+                            <span className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wider mr-1">จบใน</span>
                             <Digit n={countdown.h} />
-                            <span className="text-sm font-medium text-muted-foreground">:</span>
+                            <span className="text-sm font-black text-red-500 animate-pulse">:</span>
                             <Digit n={countdown.m} />
-                            <span className="text-sm font-medium text-muted-foreground">:</span>
+                            <span className="text-sm font-black text-red-500 animate-pulse">:</span>
                             <Digit n={countdown.s} />
                         </div>
-                    </div>
-                    {/* Navigation Arrows */}
-                    <div className="hidden sm:flex items-center gap-2">
-                        <button
-                            onClick={() => scroll("left")}
-                            className="flex items-center justify-center w-8 h-8 rounded-lg border border-border bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card transition-all"
-                            aria-label="Previous"
-                        >
-                            <ChevronLeft className="w-4 h-4" />
-                        </button>
-                        <button
-                            onClick={() => scroll("right")}
-                            className="flex items-center justify-center w-8 h-8 rounded-lg border border-border bg-card/50 text-muted-foreground hover:text-foreground hover:bg-card transition-all"
-                            aria-label="Next"
-                        >
-                            <ChevronRight className="w-4 h-4" />
-                        </button>
                     </div>
                 </div>
 
@@ -306,12 +387,36 @@ export default function Home() {
                         ))}
                     </div>
                 ) : flashGames.length > 0 ? (
-                    <div ref={scrollContainerRef} className="flex gap-4 overflow-x-auto pt-4 pb-4 scrollbar-hide snap-x snap-mandatory scroll-smooth">
-                        {flashGames.map((g) => (
-                            <div key={g.id} className="w-[180px] sm:w-[260px] flex-shrink-0 snap-start">
-                                <FlashCard game={g} />
-                            </div>
-                        ))}
+                    <div className="relative group/slider w-full">
+                        {/* Floating Arrow Left */}
+                        <button
+                            onClick={() => scroll("left")}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-border/80 bg-background/90 text-muted-foreground hover:text-foreground hover:bg-background shadow-lg transition-all opacity-0 group-hover/slider:opacity-100 hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-sm"
+                            aria-label="Previous"
+                        >
+                            <ChevronLeft className="w-5 h-5" />
+                        </button>
+
+                        {/* Scrolling track */}
+                        <div 
+                            ref={scrollContainerRef} 
+                            className="flex gap-4 overflow-x-auto pt-4 pb-4 scrollbar-hide snap-x snap-mandatory scroll-smooth relative"
+                        >
+                            {flashGames.map((g) => (
+                                <div key={g.id} className="w-[180px] sm:w-[260px] flex-shrink-0 snap-start">
+                                    <FlashCard game={g} />
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Floating Arrow Right */}
+                        <button
+                            onClick={() => scroll("right")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 z-20 flex items-center justify-center w-10 h-10 rounded-full border border-border/80 bg-background/90 text-muted-foreground hover:text-foreground hover:bg-background shadow-lg transition-all opacity-0 group-hover/slider:opacity-100 hover:scale-105 active:scale-95 cursor-pointer backdrop-blur-sm"
+                            aria-label="Next"
+                        >
+                            <ChevronRight className="w-5 h-5" />
+                        </button>
                     </div>
                 ) : (
                     <div className="text-center text-muted-foreground py-8 text-sm">ยังไม่มีสินค้า Flash Sale ในขณะนี้</div>
@@ -325,14 +430,6 @@ export default function Home() {
                         <h2 className="text-lg font-bold text-foreground">Game TOP-UP by UID</h2>
                         <p className="text-xs text-muted-foreground mt-0.5">{games.length} เกม</p>
                     </div>
-                    {visibleGamesCount < filteredGames.length && (
-                        <button
-                            onClick={() => setVisibleGamesCount(prev => prev + 12)}
-                            className="flex items-center gap-1 text-xs text-primary hover:underline bg-transparent border-0 cursor-pointer"
-                        >
-                            แสดงเพิ่มเติม <ChevronRight className="w-3.5 h-3.5" />
-                        </button>
-                    )}
                 </div>
 
                 {/* Category filter tabs */}
@@ -443,8 +540,6 @@ export default function Home() {
                     ))}
                 </div>
             </section>
-
-            <Footer />
         </div>
     );
 }

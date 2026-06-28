@@ -157,7 +157,11 @@ function ConfirmModal({
                         : "Are you sure you want to close this ticket? This action cannot be undone."}
                 </p>
                 <div className="flex gap-3">
-                    <Button variant="outline" className="flex-1" onClick={onCancel}>
+                     <Button
+                        variant="outline"
+                        className="flex-1 border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 hover:text-primary transition-all duration-200"
+                        onClick={onCancel}
+                    >
                         {lang === "th" ? "ยกเลิก" : "Cancel"}
                     </Button>
                     <Button className="flex-1 bg-destructive hover:bg-destructive/90" onClick={onConfirm}>
@@ -350,7 +354,7 @@ export default function TicketDetailPage() {
                                                     className={cn("flex gap-2", isUser ? "flex-row-reverse" : "flex-row")}
                                                 >
                                                     {!isUser && (
-                                                        <div className="w-8 h-8 rounded-full bg-gradient-cyber flex items-center justify-center shrink-0 text-xs font-bold text-foreground">
+                                                        <div className="w-8 h-8 rounded-full bg-foreground flex items-center justify-center shrink-0 text-xs font-bold text-background">
                                                             S
                                                         </div>
                                                     )}
@@ -404,10 +408,10 @@ export default function TicketDetailPage() {
                                                     ? "หากต้องการสอบถามเพิ่มเติม กรุณาสร้างตั๋วใหม่"
                                                     : "If you need further assistance, please create a new ticket"}
                                             </p>
-                                            <Button
+                                             <Button
                                                 size="sm"
                                                 variant="outline"
-                                                className="mt-3"
+                                                className="mt-3 border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 hover:text-primary transition-all duration-200"
                                                 onClick={() => router.push("/support/create-ticket")}
                                             >
                                                 {lang === "th" ? "สร้างตั๋วใหม่" : "Create New Ticket"}

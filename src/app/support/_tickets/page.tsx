@@ -133,17 +133,17 @@ export default function TicketsPage() {
 
     return (
         <div className="min-h-screen pt-16 pb-24">
-                <div className="container mx-auto px-4 max-w-3xl pt-8">
+                <div className="container mx-auto px-6 max-w-5xl pt-8">
                     <main className="min-w-0">
 
                         {/* Header */}
                         <div className="flex items-center justify-between mb-6">
                             <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-xl bg-gradient-cyber flex items-center justify-center">
-                                    <Ticket className="w-5 h-5 text-foreground" />
+                                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 flex items-center justify-center">
+                                    <Ticket className="w-5 h-5" />
                                 </div>
                                 <h1 className="text-xl font-bold tracking-wide">
-                                    {lang === "th" ? "ตั๋วความช่วยเหลือ" : "TICKETS"}
+                                    {lang === "th" ? "ติดตามสถานะคำร้อง" : "HELP REQUESTS"}
                                 </h1>
                             </div>
                             <div className="flex items-center gap-2">
@@ -151,7 +151,7 @@ export default function TicketsPage() {
                                     variant="outline"
                                     size="sm"
                                     onClick={() => setSortOrder(sortOrder === "newest" ? "oldest" : "newest")}
-                                    className="gap-1.5 text-xs"
+                                    className="gap-1.5 text-xs border-primary/20 text-primary bg-primary/5 hover:bg-primary/10 hover:text-primary transition-all duration-200"
                                 >
                                     {sortOrder === "newest" ? (
                                         <SortDesc className="w-3.5 h-3.5" />
@@ -165,10 +165,10 @@ export default function TicketsPage() {
                                 <Button
                                     size="sm"
                                     onClick={() => router.push("/support/create-ticket")}
-                                    className="bg-gradient-cyber gap-1.5 text-xs"
+                                    className="bg-foreground text-background hover:bg-foreground/90 font-bold gap-1.5 text-xs transition-all duration-200"
                                 >
                                     <Plus className="w-3.5 h-3.5" />
-                                    {lang === "th" ? "สร้างตั๋ว" : "New Ticket"}
+                                    {lang === "th" ? "แจ้งปัญหา" : "Report Issue"}
                                 </Button>
                             </div>
                         </div>
@@ -180,14 +180,14 @@ export default function TicketsPage() {
                                 animate={{ opacity: 1, y: 0 }}
                                 className="glass-card rounded-2xl p-12 text-center"
                             >
-                                <div className="w-16 h-16 rounded-full bg-muted/60 flex items-center justify-center mx-auto mb-4">
-                                    <Ticket className="w-8 h-8 text-muted-foreground" />
+                                <div className="w-16 h-16 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 flex items-center justify-center mx-auto mb-4">
+                                    <Ticket className="w-8 h-8" />
                                 </div>
                                 <p className="font-medium text-foreground mb-1">
-                                    {lang === "th" ? "ยังไม่มีตั๋วความช่วยเหลือ" : "No support tickets yet"}
+                                    {lang === "th" ? "ยังไม่มีคำร้องการแจ้งปัญหา" : "No help requests yet"}
                                 </p>
                                 <p className="text-sm text-muted-foreground">
-                                    {lang === "th" ? "เมื่อคุณสร้างตั๋ว จะแสดงที่นี่" : "When you create a ticket, it will appear here"}
+                                    {lang === "th" ? "เมื่อคุณแจ้งปัญหาจะแสดงข้อมูลที่นี่" : "When you submit a request, it will appear here"}
                                 </p>
                             </motion.div>
                         ) : (

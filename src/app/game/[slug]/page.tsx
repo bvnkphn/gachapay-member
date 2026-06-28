@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/language-context";
-import { ArrowLeft, Zap, Shield, Clock, AlertCircle, CheckCircle2, ShoppingCart } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Zap, Shield, Clock, AlertCircle, CheckCircle2, ShoppingCart, ChevronLeft, Coins, QrCode, AlertTriangle, Loader2, X } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
 
 interface GamePackage {
     id: string;
@@ -60,6 +61,36 @@ export default function GameTopupPage() {
     const [couponCode, setCouponCode] = useState("");
     const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
 
+    const [paymentMethod, setPaymentMethod] = useState<"coin" | "qr">("coin");
+    const [walletBalance, setWalletBalance] = useState(0);
+    const [showWarningModal, setShowWarningModal] = useState(false);
+    const [warningText, setWarningText] = useState("");
+    const [showQrPaymentModal, setShowQrPaymentModal] = useState(false);
+    const [qrCodeUrl, setQrCodeUrl] = useState("");
+    const [paymentRef, setPaymentRef] = useState("");
+    const [currentOrderId, setCurrentOrderId] = useState<string | null>(null);
+    const [paymentChecking, setPaymentChecking] = useState(false);
+
+    const fetchBalance = useCallback(() => {
+        if (user) {
+            api.getWalletBalance()
+                .then((resData) => {
+                    setWalletBalance(parseFloat(resData?.amount ?? "0"));
+                })
+                .catch(() => {
+                    setWalletBalance(user.balance ?? 0);
+                });
+        }
+    }, [user]);
+
+    useEffect(() => {
+        fetchBalance();
+        window.addEventListener("balance-changed", fetchBalance);
+        return () => {
+            window.removeEventListener("balance-changed", fetchBalance);
+        };
+    }, [fetchBalance]);
+
     // Check if auth store has hydrated from localStorage
     useEffect(() => {
         // Give zustand time to hydrate from localStorage
@@ -73,6 +104,12 @@ export default function GameTopupPage() {
         }, 100);
         return () => clearTimeout(timer);
     }, [user]);
+
+    useEffect(() => {
+        if (hydrated && !isLoggedIn) {
+            setPaymentMethod("qr");
+        }
+    }, [hydrated, isLoggedIn]);
 
     useEffect(() => {
         const loadGame = async () => {
@@ -109,6 +146,35 @@ export default function GameTopupPage() {
         }
     }, [params.slug, t]);
 
+    // Polling status for QR code payment
+    useEffect(() => {
+        if (!showQrPaymentModal || !currentOrderId) return;
+
+        let active = true;
+        const intervalId = setInterval(async () => {
+            try {
+                const res = await api.checkPaymentStatus(currentOrderId);
+                if (res && res.success && res.status === "completed" && active) {
+                    clearInterval(intervalId);
+                    setShowQrPaymentModal(false);
+                    setSuccess(true);
+                    setOrderId(currentOrderId);
+                    window.dispatchEvent(new Event("balance-changed"));
+                    setTimeout(() => {
+                        router.push(`/history/${currentOrderId}`);
+                    }, 2000);
+                }
+            } catch (err) {
+                console.error("Checking status fail:", err);
+            }
+        }, 3000);
+
+        return () => {
+            active = false;
+            clearInterval(intervalId);
+        };
+    }, [showQrPaymentModal, currentOrderId, router]);
+
     const handleSubmit = async () => {
         // Validation
         if (!game) return;
@@ -116,42 +182,62 @@ export default function GameTopupPage() {
         // Check all required fields
         for (const field of game.fields) {
             if (field.required && !formData[field.name]?.trim()) {
-                setError(`${field.label} is required`);
+                setWarningText(`กรุณากรอกข้อมูลช่อง ${field.label} ให้เรียบร้อย`);
+                setShowWarningModal(true);
                 return;
             }
         }
 
         if (!selectedPackage) {
-            setError(t.pleaseSelectPackage);
+            setWarningText("กรุณาเลือกแพ็กเกจที่ต้องการเติมเงิน");
+            setShowWarningModal(true);
             return;
         }
 
         // Check email for guest checkout
         if (!isLoggedIn && !formData.email.trim()) {
-            setError(t.emailRequired);
+            setWarningText("กรุณากรอกอีเมลสำหรับรับใบเสร็จ");
+            setShowWarningModal(true);
             return;
         }
 
         // Basic email validation
         if (!isLoggedIn && !formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
-            setError(t.invalidEmail);
+            setWarningText("กรุณากรอกอีเมลให้ถูกต้องตามรูปแบบ");
+            setShowWarningModal(true);
             return;
+        }
+
+        // Extract UID from form data - find the field with highest priority/first required field
+        const uidValue = game.fields && game.fields.length > 0 
+            ? formData[game.fields[0].name] || formData.uid || formData.id || ""
+            : "";
+
+        if (!uidValue.trim()) {
+            setWarningText("กรุณากรอกข้อมูล UID ของเกม");
+            setShowWarningModal(true);
+            return;
+        }
+
+        const totalAmount = selectedPackage.price * (1 - (appliedCoupon?.discount ?? 0) / 100);
+
+        // Check balance for Coin payment
+        if (paymentMethod === "coin") {
+            if (!isLoggedIn) {
+                setWarningText("กรุณาเข้าสู่ระบบเพื่อสั่งซื้อด้วยคอยน์สะสม");
+                setShowWarningModal(true);
+                return;
+            }
+            if (walletBalance < totalAmount) {
+                setWarningText(`ยอดเงินคอยน์สะสมไม่เพียงพอ\n(ต้องการ ฿${totalAmount.toFixed(2)} แต่คุณมี ฿${walletBalance.toFixed(2)})\n\nกรุณาเติมเงินคอยน์ก่อนทำรายการ`);
+                setShowWarningModal(true);
+                return;
+            }
         }
 
         try {
             setSubmitting(true);
             setError(null);
-
-            // Extract UID from form data - find the field with highest priority/first required field
-            const uidValue = game.fields && game.fields.length > 0 
-                ? formData[game.fields[0].name] || formData.uid || formData.id
-                : "";
-
-            if (!uidValue) {
-                setError("Game UID is required");
-                setSubmitting(false);
-                return;
-            }
 
             // Create order via backend API with correct structure
             const orderData = {
@@ -167,25 +253,52 @@ export default function GameTopupPage() {
 
             const response = await api.createOrder(orderData);
             
-            // Response is the order object directly, not wrapped in { data: ... }
             if (response && response.id) {
-                setSuccess(true);
-                setOrderId(String(response.id));
+                const createdOrderId = String(response.id);
+                setCurrentOrderId(createdOrderId);
 
-                setTimeout(() => {
-                    if (isLoggedIn) {
-                        router.push(`/account/balance?order=${response.id}`);
+                if (paymentMethod === "coin") {
+                    // Pay with wallet balance
+                    const payResult = await api.processWalletPayment({
+                        orderId: Number(createdOrderId),
+                        amount: totalAmount,
+                        paymentMethod: "gacha_wallet"
+                    });
+
+                    if (payResult && payResult.success) {
+                        setSuccess(true);
+                        setOrderId(createdOrderId);
+                        window.dispatchEvent(new Event("balance-changed"));
+
+                        setTimeout(() => {
+                            router.push(`/history/${createdOrderId}`);
+                        }, 2000);
                     } else {
-                        router.push(`/?order=${response.id}`);
+                        throw new Error(payResult.message || "การชำระเงินด้วยคอยน์สะสมล้มเหลว");
                     }
-                }, 2000);
+                } else {
+                    // Pay with QR Code
+                    const qrResult = await api.generateQRCode({
+                        orderId: Number(createdOrderId),
+                        amount: totalAmount,
+                        method: "promptpay"
+                    });
+
+                    if (qrResult && qrResult.success) {
+                        setQrCodeUrl(qrResult.data.qrCode);
+                        setPaymentRef(qrResult.data.referenceNumber);
+                        setShowQrPaymentModal(true);
+                    } else {
+                        throw new Error(qrResult.message || "ไม่สามารถสร้าง QR Code สแกนจ่ายได้");
+                    }
+                }
             } else {
                 console.error("Unexpected response structure:", response);
                 throw new Error("Invalid response from server");
             }
         } catch (err) {
             setError(err instanceof Error ? err.message : t.failedCreateOrder || "Failed to create order");
-            console.error("Order creation error:", err);
+            console.error("Order payment execution error:", err);
         } finally {
             setSubmitting(false);
         }
@@ -240,122 +353,69 @@ export default function GameTopupPage() {
         );
     }
 
-    if (success) {
-        return (
-            <div className="min-h-screen flex items-center justify-center pb-20">
-                <div className="container mx-auto px-4">
-                    <Card className="glass-card p-8 max-w-md mx-auto text-center">
-                        <div className="mb-6">
-                            <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                                <CheckCircle2 className="w-8 h-8 text-green-500" />
-                            </div>
-                            <h2 className="text-2xl font-bold mb-2">{t.Success}</h2>
-                            <p className="text-muted-foreground">{t.orderCreatedSuccess}</p>
-                        </div>
 
-                        <div className="bg-primary/10 rounded-lg p-4 mb-6 text-left">
-                            <p className="text-sm text-muted-foreground mb-2">Order ID:</p>
-                            <p className="font-mono font-bold">{orderId}</p>
-                        </div>
-
-                        <Button asChild className="w-full">
-                            <Link href="/account/balance">{t.goToAccount}</Link>
-                        </Button>
-                    </Card>
-                </div>
-            </div>
-        );
-    }
 
     return (
-        <div className="min-h-screen pb-20 bg-gradient-to-b from-card via-background to-background">
-            {/* Header */}
-            <div className="sticky top-0 z-40 bg-card/80 backdrop-blur-md border-b border-border/50">
-                <div className="container mx-auto px-4 py-4 flex items-center gap-3">
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.back()}
-                        className="hover:bg-primary/10"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                    </Button>
-                    <h1 className="text-lg font-semibold">{game.name}</h1>
-                </div>
-            </div>
-
+        <div className="min-h-screen pb-20 bg-background text-foreground animate-in fade-in duration-300">
             {/* Main Content */}
-            <div className="container mx-auto px-4 pt-6">
+            <div className="container mx-auto px-6 max-w-5xl pt-8">
+                {/* Back Button & Title */}
+                <div className="flex items-center gap-3 mb-6">
+                    <button 
+                        onClick={() => router.back()}
+                        className="flex items-center justify-center w-9 h-9 rounded-xl border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-sm shrink-0"
+                        aria-label="Back"
+                    >
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <h1 className="text-xl font-black text-foreground">{game.name}</h1>
+                </div>
+
                 {/* Error Message */}
                 {error && (
-                    <Card className="glass-card p-4 mb-6 border border-red-500/30 bg-red-500/5">
+                    <div className="glass-card rounded-2xl p-4 mb-6 border border-red-500/30 bg-red-500/5">
                         <div className="flex gap-3 items-start">
                             <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
                             <p className="text-sm text-red-500">{error}</p>
                         </div>
-                    </Card>
+                    </div>
                 )}
+
+                {/* Full-width Game Header Banner */}
+                <div className="glass-card rounded-2xl overflow-hidden mb-6">
+                    <div className="relative h-64 md:h-80 w-full overflow-hidden bg-muted">
+                        {game.image ? (
+                            <Image
+                                src={game.image}
+                                alt={game.name}
+                                fill
+                                className="object-cover"
+                                onError={(e) => {
+                                    (e.target as HTMLImageElement).src = "/placeholder.svg";
+                                }}
+                            />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-muted-foreground">
+                                No Image
+                            </div>
+                        )}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+                    </div>
+                    <div className="p-6">
+                        <h1 className="text-3xl font-bold mb-2">{game.name}</h1>
+                        <p className="text-muted-foreground">{game.description}</p>
+                    </div>
+                </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                     {/* Left Column - Game Info */}
                     <div className="lg:col-span-2">
-                        {/* Game Header */}
-                        <Card className="glass-card p-6 mb-6">
-                            <div className="relative h-48 mb-6 rounded-lg overflow-hidden bg-muted">
-                                {game.image ? (
-                                    <Image
-                                        src={game.image}
-                                        alt={game.name}
-                                        fill
-                                        className="object-cover"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).src = "/placeholder.svg";
-                                        }}
-                                    />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-muted-foreground">
-                                        No Image
-                                    </div>
-                                )}
-                                <div className="absolute inset-0 bg-gradient-to-t from-card via-transparent to-transparent" />
-
-                                {game.label !== "NONE" && (
-                                    <div className="absolute top-4 right-4">
-                                        <Badge className="bg-gradient-to-r from-primary to-secondary text-primary-foreground">
-                                            {game.label}
-                                        </Badge>
-                                    </div>
-                                )}
-                            </div>
-
-                            <h1 className="text-3xl font-bold mb-2">{game.name}</h1>
-                            <p className="text-muted-foreground mb-6">{game.description}</p>
-
-                            {/* Features */}
-                            <div className="grid grid-cols-3 gap-3">
-                                <div className="bg-primary/10 rounded-lg p-3 text-center">
-                                    <Zap className="w-5 h-5 mx-auto text-primary mb-1" />
-                                    <p className="text-xs text-muted-foreground">Quick</p>
-                                </div>
-                                <div className="bg-primary/10 rounded-lg p-3 text-center">
-                                    <Shield className="w-5 h-5 mx-auto text-primary mb-1" />
-                                    <p className="text-xs text-muted-foreground">Safe</p>
-                                </div>
-                                <div className="bg-primary/10 rounded-lg p-3 text-center">
-                                    <Clock className="w-5 h-5 mx-auto text-primary mb-1" />
-                                    <p className="text-xs text-muted-foreground">24/7</p>
-                                </div>
-                            </div>
-                        </Card>
-
                         {/* User Inputs Section */}
-                        <Card className="glass-card p-6 mb-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-bold text-sm">
-                                    1
-                                </div>
-                                <h2 className="text-lg font-bold">{t.Topupinfo}</h2>
-                            </div>
+                        <div className="glass-card rounded-2xl p-6 mb-6">
+                            <p className="text-xs font-bold text-muted-foreground flex items-center gap-2 mb-4 select-none">
+                                <span className="w-5 h-5 rounded-full bg-primary/20 text-primary text-[10px] flex items-center justify-center font-bold shrink-0">1</span>
+                                {t.Topupinfo}
+                            </p>
                             {game.fields && game.fields.length > 0 ? (
                                 <div className={`grid gap-4 ${game.fields.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                                     {game.fields.map((field) => (
@@ -365,92 +425,99 @@ export default function GameTopupPage() {
                                                 {field.required && <span className="text-red-500">*</span>}
                                             </label>
                                             <div className="relative">
-                                                <Input
-                                                    type={field.type || "text"}
-                                                    placeholder={field.placeholder}
-                                                    value={formData[field.name] || ""}
-                                                    onChange={(e) => {
-                                                        setFormData({ ...formData, [field.name]: e.target.value });
-                                                        if (error) setError(null);
-                                                    }}
-                                                    className="glass-input"
-                                                    disabled={submitting}
-                                                    list={field.options && field.options.length > 0 ? `options-${field.name}` : undefined}
-                                                />
-                                                {field.options && field.options.length > 0 && (
-                                                    <datalist id={`options-${field.name}`}>
+                                                {field.options && field.options.length > 0 ? (
+                                                    <select
+                                                        value={formData[field.name] || ""}
+                                                        onChange={(e) => {
+                                                            setFormData({ ...formData, [field.name]: e.target.value });
+                                                            if (error) setError(null);
+                                                        }}
+                                                        className="w-full bg-muted/30 border border-border/50 rounded-xl px-3 py-2 text-sm text-foreground focus:border-primary/60 focus:ring-primary/20 bg-background/20 backdrop-blur-sm cursor-pointer h-10 transition-all"
+                                                        disabled={submitting}
+                                                    >
+                                                        <option value="" disabled className="bg-background text-foreground">
+                                                            {field.placeholder || `เลือก ${field.label}`}
+                                                        </option>
                                                         {field.options.map((opt) => (
-                                                            <option key={opt.value} value={opt.value} label={opt.label} />
+                                                            <option 
+                                                                key={opt.value} 
+                                                                value={opt.value}
+                                                                className="bg-background text-foreground"
+                                                            >
+                                                                {opt.label || opt.value}
+                                                            </option>
                                                         ))}
-                                                    </datalist>
+                                                    </select>
+                                                ) : (
+                                                    <Input
+                                                        type={field.type || "text"}
+                                                        placeholder={field.placeholder}
+                                                        value={formData[field.name] || ""}
+                                                        onChange={(e) => {
+                                                            const cleanValue = e.target.value.replace(/[^a-zA-Z0-9]/g, "");
+                                                            setFormData({ ...formData, [field.name]: cleanValue });
+                                                            if (error) setError(null);
+                                                        }}
+                                                        className="bg-muted/30 border-border/50 text-foreground focus:border-primary/60 focus:ring-primary/20"
+                                                        disabled={submitting}
+                                                    />
                                                 )}
                                             </div>
                                         </div>
-                                        
                                     ))}
                                 </div>
                             ) : (
                                 <p className="text-muted-foreground text-sm">{t.noFieldsRequired || "No additional information required"}</p>
                             )}
-                        </Card>
+                        </div>
 
                         {/* Packages Grid */}
-                        <Card className="glass-card p-6 mb-6">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-bold text-sm">
-                                    2
-                                </div>
-                                <h2 className="text-lg font-bold">{t.Choosepackage}</h2>
-                            </div>
+                        <div className="glass-card rounded-2xl p-6 mb-6">
+                            <p className="text-xs font-bold text-muted-foreground flex items-center gap-2 mb-4 select-none">
+                                <span className="w-5 h-5 rounded-full bg-primary/20 text-primary text-[10px] flex items-center justify-center font-bold shrink-0">2</span>
+                                {t.Choosepackage}
+                            </p>
                             {game.packages && game.packages.length > 0 ? (
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                    {game.packages.map((pkg) => (
-                                        <div
-                                            key={pkg.id}
-                                            className="cursor-pointer group"
-                                            onClick={() => {
-                                                setSelectedPackage(pkg);
-                                                if (error) setError(null);
-                                            }}
-                                        >
-                                            <Card
-                                                className="p-3 h-full transition-all duration-300 hover:glow-primary border-2 rounded-lg"
-                                                style={{
-                                                    background: "rgba(100, 50, 255, 0.1)",
-                                                    borderColor:
-                                                        selectedPackage?.id === pkg.id
-                                                            ? "hsl(var(--primary))"
-                                                            : "rgba(100, 50, 255, 0.3)",
-                                                    backgroundColor:
-                                                        selectedPackage?.id === pkg.id
-                                                            ? "rgba(100, 50, 255, 0.2)"
-                                                            : "rgba(100, 50, 255, 0.1)",
+                                    {game.packages.map((pkg) => {
+                                        const selected = selectedPackage?.id === pkg.id;
+                                        return (
+                                            <div
+                                                key={pkg.id}
+                                                className="cursor-pointer group"
+                                                onClick={() => {
+                                                    setSelectedPackage(pkg);
+                                                    if (error) setError(null);
                                                 }}
                                             >
-                                                <div className="mb-2">
-                                                    <p className="text-xs text-muted-foreground font-medium">{pkg.name}</p>
-                                                    <p className="text-sm font-bold text-foreground line-clamp-2">
-                                                        {pkg.count}
-                                                    </p>
+                                                <div
+                                                    className={`p-3 h-full rounded-2xl transition-all duration-300 border ${selected ? "border-primary/70 bg-primary/10 shadow-[0_0_25px_rgba(56,189,248,0.16)]" : "border-border/30 bg-muted/30 hover:border-primary/50 hover:bg-muted/40"}`}
+                                                >
+                                                    <div className="mb-3">
+                                                        <p className="text-xs text-muted-foreground font-medium">{pkg.name}</p>
+                                                        <p className="text-sm font-bold text-foreground line-clamp-2">
+                                                            {pkg.count}
+                                                        </p>
+                                                    </div>
+                                                    <div className="pt-3 border-t border-border/20">
+                                                        <p className="text-lg font-bold text-primary">
+                                                            ฿ {pkg.price.toFixed(2)}
+                                                        </p>
+                                                    </div>
                                                 </div>
-                                                <div className="pt-2 border-t border-border/50">
-                                                    <p className="text-lg font-bold text-primary">
-                                                        ฿ {pkg.price.toFixed(2)}
-                                                    </p>
                                             </div>
-                                        </Card>
-                                    </div>
-                                ))}
+                                        );
+                                    })}
                                 </div>
                             ) : (
                                 <p className="text-muted-foreground text-sm">{t.noPackages || "No packages available"}</p>
                             )}
-                        </Card>
+                        </div>
                     </div>
 
                     {/* Right Column - Order Form (Sticky) */}
                     <div className="lg:col-span-1">
-                        <Card className="glass-card p-6 sticky top-24">
+                        <div className="glass-card rounded-2xl p-6 sticky top-24">
                             <div className="mb-4 pb-4 border-b border-border/50">
                                 <p className="text-xs text-muted-foreground">{t.orderType}</p>
                                 <p className="text-sm font-semibold">
@@ -475,6 +542,45 @@ export default function GameTopupPage() {
                                 )}
                             </div>
 
+                            {/* Payment Method Selection */}
+                            <div className="mb-6 pb-6 border-b border-border/50">
+                                <p className="text-xs font-bold text-muted-foreground flex items-center gap-2 mb-4 select-none">
+                                    <span className="w-5 h-5 rounded-full bg-primary/20 text-primary text-[10px] flex items-center justify-center font-bold shrink-0">3</span>
+                                    วิธีการชำระเงิน (Payment Method)
+                                </p>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button
+                                        type="button"
+                                        disabled={!isLoggedIn}
+                                        onClick={() => setPaymentMethod("coin")}
+                                        className={cn(
+                                            "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all select-none",
+                                            !isLoggedIn
+                                                ? "opacity-50 cursor-not-allowed border-border/20 bg-muted/10 text-muted-foreground"
+                                                : paymentMethod === "coin"
+                                                    ? "border-primary bg-primary/10 text-primary font-bold cursor-pointer"
+                                                    : "border-border/30 hover:border-primary/50 text-muted-foreground cursor-pointer"
+                                        )}
+                                    >
+                                        <Coins className="w-5 h-5 mb-1 text-amber-500 fill-current" />
+                                        <span className="text-[11px]">Coin (฿{walletBalance.toFixed(2)})</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setPaymentMethod("qr")}
+                                        className={cn(
+                                            "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all cursor-pointer select-none",
+                                            paymentMethod === "qr"
+                                                ? "border-primary bg-primary/10 text-primary font-bold"
+                                                : "border-border/30 hover:border-primary/50 text-muted-foreground"
+                                        )}
+                                    >
+                                        <QrCode className="w-5 h-5 mb-1 text-primary" />
+                                        <span className="text-[11px]">QR Code</span>
+                                    </button>
+                                </div>
+                            </div>
+
                             {/* Coupon Section */}
                             <div className="mb-6 pb-6 border-b border-border/50">
                                 <p className="text-sm font-semibold mb-3">{t.discountCoupon}</p>
@@ -490,7 +596,8 @@ export default function GameTopupPage() {
                                     <Button
                                         onClick={handleApplyCoupon}
                                         disabled={submitting || !couponCode.trim()}
-                                        className="px-4 bg-primary hover:bg-primary/90 text-sm"
+                                        variant="outline"
+                                        className="px-4 border border-primary/30 hover:bg-primary/10 text-primary text-sm font-semibold rounded-xl transition-all cursor-pointer"
                                     >
                                         {t.useCoupon}
                                     </Button>
@@ -503,15 +610,11 @@ export default function GameTopupPage() {
                                 <p className="text-xs text-muted-foreground mt-2">{t.tryCoupons}</p>
                             </div>
 
-                            <h2 className="text-lg font-bold mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-gradient-to-r from-primary to-secondary flex items-center justify-center text-white font-bold text-sm">
-                                        3
-                                    </div>
-                                    {t.orderSummary}
-                                </div>
-                            </h2>
-                            <div className="bg-primary/10 rounded-lg p-4 mb-6">
+                            <p className="text-xs font-bold text-muted-foreground flex items-center gap-2 mb-4 select-none">
+                                <span className="w-5 h-5 rounded-full bg-primary/20 text-primary text-[10px] flex items-center justify-center font-bold shrink-0">4</span>
+                                {t.orderSummary}
+                            </p>
+                            <div className="bg-muted/20 rounded-2xl p-4 mb-6 border border-border/30">
                                 <p className="text-xs text-muted-foreground mb-1">{t.selectedPackage}</p>
                                 <p className="font-bold text-foreground">
                                     {selectedPackage ? selectedPackage.count : t.noSelection}
@@ -566,17 +669,17 @@ export default function GameTopupPage() {
                             <Button
                                 onClick={handleSubmit}
                                 disabled={submitting || !selectedPackage}
-                                className="w-full bg-gradient-cyber hover:opacity-90 h-12 font-bold"
+                                className="w-full bg-primary hover:bg-primary/95 text-white h-12 font-bold rounded-xl transition-all cursor-pointer shadow-md hover:shadow-lg active:scale-[0.98]"
                             >
                                 {submitting ? (
                                     <>
-                                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
                                         {t.processing}
                                     </>
                                 ) : (
                                     <>
-                                        {t.orderButton}
-                                        <ShoppingCart className="w-5 h-5 ml-2" />
+                                        <ShoppingCart className="w-5 h-5 mr-2" />
+                                        สั่งซื้อ
                                     </>
                                 )}
                             </Button>
@@ -584,10 +687,127 @@ export default function GameTopupPage() {
                             <p className="text-xs text-center text-muted-foreground mt-4">
                                 {t.selectPackageHint}
                             </p>
-                        </Card>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {/* Warning Modal */}
+            {showWarningModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-background rounded-2xl w-full max-w-sm shadow-2xl border border-border/40 p-6 flex flex-col items-center text-center">
+                        <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center mb-4 text-amber-500">
+                            <AlertTriangle className="w-6 h-6" />
+                        </div>
+                        <h3 className="text-lg font-bold text-foreground mb-2">แจ้งเตือน (Warning)</h3>
+                        <p className="text-sm text-muted-foreground mb-6 whitespace-pre-line leading-relaxed">{warningText}</p>
+                        <Button 
+                            onClick={() => setShowWarningModal(false)}
+                            className="w-full font-semibold cursor-pointer rounded-xl"
+                        >
+                            ตกลง (OK)
+                        </Button>
+                    </div>
+                </div>
+            )}
+
+            {/* QR Code Payment Modal */}
+            {showQrPaymentModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-background rounded-2xl w-full max-w-sm shadow-2xl border border-border/40 overflow-hidden relative">
+                        {/* Status bar */}
+                        <div className="h-1 w-full bg-amber-500 animate-pulse" />
+                        
+                        <button
+                            disabled={paymentChecking}
+                            onClick={() => setShowQrPaymentModal(false)}
+                            className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        >
+                            <X className="w-4.5 h-4.5" />
+                        </button>
+
+                        <div className="p-6 flex flex-col items-center text-center">
+                            <h3 className="text-base font-bold text-foreground mb-1">สแกนชำระเงินเพื่อเติมเกม</h3>
+                            <p className="text-xs text-muted-foreground mb-6">กรุณาสแกน QR Code ด้วยแอปธนาคารของคุณ</p>
+
+                            {/* QR Code Container */}
+                            <div className="bg-white p-4 rounded-2xl shadow-sm border border-border/20 mb-4 flex items-center justify-center w-48 h-48 relative">
+                                {qrCodeUrl ? (
+                                    <img src={qrCodeUrl} alt="PromptPay QR Code" className="w-full h-full object-contain" />
+                                ) : (
+                                    <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                                )}
+                            </div>
+
+                            <p className="text-xs text-muted-foreground font-mono bg-muted/40 px-3 py-1 rounded-full mb-6">
+                                Ref: {paymentRef || "-"}
+                            </p>
+
+                            <div className="w-full space-y-3">
+                                <div className="flex justify-between text-xs text-muted-foreground border-b border-border/20 pb-2">
+                                    <span>ยอดชำระ:</span>
+                                    <span className="font-bold text-primary">
+                                        ฿ {selectedPackage ? (selectedPackage.price * (1 - (appliedCoupon?.discount ?? 0) / 100)).toFixed(2) : "0.00"}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between text-xs text-muted-foreground">
+                                    <span>สถานะ:</span>
+                                    <span className="flex items-center gap-1.5 font-semibold text-amber-500 animate-pulse">
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                        รอการชำระเงิน...
+                                    </span>
+                                </div>
+                            </div>
+
+                            {/* Dev simulate button */}
+                            <Button
+                                onClick={async () => {
+                                    if (!paymentRef || !currentOrderId) return;
+                                    try {
+                                        setPaymentChecking(true);
+                                        await api.simulateTopupComplete(paymentRef);
+                                    } catch (err) {
+                                        console.error("Simulation error:", err);
+                                    } finally {
+                                        setPaymentChecking(false);
+                                    }
+                                }}
+                                disabled={paymentChecking}
+                                variant="outline"
+                                className="w-full mt-6 text-xs border-dashed border-primary/30 text-primary hover:bg-primary/5 cursor-pointer font-bold rounded-xl"
+                            >
+                                {paymentChecking ? "กำลังตรวจสอบ..." : "จำลองการชำระเงินสำเร็จ (Simulate Success)"}
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Success Popup Modal */}
+            {success && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-background rounded-2xl w-full max-w-sm shadow-2xl border border-border/40 p-6 flex flex-col items-center text-center">
+                        <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mb-4 text-emerald-500">
+                            <CheckCircle2 className="w-10 h-10" />
+                        </div>
+                        <h3 className="text-xl font-bold text-foreground mb-2">ทำรายการเสร็จสิ้น</h3>
+                        <p className="text-sm text-muted-foreground mb-6">
+                            ทำรายการสำเร็จ ระบบได้ทำการบันทึกและจัดเก็บประวัติการสั่งซื้อของท่านเรียบร้อยแล้ว
+                        </p>
+                        <div className="bg-muted/40 rounded-xl px-4 py-2 w-full mb-6 text-xs text-muted-foreground text-left font-mono border border-border/30">
+                            <span className="font-semibold text-foreground">Order ID:</span> {orderId}
+                        </div>
+                        <Button 
+                            onClick={() => {
+                                router.push(`/history/${orderId}`);
+                            }}
+                            className="w-full font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors cursor-pointer"
+                        >
+                            ดูประวัติการสั่งซื้อ (View History)
+                        </Button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

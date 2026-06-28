@@ -18,7 +18,7 @@ import { useTheme } from "next-themes";
 export default function LoginPage() {
     const router = useRouter();
     const { setAuth } = useAuth();
-    const { lang, t } = useLanguage();
+    const { lang, t, translateError } = useLanguage();
     const { setTheme, resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
     const [email, setEmail] = useState("");
@@ -54,7 +54,7 @@ export default function LoginPage() {
             toast.success(t.success);
             router.push("/");
         } catch (error: any) {
-            toast.error(error.message || t.errorLogin);
+            toast.error(translateError(error.message));
         } finally {
             setIsLoading(false);
         }
@@ -69,7 +69,7 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 relative">
+        <div className="min-h-screen flex items-center justify-center px-4 py-12 relative">
             {/* Theme Toggle Button */}
             <div className="fixed top-4 right-4 z-50">
                 <button

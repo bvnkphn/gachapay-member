@@ -32,7 +32,7 @@ const Footer = () => {
             <div className="flex flex-col items-center md:items-start gap-1.5 text-xs text-muted-foreground">
               <Link href="/" className="hover:text-primary transition-colors">หน้าหลัก</Link>
               <Link href="/#all-games" className="hover:text-primary transition-colors">บริการเติมเกมทั้งหมด</Link>
-              <Link href="/account/balance" className="hover:text-primary transition-colors">เติมเงินเข้าวอลเล็ท</Link>
+              <Link href="/balance" className="hover:text-primary transition-colors">เติมเงินเข้าวอลเล็ท</Link>
             </div>
           </div>
 

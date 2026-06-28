@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { useTheme } from "next-themes";
+import { useLanguage } from "@/components/language-context";
 
 function ResetPasswordContent() {
     const router = useRouter();
@@ -18,6 +19,7 @@ function ResetPasswordContent() {
     const emailParam = searchParams.get("email");
 
     const { setTheme, resolvedTheme } = useTheme();
+    const { translateError } = useLanguage();
     const [mounted, setMounted] = useState(false);
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
@@ -90,7 +92,7 @@ function ResetPasswordContent() {
             sessionStorage.removeItem("otp_data");
             router.push("/login");
         } catch (error: any) {
-            toast.error(error.message || "รีเซ็ตรหัสผ่านไม่สำเร็จ");
+            toast.error(translateError(error.message));
             // If OTP is invalid, redirect back to forgot-password
             if (error.message?.includes("OTP") || error.message?.includes("expired")) {
                 sessionStorage.removeItem("otp_data");
@@ -106,7 +108,7 @@ function ResetPasswordContent() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 relative">
+        <div className="min-h-screen flex items-center justify-center px-4 py-12 relative">
             {/* Theme Toggle Button */}
             <div className="fixed top-4 right-4 z-50">
                 <button
@@ -188,7 +190,7 @@ function ResetPasswordContent() {
                             </div>
 
                             {password && (
-                                <div className="space-y-2 p-3 rounded-lg bg-muted/30 border border-border/50">
+                                <div className="mt-4 space-y-2 p-3 rounded-lg bg-muted/30 border border-border/50">
                                     <p className="text-xs font-medium text-muted-foreground mb-2">รหัสผ่านต้องมี:</p>
                                     <div className="space-y-1">
                                         <PasswordCheck checked={passwordChecks.length} text="อย่างน้อย 8 ตัวอักษร" />
@@ -241,19 +243,18 @@ export default function ResetPasswordPage() {
 function PasswordCheck({ checked, text }: { checked: boolean; text: string }) {
     return (
         <div
-            className={`flex items-center gap-2 text-xs transition-all duration-300 ${checked ? "opacity-100" : "text-muted-foreground opacity-70"
-                }`}
-            style={{ color: checked ? "#26FF95" : undefined }}
+            className={`flex items-center gap-2 text-xs transition-all duration-300 ${
+                checked 
+                    ? "text-green-600 dark:text-green-400 font-medium opacity-100" 
+                    : "text-muted-foreground opacity-70"
+            }`}
         >
             {checked ? (
-                <Check
-                    className="w-3.5 h-3.5"
-                    style={{ filter: "drop-shadow(0 0 2px #26FF95)" }}
-                />
+                <Check className="w-3.5 h-3.5 drop-shadow-[0_0_2px_rgba(22,163,74,0.3)] dark:drop-shadow-[0_0_4px_rgba(74,222,128,0.5)]" />
             ) : (
                 <X className="w-3.5 h-3.5 opacity-50" />
             )}
-            <span className={checked ? "font-medium" : ""}>
+            <span>
                 {text}
             </span>
         </div>

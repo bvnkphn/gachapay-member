@@ -51,7 +51,7 @@ const MOCK_BANNERS: Banner[] = [
     image: '/banner_cashback.png',
     title: 'CYBERPAY CASHBACK',
     description: 'รับเงินคืนสะสมสูงสุด 10% ทุกการเติมเงินผ่านวอลเล็ท!',
-    redirectUrl: '/account/balance',
+    redirectUrl: '/balance',
     order: 3,
     isActive: true,
     createdAt: new Date().toISOString(),
@@ -170,20 +170,9 @@ export default function BannerSlider() {
 
       {/* Banner slider */}
       {!loading && banners.length > 0 && (
-        <div className="w-full relative flex flex-col items-center group/slider">
-          {/* Cyberpunk Neon Glow Backdrop */}
-          <div className="absolute inset-0 -z-10 flex items-center justify-center pointer-events-none opacity-40 dark:opacity-60 select-none transition-all duration-1000">
-            <div 
-              className={cn(
-                "absolute w-[80%] h-[75%] bg-gradient-to-b blur-[80px] sm:blur-[120px] rounded-full transition-all duration-1000 animate-pulse",
-                banners[index] ? getGlowStyles(banners[index].uuid || banners[index].id) : 'from-primary/25 via-secondary/15 to-transparent'
-              )} 
-              style={{ animationDuration: '6s' }} 
-            />
-          </div>
-
+        <div className="w-full relative flex flex-col items-center group/slider px-4 overflow-hidden">
           <div
-            className="relative w-full max-w-7xl h-48 sm:h-72 md:h-[24rem] lg:h-[28rem] overflow-hidden flex items-center justify-center select-none"
+            className="relative w-full h-48 sm:h-72 md:h-[24rem] lg:h-[28rem] flex items-center justify-center select-none"
             onPointerDown={onPointerDown}
             onPointerUp={onPointerUp}
           >
@@ -197,6 +186,9 @@ export default function BannerSlider() {
                   ? "right"
                   : "hidden"
 
+              const isFirstBanner = i === 0
+              const isLastBanner = i === banners.length - 1
+
               return (
                 <div
                   key={banner.uuid}
@@ -206,24 +198,26 @@ export default function BannerSlider() {
                     }
                   }}
                   className={cn(
-                    "absolute overflow-hidden border rounded-2xl select-none transition-all cursor-pointer group",
+                    "absolute overflow-hidden border select-none transition-all cursor-pointer group",
                     position === "center"
-                      ? "border-border/40 hover:border-primary/60 shadow-[0_12px_40px_rgba(0,0,0,0.6)] hover:shadow-[0_20px_50px_rgba(6,182,212,0.25)] hover:-translate-y-1.5 duration-500"
-                      : "border-border/10 opacity-0 pointer-events-none"
+                      ? "border-border/40 hover:border-primary/60 shadow-[0_12px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_12px_40px_rgba(0,0,0,0.6)] hover:shadow-[0_20px_40px_rgba(6,182,212,0.15)] dark:hover:shadow-[0_20px_50px_rgba(6,182,212,0.25)] hover:-translate-y-1.5 duration-500 rounded-2xl"
+                      : "border-border/20",
+                    position === "hidden" && "opacity-0 pointer-events-none",
+                    (isFirstBanner || isLastBanner) && "rounded-2xl"
                   )}
                   style={{
-                    width: "100%",
+                    width: "85%",
                     height: "100%",
                     transform:
                       position === "center"
                         ? "scale(1) translateX(0)"
                         : position === "left"
-                        ? "scale(0.95) translateX(-100%)"
+                        ? "scale(0.85) translateX(-35%)"
                         : position === "right"
-                        ? "scale(0.95) translateX(100%)"
-                        : "scale(0.9)",
-                    opacity: position === "center" ? 1 : 0,
-                    zIndex: position === "center" ? 10 : 5,
+                        ? "scale(0.85) translateX(35%)"
+                        : "scale(0.75)",
+                    opacity: position === "center" ? 1 : position === "hidden" ? 0 : 0.5,
+                    zIndex: position === "center" ? 10 : position === "left" ? 8 : position === "right" ? 8 : 5,
                     transition: "all 0.7s cubic-bezier(0.16, 1, 0.3, 1)",
                   }}
                 >

@@ -14,20 +14,21 @@ export function AccountSidebar() {
     const { logout } = useAuth();
     const { open } = useSidebar();
 
-    // Only show on account/tickets pages
+    // Only show on account, balance, invite, vip-tier, history pages
     const shouldShow =
         pathname.startsWith("/account") ||
-        pathname.startsWith("/support/tickets") ||
+        pathname === "/balance" ||
+        pathname === "/invite" ||
+        pathname === "/vip-tier" ||
         pathname.startsWith("/history");
 
     if (!shouldShow) return null;
 
     const items = [
         { icon: User, label: t.myAccount, path: "/account" },
-        { icon: Wallet, label: t.sidebarBalance, path: "/account/balance" },
+        { icon: Wallet, label: t.sidebarBalance, path: "/balance" },
         { icon: ShoppingCart, label: t.sidebarOrders, path: "/history" },
-        { icon: Ticket, label: t.sidebarTickets, path: "/support/tickets" },
-        { icon: Crown, label: t.vipPrivileges, path: "/account/vip-tier" },
+        { icon: Crown, label: t.vipPrivileges, path: "/vip-tier" },
         { icon: Settings, label: t.accountSettings, path: "/account/settings" },
     ];
 
@@ -50,9 +51,7 @@ export function AccountSidebar() {
                         pathname === item.path ||
                         (item.path === "/account" &&
                             pathname.startsWith("/account") &&
-                            pathname !== "/account/vip-tier" &&
-                            pathname !== "/account/settings" &&
-                            pathname !== "/account/balance") ||
+                            pathname !== "/account/settings") ||
                         (item.path === "/history" && pathname.startsWith("/history"));
                     return (
                         <button

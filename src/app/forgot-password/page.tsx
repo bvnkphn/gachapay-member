@@ -10,9 +10,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { useTheme } from "next-themes";
+import { useLanguage } from "@/components/language-context";
 
 export default function ForgotPasswordPage() {
     const { setTheme, resolvedTheme } = useTheme();
+    const { translateError } = useLanguage();
     const [mounted, setMounted] = useState(false);
     const [email, setEmail] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +37,7 @@ export default function ForgotPasswordPage() {
             setSent(true);
             toast.success("ส่งรหัส OTP ไปยังอีเมลแล้ว");
         } catch (error: any) {
-            toast.error(error.message || "เกิดข้อผิดพลาด");
+            toast.error(translateError(error.message));
         } finally {
             setIsLoading(false);
         }
@@ -43,7 +45,7 @@ export default function ForgotPasswordPage() {
 
     if (sent) {
         return (
-            <div className="min-h-screen flex items-center justify-center px-4 relative">
+            <div className="min-h-screen flex items-center justify-center px-4 py-12 relative">
                 {/* Theme Toggle Button */}
                 <div className="fixed top-4 right-4 z-50">
                     <button
@@ -107,7 +109,7 @@ export default function ForgotPasswordPage() {
     }
 
     return (
-        <div className="min-h-screen flex items-center justify-center px-4 relative">
+        <div className="min-h-screen flex items-center justify-center px-4 py-12 relative">
             {/* Theme Toggle Button */}
             <div className="fixed top-4 right-4 z-50">
                 <button

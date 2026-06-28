@@ -121,4 +121,12 @@ export const api = {
         apiRequest(`/topup/${referenceId}/complete`, { method: "PATCH" }),
     simulateTopupCancel: (referenceId: string) =>
         apiRequest(`/topup/${referenceId}/cancel`, { method: "PATCH" }),
+    claimGachaReward: (amount: number) =>
+        apiRequest("/wallets/me/gacha-claim", { method: "POST", body: JSON.stringify({ amount }) }),
+    processWalletPayment: (data: { orderId: number; amount: number; paymentMethod: string }) =>
+        apiRequest("/payments/process-wallet-payment", { method: "POST", body: JSON.stringify(data) }),
+    generateQRCode: (data: { orderId: number; amount: number; method: "promptpay" | "truemoney" }) =>
+        apiRequest("/payments/generate-qr", { method: "POST", body: JSON.stringify(data) }),
+    checkPaymentStatus: (orderId: string) =>
+        apiRequest(`/payments/check-status?orderId=${orderId}`),
 };

@@ -151,6 +151,9 @@ export default function PaymentPage({
                 ...prev,
                 step: 'success',
             }));
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new Event('balance-changed'));
+            }
             if (onPaymentSuccess) {
                 onPaymentSuccess(orderId);
             }

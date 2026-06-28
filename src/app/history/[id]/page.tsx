@@ -10,10 +10,10 @@ import { ChevronLeft, CheckCircle, XCircle, AlertTriangle, CreditCard, Clock, Lo
 import { cn } from "@/lib/utils";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: any }> = {
-    COMPLETED: { label: "จัดการคำสั่งซื้อแล้ว", color: "text-green-400", bg: "bg-green-500/20", icon: CheckCircle },
-    PARTIAL_PAYMENT: { label: "ชำระเงินไม่ครบ", color: "text-red-400", bg: "bg-red-500/20", icon: XCircle },
-    PENDING: { label: "รอดำเนินการ", color: "text-yellow-400", bg: "bg-yellow-500/20", icon: Clock },
-    CANCELLED: { label: "ยกเลิกรายการ", color: "text-gray-400", bg: "bg-gray-500/20", icon: XCircle },
+    COMPLETED: { label: "จัดการคำสั่งซื้อแล้ว", color: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-500/10 dark:bg-emerald-400/10", icon: CheckCircle },
+    PARTIAL_PAYMENT: { label: "ชำระเงินไม่ครบ", color: "text-rose-600 dark:text-rose-400", bg: "bg-rose-500/10 dark:bg-rose-400/10", icon: XCircle },
+    PENDING: { label: "รอดำเนินการ", color: "text-amber-600 dark:text-amber-400", bg: "bg-amber-500/10 dark:bg-amber-400/10", icon: Clock },
+    CANCELLED: { label: "ยกเลิกรายการ", color: "text-slate-600 dark:text-slate-400", bg: "bg-slate-500/10 dark:bg-slate-400/10", icon: XCircle },
 };
 
 export default function OrderDetailPage() {

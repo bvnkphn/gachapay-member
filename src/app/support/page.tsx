@@ -11,6 +11,7 @@ import {
     ExternalLink,
     PlayCircle,
     Ticket,
+    ChevronLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -52,20 +53,31 @@ export default function SupportPage() {
 
     return (
         <div className="min-h-screen pt-20 pb-24">
-            <div className="container mx-auto px-4 max-w-3xl">
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <motion.div
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-cyber mb-4"
+            <div className="container mx-auto px-6 max-w-5xl">
+                {/* Header with Back Button and Title */}
+                <div className="flex items-center gap-3 mb-6">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => router.back()}
+                        className="w-9 h-9 rounded-xl border border-border/50 hover:bg-muted flex items-center justify-center cursor-pointer transition-colors shrink-0"
                     >
-                        <HelpCircle className="w-10 h-10 text-foreground" />
-                    </motion.div>
-                    <h1 className="text-2xl font-bold">{t.supportTitle}</h1>
-                    <p className="text-muted-foreground mt-1">
-                        {t.supportSubtitle}
-                    </p>
+                        <ChevronLeft className="w-5 h-5 text-foreground" />
+                    </Button>
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-wide text-foreground">{t.supportTitle}</h1>
+                </div>
+
+                {/* Subtitle Info Banner */}
+                <div className="glass-card rounded-2xl border border-border/40 p-5 mb-8 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 text-cyan-500 flex items-center justify-center shrink-0">
+                        <HelpCircle className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-semibold text-foreground">{t.supportTitle}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                            {t.supportSubtitle}
+                        </p>
+                    </div>
                 </div>
 
                 {/* FAQ Section with Categories */}
@@ -144,7 +156,7 @@ export default function SupportPage() {
                                                                 onClick={() => router.push("/support/create-ticket")}
                                                                 variant="outline"
                                                                 size="sm"
-                                                                className="w-full sm:w-auto"
+                                                                className="w-full sm:w-auto border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 hover:text-primary transition-all duration-200"
                                                             >
                                                                 <Ticket className="w-4 h-4 mr-2" />
                                                                 {t.createTicket}
