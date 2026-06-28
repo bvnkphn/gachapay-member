@@ -369,7 +369,7 @@ export function Header() {
                         </div>
 
                         {/* ── RIGHT: Coin + User ── */}
-                        <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
+                        <div className="flex items-center gap-2 shrink-0 ml-auto">
                             {/* Mobile search icon */}
                             <Button variant="ghost" size="icon" className="sm:hidden hover:bg-muted w-8 h-8 cursor-pointer" onClick={() => setSearchOpen(!searchOpen)}>
                                 <Search className="w-4 h-4" />
@@ -574,7 +574,7 @@ export function Header() {
 
             {/* Gacha Lucky Wheel Floating FAB Icon */}
             {user && (
-                <div className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col items-end animate-subtle-bounce hover:animate-none">
+                <div className="fixed bottom-6 right-4 sm:bottom-6 sm:right-6 z-40 flex flex-col items-end animate-subtle-bounce hover:animate-none">
                     {/* FAB Button */}
                     <button
                         onClick={() => setShowGachaModal(true)}

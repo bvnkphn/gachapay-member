@@ -244,6 +244,42 @@ export default function Home() {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const reviewsContainerRef = useRef<HTMLDivElement>(null);
 
+    const extendedReviews = useMemo(() => {
+        return [...reviews, ...reviews, ...reviews].map((r, index) => ({
+            ...r,
+            uniqueId: `${r.id}-${index}`,
+        }));
+    }, []);
+
+    // Set initial scroll position to the middle set of reviews
+    useEffect(() => {
+        const container = reviewsContainerRef.current;
+        if (container) {
+            setTimeout(() => {
+                const oneSetWidth = container.scrollWidth / 3;
+                container.scrollLeft = oneSetWidth;
+            }, 100);
+        }
+    }, []);
+
+    const handleReviewsScroll = () => {
+        const container = reviewsContainerRef.current;
+        if (!container) return;
+
+        const { scrollLeft, scrollWidth, clientWidth } = container;
+        const oneSetWidth = scrollWidth / 3;
+
+        if (scrollLeft < 10) {
+            container.style.scrollBehavior = "auto";
+            container.scrollLeft = scrollLeft + oneSetWidth;
+            container.style.scrollBehavior = "smooth";
+        } else if (scrollLeft + clientWidth >= scrollWidth - 10) {
+            container.style.scrollBehavior = "auto";
+            container.scrollLeft = scrollLeft - oneSetWidth;
+            container.style.scrollBehavior = "smooth";
+        }
+    };
+
     // Flash sale ends in a few hours
     const flashEnd = useRef(new Date(Date.now() + 12 * 3600 * 1000 + 45 * 60 * 1000 + 8 * 1000));
     const countdown = useCountdown(flashEnd.current);
@@ -519,9 +555,13 @@ export default function Home() {
                     </div>
                 </div>
 
-                <div ref={reviewsContainerRef} className="flex gap-4 overflow-x-auto pt-4 pb-4 scrollbar-hide snap-x snap-mandatory scroll-smooth">
-                    {reviews.map((r) => (
-                        <div key={r.id} className="w-[285px] sm:w-[360px] flex-shrink-0 snap-start glass-card rounded-2xl p-5 hover-lift border border-border/40 hover:border-primary/40 transition-all duration-300 shadow-md hover:shadow-primary/5">
+                <div 
+                    ref={reviewsContainerRef} 
+                    onScroll={handleReviewsScroll}
+                    className="flex gap-4 overflow-x-auto pt-4 pb-4 scrollbar-hide snap-x snap-mandatory"
+                >
+                    {extendedReviews.map((r) => (
+                        <div key={r.uniqueId} className="w-[calc(100vw-32px)] sm:w-[360px] flex-shrink-0 snap-start glass-card rounded-2xl p-5 hover-lift border border-border/40 hover:border-primary/40 transition-all duration-300 shadow-md hover:shadow-primary/5">
                             {/* Stars */}
                             <div className="flex gap-0.5 mb-3">
                                 {[...Array(5)].map((_, i) => (
