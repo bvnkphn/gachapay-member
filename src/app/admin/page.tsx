@@ -248,7 +248,7 @@ export default function AdminDashboard() {
             {refreshing && <RefreshCw size={12} className="animate-spin text-primary" />}
           </h1>
           <p className="text-[10px] text-muted-foreground">
-            {lastUpdated ? `อัปเดต ${timeAgo(lastUpdated)}` : "กำลังโหลด..."}
+            {lastUpdated ? `อัปเดต ${String(lastUpdated.getHours()).padStart(2,"0")}:${String(lastUpdated.getMinutes()).padStart(2,"0")}:${String(lastUpdated.getSeconds()).padStart(2,"0")}` : "กำลังโหลด..."}
           </p>
         </div>
         <div className="flex items-center gap-2">

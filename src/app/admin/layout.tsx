@@ -48,9 +48,6 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   return (
     <div className="flex flex-col h-full bg-card text-card-foreground">
       <div className="flex items-center gap-2.5 px-5 py-4 flex-shrink-0 border-b border-border/80">
-        <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 bg-gradient-to-tr from-primary to-secondary">
-          <Zap size={16} className="text-white" />
-        </div>
         <div>
           <p className="text-sm font-extrabold text-foreground tracking-wide">GACHAPAY</p>
           <p className="text-[9px] text-muted-foreground">Super Admin</p>
