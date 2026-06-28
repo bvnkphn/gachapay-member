@@ -181,17 +181,6 @@ export default function RegisterPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center px-4 py-12 relative">
-            {/* Theme Toggle Button */}
-            <div className="fixed top-4 right-4 z-50">
-                <button
-                    type="button"
-                    className="w-9 h-9 flex items-center justify-center rounded-full bg-foreground text-background hover:opacity-90 transition-all duration-300 shadow-lg"
-                    onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
-                >
-                    {currentTheme === "dark" ? <Sun className="w-4 h-4 text-background" /> : <Moon className="w-4 h-4 text-background" />}
-                </button>
-            </div>
-
             <div className="w-full max-w-md">
                 {/* Logo */}
                 <div className="text-center mb-5">
@@ -207,7 +196,17 @@ export default function RegisterPage() {
                     </Link>
                 </div>
 
-                <Card className="glass-card border-border/50">
+                <Card className="glass-card border-border/50 relative overflow-visible">
+                    {/* Theme Toggle Button */}
+                    <div className="absolute top-4 right-4 z-10">
+                        <button
+                            type="button"
+                            className="w-8 h-8 flex items-center justify-center rounded-full bg-muted hover:bg-muted/80 text-foreground transition-all duration-300 shadow-sm"
+                            onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
+                        >
+                            {currentTheme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+                        </button>
+                    </div>
                     <CardHeader className="pt-5 pb-2 px-6 space-y-1">
                         <CardTitle className="text-2xl font-bold text-center">สมัครสมาชิก</CardTitle>
                     </CardHeader>

@@ -386,6 +386,28 @@ export function Header() {
                                 </Link>
                             )}
 
+                            {/* Capsule Theme Switcher in Navbar */}
+                            <div
+                                className="relative flex items-center w-[72px] h-8 bg-muted/40 dark:bg-[#090a0f] border border-border/40 rounded-full p-1 cursor-pointer select-none transition-all duration-300 shrink-0 hover:scale-105 active:scale-95 shadow-sm ml-1"
+                                onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
+                            >
+                                {/* Sliding active pill indicator */}
+                                <div
+                                    className={cn(
+                                        "absolute top-0.5 bottom-0.5 w-7 rounded-full bg-white dark:bg-[#2a303f] shadow-sm transition-transform duration-300 ease-out",
+                                        currentTheme === "dark" ? "translate-x-[36px]" : "translate-x-0"
+                                    )}
+                                />
+                                {/* Sun Icon (Left) */}
+                                <div className="relative z-10 flex-1 flex items-center justify-center h-full">
+                                    <Sun className={cn("w-3.5 h-3.5 transition-colors duration-300", currentTheme === "light" ? "text-amber-500 fill-current" : "text-muted-foreground")} />
+                                </div>
+                                {/* Moon Icon (Right) */}
+                                <div className="relative z-10 flex-1 flex items-center justify-center h-full">
+                                    <Moon className={cn("w-3.5 h-3.5 transition-colors duration-300", currentTheme === "dark" ? "text-blue-400 fill-current" : "text-muted-foreground")} />
+                                </div>
+                            </div>
+
                             {/* User Menu */}
                             {user ? (
                                 <DropdownMenu>
@@ -461,36 +483,6 @@ export function Header() {
                                             </Link>
                                         </DropdownMenuItem>
 
-                                        <DropdownMenuSeparator className="my-1" />
-
-                                        {/* ธีม (Theme Toggle) */}
-                                        <DropdownMenuItem asChild>
-                                            <div className="flex items-center justify-between w-[calc(100%-8px)] px-3 py-2.5 rounded-lg mx-1 select-none">
-                                                <span className="text-sm flex-1 text-foreground">ธีม</span>
-
-                                                {/* Capsule Theme Switcher */}
-                                                <div
-                                                    className="relative flex items-center w-[72px] h-8 bg-[#eef2f6] dark:bg-[#090a0f] border border-transparent dark:border-zinc-800/80 rounded-full p-1 cursor-pointer select-none transition-colors duration-300"
-                                                    onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
-                                                >
-                                                    {/* Sliding active pill indicator */}
-                                                    <div
-                                                        className={cn(
-                                                            "absolute top-1 bottom-1 w-8 rounded-full bg-white dark:bg-[#2a303f] shadow-sm transition-transform duration-300 ease-out",
-                                                            currentTheme === "dark" ? "translate-x-8" : "translate-x-0"
-                                                        )}
-                                                    />
-                                                    {/* Sun Icon (Left) */}
-                                                    <div className="relative z-10 flex-1 flex items-center justify-center h-full">
-                                                        <Sun className={cn("w-4 h-4 transition-colors duration-300", currentTheme === "light" ? "text-zinc-950" : "text-zinc-500")} />
-                                                    </div>
-                                                    {/* Moon Icon (Right) */}
-                                                    <div className="relative z-10 flex-1 flex items-center justify-center h-full">
-                                                        <Moon className={cn("w-3.5 h-3.5 transition-colors duration-300", currentTheme === "dark" ? "text-white" : "text-zinc-400")} />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </DropdownMenuItem>
 
                                         {/* ติดต่อหรือขอความช่วยเหลือ (Support) */}
                                         <DropdownMenuItem asChild>
