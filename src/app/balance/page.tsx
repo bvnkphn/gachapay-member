@@ -29,7 +29,6 @@ const BANKS = [
 ];
 
 const PAGE_SIZE = 4;
-const FEE = 0.0;
 
 type PayStep = "qr" | "processing" | "success" | "failed" | "awaiting_review";
 
@@ -1155,7 +1154,8 @@ export default function BalancePage() {
     }, [filteredHistory, historyPage]);
 
     const topupAmount = selectedAmount ?? (customAmount ? parseFloat(customAmount) || 0 : 0);
-    const total = topupAmount + FEE;
+    const fee = selectedMethod === "truemoney" ? Math.round(topupAmount * 0.015 * 100) / 100 : 0.0;
+    const total = topupAmount + fee;
 
     const handleConfirmTopup = async () => {
         if (topupAmount < 20) return;
@@ -1415,14 +1415,16 @@ export default function BalancePage() {
                                         <span className="font-medium">฿{topupAmount.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
-                                        <span className="text-muted-foreground">{t.feeLabel}</span>
+                                        <span className="text-muted-foreground">
+                                            {t.feeLabel} {selectedMethod === "truemoney" && "(1.5%)"}
+                                        </span>
                                         <span className={cn(
                                             "font-medium text-xs px-2.5 py-0.5 rounded-full select-none",
-                                            FEE === 0
+                                            fee === 0
                                                 ? "bg-emerald-500/10 text-emerald-500 dark:bg-emerald-400/15 dark:text-emerald-400 font-bold"
-                                                : "bg-red-500/10 text-red-500 dark:bg-red-400/15 dark:text-red-400 font-semibold"
+                                                : "bg-red-500/10 text-red-500 dark:bg-red-400/15 dark:text-red-400 font-bold"
                                         )}>
-                                            {FEE === 0 ? (lang === "th" ? "ฟรี" : "Free") : `฿${FEE.toFixed(2)}`}
+                                            {fee === 0 ? (lang === "th" ? "ฟรี" : "Free") : `฿${fee.toFixed(2)}`}
                                         </span>
                                     </div>
                                     <div className="border-t border-border/40 pt-3 flex justify-between font-bold text-base">
