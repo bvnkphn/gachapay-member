@@ -16,30 +16,33 @@ export function Providers({ children }: { children: React.ReactNode }) {
                     {children}
                 </SidebarProvider>
                 <Toaster
-                    position="bottom-right"
+                    position="top-center"
                     toastOptions={{
                         style: {
-                            background: 'var(--card)',
-                            color: 'var(--card-foreground)',
+                            background: 'hsl(var(--card))',
+                            color: 'hsl(var(--card-foreground))',
                             border: '1px solid hsl(var(--border))',
                             borderRadius: '16px',
-                            boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.3)',
+                            boxShadow: '0 10px 30px -10px rgba(0, 0, 0, 0.5)',
                             fontFamily: 'inherit',
+                            opacity: 1,
                         },
                         success: {
                             style: {
-                                border: '1px solid rgba(6, 182, 212, 0.4)', // cyan accent
-                                boxShadow: '0 10px 25px -5px rgba(6, 182, 212, 0.15)',
-                                background: 'var(--card)',
-                                color: 'var(--card-foreground)',
+                                background: 'hsl(var(--card))',
+                                color: 'hsl(var(--card-foreground))',
+                                border: '1px solid rgba(6, 182, 212, 0.4)',
+                                boxShadow: '0 10px 25px -5px rgba(6, 182, 212, 0.2)',
+                                opacity: 1,
                             },
                         },
                         error: {
                             style: {
-                                border: '1px solid rgba(239, 68, 68, 0.4)', // red accent
-                                boxShadow: '0 10px 25px -5px rgba(239, 68, 68, 0.15)',
-                                background: 'var(--card)',
-                                color: 'var(--card-foreground)',
+                                background: 'hsl(var(--card))',
+                                color: 'hsl(var(--card-foreground))',
+                                border: '1px solid rgba(239, 68, 68, 0.4)',
+                                boxShadow: '0 10px 25px -5px rgba(239, 68, 68, 0.2)',
+                                opacity: 1,
                             },
                         },
                     }}
