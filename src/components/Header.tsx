@@ -51,7 +51,7 @@ export function Header() {
         fetchGames();
     }, []);
 
-    const suggestions = searchQuery.trim() 
+    const suggestions = searchQuery.trim()
         ? allGames
             .filter(game => {
                 const queryClean = searchQuery.trim().toLowerCase();
@@ -175,15 +175,15 @@ export function Header() {
 
     const startSpin = () => {
         if (isSpinning || availableSpins <= 0) return;
-        
+
         // Reset rotation first to rotate correctly on multiple spins
         setRotation(prev => prev % 360);
-        
+
         setTimeout(() => {
             setIsSpinning(true);
             const winningIndex = spinGacha();
             setWinningSegmentIndex(winningIndex);
-            
+
             const extraSpins = 6;
             const jitter = (Math.random() - 0.5) * 20; // -10 to +10 degrees
             const targetRotation = (extraSpins * 360) + (360 - (winningIndex * 45) - 22.5) + jitter;
@@ -194,7 +194,7 @@ export function Header() {
     const handleTransitionEnd = async () => {
         setIsSpinning(false);
         const prize = SEGMENTS[winningSegmentIndex];
-        
+
         // Record used spin
         const newUsed = usedSpins + 1;
         setUsedSpins(newUsed);
@@ -210,11 +210,11 @@ export function Header() {
         } catch (err) {
             console.error("Failed to record gacha spin:", err);
         }
-        
+
         if (prize.value > 0) {
             setClaimedPrizeText(`ได้รับ ${prize.value} COINS!`);
             setShowPrizeClaimed(true);
-            
+
             try {
                 // Call dedicated gacha claim endpoint to increment wallet balance directly
                 const result = await api.claimGachaReward(prize.value);
@@ -282,10 +282,10 @@ export function Header() {
     if (pathname.startsWith("/admin") || isAuthPage) return null;
 
     // pages that have the account sidebar
-    const hasSidebar = pathname.startsWith("/account") || 
-        pathname === "/balance" || 
-        pathname === "/invite" || 
-        pathname === "/vip-tier" || 
+    const hasSidebar = pathname.startsWith("/account") ||
+        pathname === "/balance" ||
+        pathname === "/invite" ||
+        pathname === "/vip-tier" ||
         pathname.startsWith("/history");
 
     const getUserInitials = () => {
@@ -320,9 +320,6 @@ export function Header() {
                                 <div className="flex flex-col">
                                     <span className="text-sm sm:text-base font-black tracking-widest text-primary drop-shadow-[0_0_8px_rgba(6,182,212,0.4)] transition-transform duration-300">
                                         GACHA<span className="text-foreground dark:text-white drop-shadow-none">PAY</span>
-                                    </span>
-                                    <span className="text-[6px] sm:text-[7px] font-bold text-muted-foreground tracking-[0.25em] uppercase -mt-1.5 ml-0.5">
-                                        TOP-UP PLATFORM
                                     </span>
                                 </div>
                             </Link>
@@ -420,7 +417,7 @@ export function Header() {
                                                 )}
                                             </div>
                                             <span className="text-[10px] text-muted-foreground">ID: {user.id && user.id.length > 8 ? `${user.id.substring(0, 8)}...` : user.id}</span>
-                                            
+
                                             {/* Mobile-only Wallet displays */}
                                             <div className="sm:hidden flex items-center gap-2 mt-2 pt-2 border-t border-border/30">
                                                 <Coins className="w-3.5 h-3.5 text-yellow-500 fill-current" />
@@ -591,13 +588,13 @@ export function Header() {
                         onClick={() => setShowGachaModal(true)}
                         className="relative flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-r from-yellow-500 via-orange-500 to-red-500 hover:from-yellow-400 hover:to-red-400 text-white shadow-[0_0_20px_rgba(249,115,22,0.4)] hover:shadow-[0_0_25px_rgba(249,115,22,0.6)] transition-all hover:scale-105 active:scale-95 cursor-pointer"
                     >
-                        <svg 
-                            viewBox="0 0 24 24" 
-                            fill="none" 
-                            stroke="currentColor" 
-                            strokeWidth="2" 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
                             className="w-6 h-6 animate-[spin_8s_linear_infinite] group-hover:animate-[spin_3s_linear_infinite]"
                         >
                             <circle cx="12" cy="12" r="10" />
@@ -621,14 +618,14 @@ export function Header() {
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-in fade-in duration-300">
                     <div className="bg-background rounded-2xl w-full max-w-md shadow-2xl border border-border/40 overflow-hidden relative p-6 flex flex-col items-center">
                         {/* Close button */}
-                        <button 
+                        <button
                             disabled={isSpinning}
                             onClick={() => {
                                 if (!isSpinning) {
                                     setShowGachaModal(false);
                                     setShowPrizeClaimed(false);
                                 }
-                            }} 
+                            }}
                             className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 cursor-pointer"
                         >
                             <X className="w-5 h-5" />
@@ -651,7 +648,7 @@ export function Header() {
                                     </div>
 
                                     {/* The Wheel */}
-                                    <div 
+                                    <div
                                         onClick={() => {
                                             if (!isSpinning && availableSpins > 0) {
                                                 startSpin();
@@ -659,13 +656,13 @@ export function Header() {
                                         }}
                                         className={cn(
                                             "relative w-64 h-64 sm:w-72 sm:h-72 rounded-full border-4 border-foreground/10 shadow-2xl overflow-hidden select-none transition-all duration-300",
-                                            !isSpinning && availableSpins > 0 
-                                                ? "cursor-pointer hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(20,184,166,0.25)] active:scale-[0.99]" 
+                                            !isSpinning && availableSpins > 0
+                                                ? "cursor-pointer hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(20,184,166,0.25)] active:scale-[0.99]"
                                                 : ""
                                         )}
                                     >
-                                        <div 
-                                            style={{ 
+                                        <div
+                                            style={{
                                                 background: 'conic-gradient(#14b8a6 0deg 45deg, #64748b 45deg 90deg, #3b82f6 90deg 135deg, #eab308 135deg 180deg, #475569 180deg 225deg, #a855f7 225deg 270deg, #0d9488 270deg 315deg, #334155 315deg 360deg)',
                                                 transform: `rotate(${rotation}deg)`,
                                                 transition: isSpinning ? 'transform 4s cubic-bezier(0.15, 0.85, 0.15, 1)' : 'none'
@@ -676,8 +673,8 @@ export function Header() {
                                             {SEGMENTS.map((seg, i) => {
                                                 const angle = i * 45 + 22.5;
                                                 return (
-                                                    <div 
-                                                        key={i} 
+                                                    <div
+                                                        key={i}
                                                         className="absolute top-0 left-0 right-0 bottom-0 flex flex-col items-center justify-start origin-center pt-8 text-[11px] font-black text-white select-none pointer-events-none drop-shadow-md"
                                                         style={{ transform: `rotate(${angle}deg)` }}
                                                     >
@@ -687,7 +684,7 @@ export function Header() {
                                                 );
                                             })}
                                         </div>
-                                        
+
                                         {/* Center Spin Button / Cap */}
                                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                             <button
@@ -698,10 +695,10 @@ export function Header() {
                                                 }}
                                                 className={cn(
                                                     "w-16 h-16 rounded-full border-4 border-background shadow-xl flex flex-col items-center justify-center z-30 select-none transition-all duration-300 pointer-events-auto",
-                                                    isSpinning 
-                                                        ? "bg-muted text-muted-foreground scale-95" 
-                                                        : availableSpins > 0 
-                                                            ? "bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-white font-black cursor-pointer scale-100 hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.5)]" 
+                                                    isSpinning
+                                                        ? "bg-muted text-muted-foreground scale-95"
+                                                        : availableSpins > 0
+                                                            ? "bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-white font-black cursor-pointer scale-100 hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.5)]"
                                                             : "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 border-zinc-300 dark:border-zinc-700 cursor-not-allowed"
                                                 )}
                                             >
@@ -731,8 +728,8 @@ export function Header() {
                                     </div>
                                     {/* Progress Bar to next spin */}
                                     <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
-                                        <div 
-                                            className="bg-primary h-full transition-all duration-500" 
+                                        <div
+                                            className="bg-primary h-full transition-all duration-500"
                                             style={{ width: `${(progressToNextSpin / 1000) * 100}%` }}
                                         />
                                     </div>
@@ -772,7 +769,7 @@ export function Header() {
                                         </p>
                                     </div>
                                 )}
-                                
+
                                 <Button
                                     onClick={() => setShowPrizeClaimed(false)}
                                     className="w-full h-10 bg-foreground hover:bg-foreground/90 text-background font-bold rounded-xl"
