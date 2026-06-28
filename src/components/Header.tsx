@@ -485,8 +485,7 @@ export function Header() {
                                 )}
                             </div>
 
-                            {/* Bookmark Button — only for logged-in users */}
-                            {user && (
+                            {/* Bookmark Button */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button
@@ -496,7 +495,7 @@ export function Header() {
                                         title="เกมที่ปักหมุดไว้"
                                     >
                                         <Bookmark className="w-4 h-4" />
-                                        {bookmarks.length > 0 && (
+                                        {user && bookmarks.length > 0 && (
                                             <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary text-primary-foreground text-[8px] flex items-center justify-center font-bold">
                                                 {bookmarks.length}
                                             </span>
@@ -508,7 +507,11 @@ export function Header() {
                                         เกมที่ปักหมุดไว้
                                     </div>
                                     <DropdownMenuSeparator className="my-1" />
-                                    {bookmarks.length > 0 ? (
+                                    {!user ? (
+                                        <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+                                            กรุณาเข้าสู่ระบบก่อน<br/>เพื่อใช้งานฟีเจอร์ปักหมุด
+                                        </div>
+                                    ) : bookmarks.length > 0 ? (
                                         bookmarks.map((game) => (
                                             <DropdownMenuItem key={game.slug} asChild>
                                                 <Link
@@ -530,7 +533,6 @@ export function Header() {
                                     )}
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            )}
                         </div>
 
                         {/* ── RIGHT: Coin + User ── */}
@@ -540,13 +542,12 @@ export function Header() {
                                 <Search className="w-4 h-4" />
                             </Button>
 
-                            {/* Mobile bookmark — only for logged-in users */}
-                            {user && (
+                            {/* Mobile bookmark */}
                             <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
                                     <Button variant="ghost" size="icon" className="sm:hidden hover:bg-muted w-8 h-8 cursor-pointer relative shrink-0">
                                         <Bookmark className="w-4 h-4" />
-                                        {bookmarks.length > 0 && (
+                                        {user && bookmarks.length > 0 && (
                                             <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-primary text-primary-foreground text-[7px] flex items-center justify-center font-bold">
                                                 {bookmarks.length}
                                             </span>
@@ -558,7 +559,11 @@ export function Header() {
                                         เกมที่ปักหมุดไว้
                                     </div>
                                     <DropdownMenuSeparator className="my-1" />
-                                    {bookmarks.length > 0 ? (
+                                    {!user ? (
+                                        <div className="px-3 py-4 text-center text-xs text-muted-foreground">
+                                            กรุณาเข้าสู่ระบบก่อน<br/>เพื่อใช้งานฟีเจอร์ปักหมุด
+                                        </div>
+                                    ) : bookmarks.length > 0 ? (
                                         bookmarks.map((game) => (
                                             <DropdownMenuItem key={game.slug} asChild>
                                                 <Link
@@ -580,7 +585,6 @@ export function Header() {
                                     )}
                                 </DropdownMenuContent>
                             </DropdownMenu>
-                            )}
 
                             {/* Coin balance — show when logged in */}
                             {user && (
