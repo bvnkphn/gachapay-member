@@ -24,10 +24,10 @@ const MOCK_BANNERS: Banner[] = [
   {
     id: 1,
     uuid: 'mock-1',
-    image: '/banner_valorant.png',
-    title: 'VALORANT PROMOTION',
-    description: 'รับส่วนลดพิเศษ 20% สำหรับการเติม VP วันนี้!',
-    redirectUrl: '/game/valorant',
+    image: '/banner_gacha.png',
+    title: 'กิจกรรมสุ่มกาชาพิเศษ',
+    description: 'เติมเงินสะสมครบ 1,000 บาท รับสิทธิ์สุ่มกาชาฟรีทันที 1 สิทธิ์!',
+    redirectUrl: '/balance',
     order: 1,
     isActive: true,
     createdAt: new Date().toISOString(),
@@ -36,10 +36,10 @@ const MOCK_BANNERS: Banner[] = [
   {
     id: 2,
     uuid: 'mock-2',
-    image: '/banner_genshin.png',
-    title: 'GENSHIN IMPACT primogems',
-    description: 'รับโบนัส Genesis Crystals คูณ 2 สูงสุดทุกแพ็กเกจ!',
-    redirectUrl: '/game/genshin-impact',
+    image: '/banner_welcome.png',
+    title: 'ยินดีต้อนรับเว็บเปิดใหม่',
+    description: 'กรอกโค้ด "WELCOME" เพื่อรับส่วนลดสุดพิเศษ (สำหรับใช้เติมเงินครั้งแรกเท่านั้น)',
+    redirectUrl: '/balance',
     order: 2,
     isActive: true,
     createdAt: new Date().toISOString(),
@@ -48,10 +48,10 @@ const MOCK_BANNERS: Banner[] = [
   {
     id: 3,
     uuid: 'mock-3',
-    image: '/banner_cashback.png',
-    title: 'CYBERPAY CASHBACK',
-    description: 'รับเงินคืนสะสมสูงสุด 10% ทุกการเติมเงินผ่านวอลเล็ท!',
-    redirectUrl: '/balance',
+    image: '/banner_invite.png',
+    title: 'แนะนำเพื่อนรับรางวัล',
+    description: 'เชิญชวนเพื่อนเข้ามาร่วมสนุกและเติมเงิน รับโบนัสสะสมสูงสุดถึง 100 บาท/คอยน์!',
+    redirectUrl: '/invite',
     order: 3,
     isActive: true,
     createdAt: new Date().toISOString(),
@@ -225,8 +225,24 @@ export default function BannerSlider() {
                     src={banner.image}
                     alt={banner.title || 'Banner'}
                     draggable={false}
-                    className="w-full h-full object-cover transition-transform duration-750 group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-750 group-hover:scale-105 animate-fade-in"
                   />
+                  
+                  {/* Text Overlay container */}
+                  {(banner.title || banner.description) && (
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/35 to-transparent flex flex-col justify-end p-5 sm:p-8 md:p-12 text-white pointer-events-none">
+                      {banner.title && (
+                        <h2 className="text-lg sm:text-2xl md:text-3xl font-extrabold mb-1.5 sm:mb-2 tracking-wide drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] text-cyan-400">
+                          {banner.title}
+                        </h2>
+                      )}
+                      {banner.description && (
+                        <p className="text-[10px] sm:text-xs md:text-sm text-white/90 max-w-[85%] font-medium leading-relaxed drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">
+                          {banner.description}
+                        </p>
+                      )}
+                    </div>
+                  )}
                   
                   {/* Subtle glassmorphic inner border glare on hover */}
                   <span className="absolute inset-0 border border-white/5 group-hover:border-white/10 rounded-2xl pointer-events-none transition-colors" />
@@ -253,7 +269,7 @@ export default function BannerSlider() {
                     e.stopPropagation()
                     next()
                   }}
-                  className="absolute right-6 top-1/2 -translate-y-1/2 bg-black/50 text-white w-10 h-10 rounded-full backdrop-blur-md z-40 border border-white/10 hover:border-secondary hover:text-secondary-foreground hover:shadow-[0_0_15px_rgba(168,85,247,0.6)] hover:bg-secondary/95 transition-all flex items-center justify-center hover:scale-105 active:scale-95 shadow-lg opacity-0 group-hover/slider:opacity-100 duration-300"
+                  className="absolute right-6 top-1/2 -translate-y-1/2 bg-black/50 text-white w-10 h-10 rounded-full backdrop-blur-md z-40 border border-white/10 hover:border-primary hover:text-primary-foreground hover:shadow-[0_0_15px_rgba(6,182,212,0.6)] hover:bg-primary/95 transition-all flex items-center justify-center hover:scale-105 active:scale-95 shadow-lg opacity-0 group-hover/slider:opacity-100 duration-300"
                   aria-label="Next slide"
                 >
                   <ChevronRight className="w-5 h-5" />

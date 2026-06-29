@@ -671,7 +671,6 @@ export default function GameTopupPage() {
                                         <p className="text-xs text-green-500">{`✓ ใช้คูปอง ${appliedCoupon.code} ประหยัด ${appliedCoupon.discount}%`}</p>
                                     </div>
                                 )}
-                                <p className="text-xs text-muted-foreground mt-2">{t.tryCoupons}</p>
                             </div>
 
                             <p className="text-xs font-bold text-muted-foreground flex items-center gap-2 mb-4 select-none">
