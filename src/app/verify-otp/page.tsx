@@ -38,6 +38,17 @@ function VerifyOtpContent() {
     }, [email, router]);
 
     useEffect(() => {
+        if (typeof window !== "undefined") {
+            const savedDevOtp = sessionStorage.getItem("dev_otp");
+            if (savedDevOtp && savedDevOtp.length === 6) {
+                setOtp(savedDevOtp.split(""));
+                toast.warning(`[โหมดพัฒนา] ตรวจพบรหัส OTP ในระบบจำลอง: ${savedDevOtp} (กรอกอัตโนมัติให้แล้ว)`, { duration: 8000 });
+                sessionStorage.removeItem("dev_otp");
+            }
+        }
+    }, [email]);
+
+    useEffect(() => {
         if (countdown > 0) {
             const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
             return () => clearTimeout(timer);

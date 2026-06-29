@@ -33,9 +33,14 @@ export default function ForgotPasswordPage() {
 
         setIsLoading(true);
         try {
-            await api.sendOtp({ email });
+            const res = await api.sendOtp({ email });
+            if (res && res._dev_otp) {
+                sessionStorage.setItem("dev_otp", res._dev_otp);
+                toast.warning(`[โหมดพัฒนา] รหัส OTP ของคุณคือ: ${res._dev_otp}`, { duration: 10000 });
+            } else {
+                toast.success("ส่งรหัส OTP ไปยังอีเมลแล้ว");
+            }
             setSent(true);
-            toast.success("ส่งรหัส OTP ไปยังอีเมลแล้ว");
         } catch (error: any) {
             toast.error(translateError(error.message));
         } finally {

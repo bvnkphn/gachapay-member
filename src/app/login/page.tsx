@@ -54,7 +54,12 @@ export default function LoginPage() {
             const response = await api.login({ email, password });
             
             if (response.requireOtp) {
-                toast.success("กรุณากรอกรหัส OTP ที่ส่งไปยัง Email");
+                if (response._dev_otp) {
+                    sessionStorage.setItem("dev_otp", response._dev_otp);
+                    toast.warning(`[โหมดพัฒนา] รหัส OTP ของคุณคือ: ${response._dev_otp}`, { duration: 10000 });
+                } else {
+                    toast.success("กรุณากรอกรหัส OTP ที่ส่งไปยัง Email");
+                }
                 router.push(`/admin/verify-otp?userId=${response.userId}`);
                 return;
             }

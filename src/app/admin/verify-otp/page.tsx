@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import axios from 'axios';
 import { ShieldCheck, Gamepad2 } from 'lucide-react';
@@ -15,6 +15,17 @@ function VerifyAdminOtpContent() {
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Auto-fill dev OTP
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedDevOtp = sessionStorage.getItem("dev_otp");
+      if (savedDevOtp && savedDevOtp.length === 6) {
+        setCode(savedDevOtp);
+        sessionStorage.removeItem("dev_otp");
+      }
+    }
+  }, []);
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
