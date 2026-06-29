@@ -33,11 +33,12 @@ const PAGE_SIZE = 4;
 type PayStep = "qr" | "processing" | "success" | "failed" | "awaiting_review";
 
 function PaymentFlowModal({
-    method, amount, referenceId, onClose, onRetry, onSuccess, router, t, bankDetails,
+    method, amount, referenceId, expiredAt, onClose, onRetry, onSuccess, router, t, bankDetails,
 }: {
     method: typeof PAYMENT_METHODS[0] & { desc: string };
     amount: number;
     referenceId?: string;
+    expiredAt?: string;
     onClose: () => void;
     onRetry: () => void;
     onSuccess?: () => void;
@@ -46,7 +47,7 @@ function PaymentFlowModal({
     bankDetails?: { code: string; name: string; number: string; accName: string };
 }) {
     const [step, setStep] = useState<PayStep>("qr");
-    const [countdown, setCountdown] = useState(109);
+    const [countdown, setCountdown] = useState(180);
     const [copied, setCopied] = useState(false);
     const txId = referenceId ?? "1159351574";
     const [showAdminPanel, setShowAdminPanel] = useState(false);
@@ -129,12 +130,27 @@ function PaymentFlowModal({
         };
     }, [filePreviewUrl]);
 
+    const calculateTimeLeft = useCallback(() => {
+        if (!expiredAt) return 180;
+        const diffMs = new Date(expiredAt).getTime() - Date.now();
+        const seconds = Math.floor(diffMs / 1000);
+        return seconds > 0 ? seconds : 0;
+    }, [expiredAt]);
+
+    useEffect(() => {
+        setCountdown(calculateTimeLeft());
+    }, [expiredAt, calculateTimeLeft]);
+
     useEffect(() => {
         if (step !== "qr") return;
-        if (countdown <= 0) { setStep("processing"); return; }
+        if (countdown <= 0) {
+            api.simulateTopupCancel(txId).catch(() => {});
+            setStep("failed");
+            return;
+        }
         const t = setTimeout(() => setCountdown(c => c - 1), 1000);
         return () => clearTimeout(t);
-    }, [countdown, step]);
+    }, [countdown, step, txId]);
 
     useEffect(() => {
         if (step !== "processing") return;
@@ -390,15 +406,6 @@ function PaymentFlowModal({
                                 ติดต่อศูนย์บริการลูกค้า
                             </button>
                         </p>
-                        <button
-                            onClick={async () => {
-                                try { await api.simulateTopupCancel(txId); } catch { }
-                                setStep("failed");
-                            }}
-                            className="text-[11px] text-red-500/80 hover:text-red-500 transition-colors font-bold hover:underline cursor-pointer"
-                        >
-                            ยกเลิกการชำระเงิน
-                        </button>
                         <DevNav />
                     </div>
                 </div>
@@ -563,7 +570,7 @@ function PaymentFlowModal({
                         <Download className="w-3.5 h-3.5" /> {t.qrSaveBtn}
                     </button>
                     <p className="text-center text-[11px] text-muted-foreground/80 mb-3">{t.qrNote(method.name)}</p>
-                    <p className="text-center text-xs text-muted-foreground mb-2">{t.qrTimeLeft}</p>
+                    <p className="text-center text-xs text-muted-foreground mb-2">{t.qrTimeLeft?.replace("3", String(Math.ceil(countdown / 60))) || ""}</p>
                     <div className="text-center mb-4">
                         <span className="font-mono font-black text-2xl tracking-widest text-foreground">
                             {mm}:{ss}
@@ -580,15 +587,6 @@ function PaymentFlowModal({
                             ติดต่อศูนย์บริการลูกค้า
                         </button>
                     </p>
-                    <button
-                        onClick={async () => {
-                            try { await api.simulateTopupCancel(txId); } catch { }
-                            setStep("failed");
-                        }}
-                        className="text-[11px] text-red-500/80 hover:text-red-500 transition-colors font-bold hover:underline cursor-pointer"
-                    >
-                        ยกเลิกการชำระเงิน
-                    </button>
                     <DevNav />
                 </div>
             </div>
@@ -1068,7 +1066,7 @@ export default function BalancePage() {
         api.getTopupTransactions({ status: "pending", limit: 1 }).then((d) => {
             const pending = d?.items?.[0];
             if (pending) {
-                setPendingTx({ reference_id: pending.reference_id, amount: pending.amount });
+                setPendingTx({ reference_id: pending.reference_id, amount: pending.amount, expired_at: pending.expired_at });
             } else {
                 setPendingTx(null);
             }
@@ -1090,7 +1088,7 @@ export default function BalancePage() {
             // restore pending tx if exists
             api.getTopupTransactions({ status: "pending", limit: 1 }).then((d) => {
                 const pending = d?.items?.[0];
-                if (pending) setPendingTx({ reference_id: pending.reference_id, amount: pending.amount });
+                if (pending) setPendingTx({ reference_id: pending.reference_id, amount: pending.amount, expired_at: pending.expired_at });
             }),
         ]);
     }, [user]);
@@ -1182,6 +1180,7 @@ export default function BalancePage() {
                     method={{ ...activeMethod, id: activeMethod.code ?? activeMethod.id, desc: activeMethod.code === "promptpay" ? t.promptpayDesc : t.truemoneyDesc }}
                     amount={total}
                     referenceId={pendingTx?.reference_id}
+                    expiredAt={pendingTx?.expired_at}
                     onClose={() => setShowPayment(false)}
                     onRetry={handleConfirmTopup}
                     onSuccess={refreshData}
