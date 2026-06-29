@@ -84,7 +84,13 @@ export default function LoginPage() {
             } else {
                 setAuth(response.user, response.token);
                 toast.success(t.success);
-                router.push("/");
+                const searchParams = new URLSearchParams(window.location.search);
+                const redirectPath = searchParams.get("redirect");
+                if (redirectPath) {
+                    router.push(redirectPath);
+                } else {
+                    router.push("/");
+                }
             }
         } catch (error: any) {
             toast.error(translateError(error.message));

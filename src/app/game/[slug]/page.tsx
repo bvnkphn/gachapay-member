@@ -434,7 +434,7 @@ export default function GameTopupPage() {
                         className={cn(
                             "flex items-center justify-center w-9 h-9 rounded-xl border transition-all shrink-0 sm:hidden",
                             !isLoggedIn
-                                ? "bg-card border-border/50 text-muted-foreground/30 opacity-40 cursor-not-allowed"
+                                ? "bg-card border-border/50 text-muted-foreground/30 opacity-60 cursor-not-allowed"
                                 : isBookmarked 
                                     ? "bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20 cursor-pointer hover:scale-105 active:scale-95" 
                                     : "bg-card border-border hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer hover:scale-105 active:scale-95"
@@ -442,7 +442,14 @@ export default function GameTopupPage() {
                         title={!isLoggedIn ? "กรุณาเข้าสู่ระบบเพื่อปักหมุด" : isBookmarked ? "ยกเลิกปักหมุด" : "ปักหมุดเกมนี้"}
                         disabled={!isLoggedIn}
                     >
-                        <Bookmark className={cn("w-4.5 h-4.5", isLoggedIn && isBookmarked && "fill-red-500 text-red-500")} />
+                        {!isLoggedIn ? (
+                            <div className="relative flex items-center justify-center w-full h-full">
+                                <Bookmark className="w-4.5 h-4.5 text-muted-foreground/30 opacity-40" />
+                                <Lock className="w-2.5 h-2.5 absolute bottom-0 right-0 text-red-500 fill-red-500" />
+                            </div>
+                        ) : (
+                            <Bookmark className={cn("w-4.5 h-4.5", isLoggedIn && isBookmarked && "fill-red-500 text-red-500")} />
+                        )}
                     </button>
                 </div>
 
@@ -482,7 +489,7 @@ export default function GameTopupPage() {
                             className={cn(
                                 "absolute top-4 right-4 z-10 w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md border shadow-lg transition-all duration-300",
                                 !isLoggedIn
-                                    ? "bg-black/20 border-white/10 text-white/30 opacity-40 cursor-not-allowed"
+                                    ? "bg-black/40 border-white/10 text-white/40 cursor-not-allowed"
                                     : isBookmarked
                                         ? "bg-red-500/20 border-red-500/40 text-red-500 hover:bg-red-500/30 cursor-pointer hover:scale-110 active:scale-95"
                                         : "bg-black/40 border-white/20 text-white hover:bg-black/60 cursor-pointer hover:scale-110 active:scale-95"
@@ -490,7 +497,14 @@ export default function GameTopupPage() {
                             title={!isLoggedIn ? "กรุณาเข้าสู่ระบบเพื่อปักหมุด" : isBookmarked ? "ยกเลิกปักหมุด" : "ปักหมุดเกมนี้"}
                             disabled={!isLoggedIn}
                         >
-                            <Bookmark className={cn("w-5 h-5 transition-transform duration-300", isLoggedIn && isBookmarked ? "fill-red-500 text-red-500 scale-110" : "hover:scale-105")} />
+                            {!isLoggedIn ? (
+                                <div className="relative flex items-center justify-center w-full h-full">
+                                    <Bookmark className="w-5 h-5 text-white/30 opacity-40" />
+                                    <Lock className="w-3.5 h-3.5 absolute bottom-0 right-0 text-red-500 fill-red-500" />
+                                </div>
+                            ) : (
+                                <Bookmark className={cn("w-5 h-5 transition-transform duration-300", isLoggedIn && isBookmarked ? "fill-red-500 text-red-500 scale-110" : "hover:scale-105")} />
+                            )}
                         </button>
                     </div>
                     <div className="p-6">
