@@ -433,16 +433,19 @@ export default function GameTopupPage() {
                         <h1 className="text-xl font-black text-foreground">{game.name}</h1>
                     </div>
                     <button
-                        onClick={handleBookmarkToggle}
+                        onClick={isLoggedIn ? handleBookmarkToggle : undefined}
                         className={cn(
-                            "flex items-center justify-center w-9 h-9 rounded-xl border transition-all cursor-pointer shadow-sm shrink-0 hover:scale-105 active:scale-95 sm:hidden",
-                            isBookmarked 
-                                ? "bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20" 
-                                : "bg-card border-border hover:bg-muted text-muted-foreground hover:text-foreground"
+                            "flex items-center justify-center w-9 h-9 rounded-xl border transition-all shrink-0 sm:hidden",
+                            !isLoggedIn
+                                ? "bg-card border-border/50 text-muted-foreground/30 opacity-40 cursor-not-allowed"
+                                : isBookmarked 
+                                    ? "bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20 cursor-pointer hover:scale-105 active:scale-95" 
+                                    : "bg-card border-border hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer hover:scale-105 active:scale-95"
                         )}
-                        title={isBookmarked ? "ยกเลิกปักหมุด" : "ปักหมุดเกมนี้"}
+                        title={!isLoggedIn ? "กรุณาเข้าสู่ระบบเพื่อปักหมุด" : isBookmarked ? "ยกเลิกปักหมุด" : "ปักหมุดเกมนี้"}
+                        disabled={!isLoggedIn}
                     >
-                        <Bookmark className={cn("w-4.5 h-4.5", isBookmarked && "fill-red-500 text-red-500")} />
+                        <Bookmark className={cn("w-4.5 h-4.5", isLoggedIn && isBookmarked && "fill-red-500 text-red-500")} />
                     </button>
                 </div>
 
@@ -478,16 +481,19 @@ export default function GameTopupPage() {
                         
                         {/* Bookmark Button on Top-Right of Banner */}
                         <button
-                            onClick={handleBookmarkToggle}
+                            onClick={isLoggedIn ? handleBookmarkToggle : undefined}
                             className={cn(
-                                "absolute top-4 right-4 z-10 w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md border shadow-lg transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer",
-                                isBookmarked
-                                    ? "bg-red-500/20 border-red-500/40 text-red-500 hover:bg-red-500/30"
-                                    : "bg-black/40 border-white/20 text-white hover:bg-black/60"
+                                "absolute top-4 right-4 z-10 w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md border shadow-lg transition-all duration-300",
+                                !isLoggedIn
+                                    ? "bg-black/20 border-white/10 text-white/30 opacity-40 cursor-not-allowed"
+                                    : isBookmarked
+                                        ? "bg-red-500/20 border-red-500/40 text-red-500 hover:bg-red-500/30 cursor-pointer hover:scale-110 active:scale-95"
+                                        : "bg-black/40 border-white/20 text-white hover:bg-black/60 cursor-pointer hover:scale-110 active:scale-95"
                             )}
-                            title={isBookmarked ? "ยกเลิกปักหมุด" : "ปักหมุดเกมนี้"}
+                            title={!isLoggedIn ? "กรุณาเข้าสู่ระบบเพื่อปักหมุด" : isBookmarked ? "ยกเลิกปักหมุด" : "ปักหมุดเกมนี้"}
+                            disabled={!isLoggedIn}
                         >
-                            <Bookmark className={cn("w-5 h-5 transition-transform duration-300", isBookmarked ? "fill-red-500 text-red-500 scale-110" : "hover:scale-105")} />
+                            <Bookmark className={cn("w-5 h-5 transition-transform duration-300", isLoggedIn && isBookmarked ? "fill-red-500 text-red-500 scale-110" : "hover:scale-105")} />
                         </button>
                     </div>
                     <div className="p-6">
