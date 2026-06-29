@@ -53,13 +53,24 @@ function PackageFormModal({ gameId, token, pkg, onClose, onSuccess }: {
   gameId: string; token: string; pkg?: GamePackage | null; onClose: () => void; onSuccess: () => void;
 }) {
   const isEdit = !!pkg;
+  const initialPrice = pkg?.price ?? 0;
+  const initialFlashPrice = pkg?.flashSale.price ?? 0;
+  const initialPercent = initialPrice > 0 && initialFlashPrice > 0
+    ? Math.round((1 - initialFlashPrice / initialPrice) * 100)
+    : 10; // Default to 10%
+
   const [form, setForm] = useState({
-    sku: pkg?.sku ?? '', price: pkg?.price ?? 0, diamond: 0,
+    sku: pkg?.sku ?? '',
+    name: pkg?.name ?? '',
+    price: pkg?.price ?? 0,
+    cost: pkg?.cost ?? 0,
+    diamond: 0,
     promo: pkg?.flashSale.isActive ? 'flash_sale' : 'none',
-    flashSalePrice: pkg?.flashSale.price ?? '',
+    flashSalePercent: initialPercent,
     flashSaleStart: toDatetimeLocal(pkg?.flashSale.start ?? null),
     flashSaleEnd: toDatetimeLocal(pkg?.flashSale.end ?? null),
-    quota: pkg?.quota.limit ?? '', isActive: pkg?.isActive ?? true,
+    quota: pkg?.quota.limit ?? '',
+    isActive: pkg?.isActive ?? true,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -71,7 +82,6 @@ function PackageFormModal({ gameId, token, pkg, onClose, onSuccess }: {
     const val = e.target.value;
     setForm(f => ({
       ...f, promo: val,
-      flashSalePrice: val === 'none' ? '' : f.flashSalePrice,
       flashSaleStart: val === 'none' ? '' : f.flashSaleStart,
       flashSaleEnd: val === 'none' ? '' : f.flashSaleEnd,
     }));
@@ -79,13 +89,23 @@ function PackageFormModal({ gameId, token, pkg, onClose, onSuccess }: {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault(); setLoading(true); setError('');
-    const body: Record<string, any> = { price: Number(form.price), isActive: form.isActive, quota: form.quota !== '' ? Number(form.quota) : null };
-    if (form.promo !== 'none' && form.flashSalePrice !== '' && form.flashSaleStart && form.flashSaleEnd) {
-      body.flashSalePrice = Number(form.flashSalePrice);
+    const body: Record<string, any> = {
+      name: form.name,
+      price: Number(form.price),
+      cost: Number(form.cost),
+      isActive: form.isActive,
+      quota: form.quota !== '' ? Number(form.quota) : null
+    };
+    if (form.promo === 'flash_sale' && form.flashSaleStart && form.flashSaleEnd) {
+      body.flashSalePrice = Math.round(Number(form.price) * (1 - Number(form.flashSalePercent) / 100) * 100) / 100;
       body.flashSaleStart = new Date(form.flashSaleStart).toISOString();
       body.flashSaleEnd = new Date(form.flashSaleEnd).toISOString();
-    } else { body.flashSalePrice = null; body.flashSaleStart = null; body.flashSaleEnd = null; }
-    if (!isEdit) { body.sku = form.sku; body.name = form.sku; }
+    } else {
+      body.flashSalePrice = null;
+      body.flashSaleStart = null;
+      body.flashSaleEnd = null;
+    }
+    if (!isEdit) { body.sku = form.sku; }
     try {
       if (isEdit) {
         await axios.patch(`${process.env.NEXT_PUBLIC_API_URL}/admin/games/${gameId}/packages/${pkg!.id}`,
@@ -122,9 +142,15 @@ function PackageFormModal({ gameId, token, pkg, onClose, onSuccess }: {
 
           <Field label="ชื่อแพ็กเกจ">
             {isEdit
-              ? <div className="w-full px-3 py-2.5 text-sm rounded-xl bg-muted/40 border border-border text-muted-foreground">{pkg!.name}</div>
-              : <input value={form.sku} onChange={set('sku')} required placeholder="ชื่อแพ็กเกจ"
-                  className="w-full px-3 py-2.5 text-sm rounded-xl bg-muted/30 border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />}
+              ? <input value={form.name} onChange={set('name')} required placeholder="ชื่อแพ็กเกจ"
+                  className="w-full px-3 py-2.5 text-sm rounded-xl bg-muted/30 border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
+              : <div className="grid grid-cols-2 gap-3">
+                  <input value={form.sku} onChange={set('sku')} required placeholder="SKU (เช่น diamond-10)"
+                    className="w-full px-3 py-2.5 text-sm rounded-xl bg-muted/30 border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
+                  <input value={form.name} onChange={set('name')} required placeholder="ชื่อแพ็กเกจ"
+                    className="w-full px-3 py-2.5 text-sm rounded-xl bg-muted/30 border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
+                </div>
+            }
           </Field>
 
           <div className="grid grid-cols-2 gap-3">
@@ -132,39 +158,55 @@ function PackageFormModal({ gameId, token, pkg, onClose, onSuccess }: {
               <TextInput noBg type="number" min="0" step="0.01" value={form.price} onChange={set('price')} required />
             </Field>
             <Field label="ต้นทุน (COST)" prefix="฿">
-              <div className="px-3 py-2.5 text-sm font-semibold text-muted-foreground">
-                {isEdit ? fp(Number(pkg!.cost)) : '—'}
-              </div>
+              <TextInput noBg type="number" min="0" step="0.01" value={form.cost} onChange={set('cost')} required />
             </Field>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="แต้มสะสม" prefix="◆">
-              <TextInput noBg type="number" min="0" value={form.diamond}
-                onChange={e => setForm(f => ({ ...f, diamond: Number(e.target.value) }))} placeholder="0" />
-            </Field>
-            <Field label="โปรโมชั่น">
-              <div className="relative">
-                <select value={form.promo} onChange={handlePromoChange}
-                  className="w-full px-3 py-2.5 text-sm rounded-xl appearance-none focus:outline-none bg-muted/30 border border-border text-foreground focus:ring-2 focus:ring-primary/30 transition">
-                  <option value="none">ไม่มีโปรโมชั่น</option>
-                  <option value="flash_sale">Flash Sale</option>
-                  <option value="happy_hour">Happy Hour</option>
-                </select>
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground text-xs">▾</span>
-              </div>
-            </Field>
+          <div className="flex items-center gap-3 bg-muted/20 border border-border/80 p-3.5 rounded-xl">
+            <input 
+              type="checkbox" 
+              id="promo-flash-sale"
+              checked={form.promo === 'flash_sale'} 
+              onChange={e => {
+                const checked = e.target.checked;
+                setForm(f => ({ 
+                  ...f, 
+                  promo: checked ? 'flash_sale' : 'none',
+                  flashSaleStart: checked ? f.flashSaleStart || toDatetimeLocal(new Date().toISOString()) : f.flashSaleStart,
+                  flashSaleEnd: checked ? f.flashSaleEnd || toDatetimeLocal(new Date(Date.now() + 24 * 3600 * 1000).toISOString()) : f.flashSaleEnd
+                }));
+              }}
+              className="w-4 h-4 rounded text-black border-border/80 focus:ring-0 focus:outline-none accent-black cursor-pointer" 
+            />
+            <label htmlFor="promo-flash-sale" className="text-sm font-semibold cursor-pointer text-foreground select-none">
+              เปิดใช้งานโปรโมชั่น Flash sale
+            </label>
           </div>
 
-          {form.promo !== 'none' && (
+          {form.promo === 'flash_sale' && (
             <div className="rounded-xl p-4 space-y-3 bg-amber-500/5 border border-amber-500/20">
               <div className="flex items-center gap-2">
                 <Zap size={12} className="text-amber-500" />
-                <p className="text-xs font-bold text-amber-500">{form.promo === 'happy_hour' ? 'Happy Hour' : 'Flash Sale'}</p>
+                <p className="text-xs font-bold text-amber-500">Flash Sale</p>
               </div>
-              <Field label="ราคาพิเศษ" prefix="฿">
-                <TextInput noBg type="number" min="0" step="0.01" value={form.flashSalePrice} onChange={set('flashSalePrice')} placeholder="0.00" />
-              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="ส่วนลด (%)">
+                  <div className="relative">
+                    <select value={form.flashSalePercent} onChange={e => setForm(f => ({ ...f, flashSalePercent: Number(e.target.value) }))}
+                      className="w-full px-3 py-2.5 text-sm rounded-xl appearance-none focus:outline-none bg-muted/30 border border-border text-foreground focus:ring-2 focus:ring-primary/30 transition">
+                      {[5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80].map(p => (
+                        <option key={p} value={p}>{p}% OFF</option>
+                      ))}
+                    </select>
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground text-xs">▾</span>
+                  </div>
+                </Field>
+                <Field label="ราคาพิเศษ" prefix="฿">
+                  <div className="px-3 py-2.5 text-sm font-bold text-amber-500">
+                    {fp(Math.round(Number(form.price) * (1 - Number(form.flashSalePercent) / 100) * 100) / 100)}
+                  </div>
+                </Field>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="เริ่มต้น">
                   <input type="datetime-local" value={form.flashSaleStart} onChange={set('flashSaleStart')}
@@ -197,11 +239,11 @@ function PackageFormModal({ gameId, token, pkg, onClose, onSuccess }: {
 
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={onClose}
-              className="flex-1 py-3 rounded-xl text-sm font-semibold text-muted-foreground bg-muted/40 border border-border hover:bg-muted transition">
+              className="flex-1 py-3 rounded-xl text-sm font-semibold text-muted-foreground bg-muted/40 border border-border/80 hover:bg-muted transition cursor-pointer">
               ยกเลิก
             </button>
             <button type="submit" disabled={loading}
-              className="flex-1 py-3 rounded-xl text-sm font-bold text-white disabled:opacity-50 bg-emerald-600 hover:bg-emerald-700 transition shadow-sm">
+              className="flex-1 py-3 rounded-xl text-sm font-bold bg-black text-white hover:bg-neutral-900 border border-black dark:bg-white dark:text-black dark:hover:bg-neutral-100 dark:border-white disabled:opacity-50 transition shadow-sm cursor-pointer">
               {loading ? 'กำลังบันทึก...' : 'บันทึก'}
             </button>
           </div>
@@ -419,8 +461,8 @@ export default function PackagesAdminPage() {
             </div>
           </div>
           <button onClick={() => setShowAdd(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold text-white flex-shrink-0 bg-primary hover:bg-primary/90 shadow-sm transition">
-            <Plus size={14} />
+            className="bg-black text-white hover:bg-neutral-900 border border-black dark:bg-white dark:text-black dark:hover:bg-neutral-100 dark:border-white transition-all duration-200 px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm cursor-pointer flex-shrink-0">
+            <Plus size={13} />
             <span className="hidden sm:inline">เพิ่มแพ็กเกจ</span>
             <span className="sm:hidden">เพิ่ม</span>
           </button>

@@ -21,6 +21,13 @@ interface GamePackage {
     description?: string;
     count: string;
     price: number;
+    effectivePrice?: number;
+    flashSale?: {
+        isActive: boolean;
+        price: number | null;
+        start: string | null;
+        end: string | null;
+    };
 }
 
 interface InputField {
@@ -53,6 +60,10 @@ export default function GameTopupPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedPackage, setSelectedPackage] = useState<GamePackage | null>(null);
+    const selectedPackagePrice = useMemo(() => {
+        if (!selectedPackage) return 0;
+        return selectedPackage.effectivePrice !== undefined ? Number(selectedPackage.effectivePrice) : Number(selectedPackage.price);
+    }, [selectedPackage]);
     const [isLoggedIn, setIsLoggedIn] = useState(!!user);
     const [formData, setFormData] = useState<Record<string, string>>({ email: "" });
     const [submitting, setSubmitting] = useState(false);
@@ -271,7 +282,7 @@ export default function GameTopupPage() {
             return;
         }
 
-        const totalAmount = selectedPackage.price * (1 - (appliedCoupon?.discount ?? 0) / 100);
+        const totalAmount = selectedPackagePrice * (1 - (appliedCoupon?.discount ?? 0) / 100);
 
         // Check balance for Coin payment
         if (paymentMethod === "coin") {
@@ -297,7 +308,7 @@ export default function GameTopupPage() {
                 gameName: game.name,
                 packageId: selectedPackage.id,
                 packageName: selectedPackage.name,
-                packagePrice: selectedPackage.price,
+                packagePrice: selectedPackagePrice,
                 uid: uidValue,
                 email: isLoggedIn ? user?.email : formData.email,
                 couponCode: appliedCoupon?.code,
@@ -371,7 +382,7 @@ export default function GameTopupPage() {
                 code: code,
                 gameId: game.id,
                 packageId: selectedPackage.id,
-                amount: selectedPackage.price
+                amount: selectedPackagePrice
             }, user?.id || "1");
 
             if (res && res.success && res.data) {
@@ -379,7 +390,7 @@ export default function GameTopupPage() {
                 if (res.data.discountType === 'PERCENTAGE') {
                     percentage = res.data.discountValue;
                 } else {
-                    percentage = Math.round((res.data.discountAmount / selectedPackage.price) * 100);
+                    percentage = Math.round((res.data.discountAmount / selectedPackagePrice) * 100);
                 }
 
                 setAppliedCoupon({
@@ -619,9 +630,25 @@ export default function GameTopupPage() {
                                                     </p>
                                                 </div>
                                                 <div className="pt-3 border-t border-border/20">
-                                                    <p className="text-lg font-bold text-primary">
-                                                        ฿ {pkg.price.toFixed(2)}
-                                                    </p>
+                                                    {pkg.flashSale?.isActive ? (
+                                                        <div className="flex flex-col gap-0.5">
+                                                            <div className="flex items-baseline gap-1.5">
+                                                                <span className="text-lg font-black text-red-500">
+                                                                    ฿ {Number(pkg.effectivePrice).toFixed(2)}
+                                                                </span>
+                                                                <span className="text-xs text-muted-foreground line-through">
+                                                                    ฿ {Number(pkg.price).toFixed(2)}
+                                                                </span>
+                                                            </div>
+                                                            <span className="text-[10px] w-fit font-bold text-white px-1.5 py-0.5 rounded bg-gradient-to-r from-red-600 to-orange-500 animate-pulse">
+                                                                Flash Sale
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-lg font-bold text-primary">
+                                                            ฿ {Number(pkg.price).toFixed(2)}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
                                         );
@@ -725,18 +752,18 @@ export default function GameTopupPage() {
                                 <div className="space-y-2 mt-4 pt-4 border-t border-primary/20">
                                     <div className="flex justify-between text-sm">
                                         <span className="text-muted-foreground">{t.priceLabel}</span>
-                                        <span className="font-semibold">฿ {selectedPackage ? selectedPackage.price.toFixed(2) : "0.00"}</span>
+                                        <span className="font-semibold">฿ {selectedPackage ? selectedPackagePrice.toFixed(2) : "0.00"}</span>
                                     </div>
                                     {appliedCoupon && selectedPackage && (
                                         <div className="flex justify-between text-sm text-green-500">
                                             <span>{`ส่วนลด (${appliedCoupon.discount}%):`}</span>
-                                            <span>-฿ {(selectedPackage.price * appliedCoupon.discount / 100).toFixed(2)}</span>
+                                            <span>-฿ {(selectedPackagePrice * appliedCoupon.discount / 100).toFixed(2)}</span>
                                         </div>
                                     )}
                                     <div className="flex justify-between text-lg font-bold pt-2 border-t border-primary/20">
                                         <span>{t.totalLabel}</span>
                                         <span className="text-primary">
-                                            ฿ {selectedPackage ? (selectedPackage.price * (1 - (appliedCoupon?.discount ?? 0) / 100)).toFixed(2) : "0.00"}
+                                            ฿ {selectedPackage ? (selectedPackagePrice * (1 - (appliedCoupon?.discount ?? 0) / 100)).toFixed(2) : "0.00"}
                                         </span>
                                     </div>
                                 </div>
@@ -839,7 +866,7 @@ export default function GameTopupPage() {
                                 <div className="flex justify-between text-xs text-muted-foreground border-b border-border/20 pb-2">
                                     <span>ยอดชำระ:</span>
                                     <span className="font-bold text-primary">
-                                        ฿ {selectedPackage ? (selectedPackage.price * (1 - (appliedCoupon?.discount ?? 0) / 100)).toFixed(2) : "0.00"}
+                                        ฿ {selectedPackage ? (selectedPackagePrice * (1 - (appliedCoupon?.discount ?? 0) / 100)).toFixed(2) : "0.00"}
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-xs text-muted-foreground">

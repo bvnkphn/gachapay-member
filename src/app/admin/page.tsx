@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import {
   Wallet, ShoppingCart, Users, Clock, AlertTriangle,
   Zap, X, Sun, Moon, RefreshCw, TrendingUp,
+  DollarSign, CheckCircle2, Loader2
 } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
@@ -152,25 +153,6 @@ function AllOrdersModal({ onClose, orders }: { onClose: () => void; orders: any[
 export default function AdminDashboard() {
   const [period, setPeriod] = useState<7 | 30 | 365>(7);
   const [showAll, setShowAll] = useState(false);
-  const { theme: _theme, setTheme, resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  const [now, setNow] = useState(() => {
-    const d = new Date();
-    return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
-  });
-
-  useEffect(() => { setMounted(true); }, []);
-  const currentTheme = mounted ? (resolvedTheme ?? "dark") : "dark";
-
-  useEffect(() => {
-    const tick = () => {
-      const d = new Date();
-      setNow(`${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`);
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, []);
 
   const { token } = useAdminAuth();
   const router = useRouter();
@@ -212,21 +194,38 @@ export default function AdminDashboard() {
     return () => clearInterval(id);
   }, [fetchDashboard]);
 
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchDashboard(true);
+    };
+    window.addEventListener('admin-refresh', handleRefresh);
+    return () => window.removeEventListener('admin-refresh', handleRefresh);
+  }, [fetchDashboard]);
+
   const stats = dashData?.stats ?? {};
   const chart = dashData?.chart ?? { labels: [], values: [] };
   const topGames = dashData?.topGames ?? [];
-  const recentOrders: any[] = dashData?.recentOrders ?? [];
+  const recentOrders: any[] = (dashData?.recentOrders ?? []).map((o: any) => ({
+    order_id: o.id,
+    uid: o.userUuid ?? o.user?.uuid ?? 'GUEST',
+    email: o.userEmail ?? o.user?.email ?? 'guest@guest.com',
+    game: o.game?.name ?? o.gameName ?? 'Unknown Game',
+    pkg: o.gamePackage?.name ?? o.packageName ?? 'Unknown Pkg',
+    amount: parseFloat(o.amount) || 0,
+    status: o.status,
+    created_at: o.createdAt,
+  }));
   const services = serverHealth?.services ?? [];
 
   const allOnline = services.length > 0 && services.every((s: any) => s.status === "normal");
   const anyDown = services.some((s: any) => s.status === "down");
 
   const statCards = [
-    { label: "รายได้วันนี้",  value: loading ? null : `฿${fmt(Math.round(stats.todayRevenue ?? 0))}`, icon: Wallet,        accent: "#38bdf8", sub: "completed" },
-    { label: "ออเดอร์วันนี้", value: loading ? null : String(stats.todayOrders ?? 0),                  icon: ShoppingCart, accent: "#10b981", sub: "ทุกสถานะ" },
-    { label: "สมาชิกใหม่",   value: loading ? null : String(stats.newMembersToday ?? 0),               icon: Users,        accent: "#8b5cf6", sub: "สมัครวันนี้" },
-    { label: "อัตราสำเร็จ",  value: loading ? null : `${stats.successRate ?? 0}%`,                    icon: Zap,          accent: "#10b981", sub: `${period} วันล่าสุด` },
-    { label: "รอดำเนินการ",  value: loading ? null : String(stats.pendingCount ?? 0),                  icon: Clock,        accent: "#f59e0b", sub: "pending" },
+    { label: "ยอดขายรวม",    value: loading ? null : `฿${fmt(stats.revenue ?? 0)}`,                       icon: DollarSign,     accent: "#10b981", sub: `${period} วันที่ผ่านมา` },
+    { label: "จำนวนออเดอร์",  value: loading ? null : String(stats.orderCount ?? 0),                       icon: ShoppingCart,   accent: "#3b82f6", sub: "ออเดอร์ทั้งหมด" },
+    { label: "กำไรรวม",      value: loading ? null : `฿${fmt(stats.profit ?? 0)}`,                        icon: TrendingUp,     accent: "#818cf8", sub: `~${stats.profitPercent ?? 0}% ของยอดขาย` },
+    { label: "ชำระเงินสำเร็จ",  value: loading ? null : String(stats.completedCount ?? 0),                  icon: CheckCircle2,   accent: "#10b981", sub: "completed" },
+    { label: "กำลังดำเนินงาน", value: loading ? null : String(stats.pendingCount ?? 0),                    icon: Loader2,        accent: "#f59e0b", sub: "pending" },
     { label: "ล้มเหลว",      value: loading ? null : String(stats.failedCount ?? 0),                   icon: AlertTriangle,accent: "#ef4444", sub: "failed" },
   ];
 
@@ -239,48 +238,6 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "'Noto Sans Thai',sans-serif" }}>
       {showAll && <AllOrdersModal onClose={() => setShowAll(false)} orders={recentOrders} />}
-
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border/80 bg-card/80 backdrop-blur-sm sticky top-0 z-10">
-        <div>
-          <h1 className="text-base font-bold text-foreground flex items-center gap-2">
-            Dashboard
-            {refreshing && <RefreshCw size={12} className="animate-spin text-primary" />}
-          </h1>
-          <p className="text-[10px] text-muted-foreground">
-            {lastUpdated ? `อัปเดต ${String(lastUpdated.getHours()).padStart(2,"0")}:${String(lastUpdated.getMinutes()).padStart(2,"0")}:${String(lastUpdated.getSeconds()).padStart(2,"0")}` : "กำลังโหลด..."}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => fetchDashboard(true)}
-            disabled={refreshing}
-            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/40 border border-border/60 transition disabled:opacity-50"
-            title="รีเฟรช"
-          >
-            <RefreshCw size={14} className={refreshing ? "animate-spin" : ""} />
-          </button>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted/40 border border-border/80">
-            <Clock size={11} className="text-primary" />
-            <span className="font-mono text-xs font-bold tracking-wider">{now}</span>
-          </div>
-          <div
-            className="relative flex items-center w-16 h-8 bg-muted border border-border/80 rounded-full p-1 cursor-pointer select-none transition-colors duration-300"
-            onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
-          >
-            <div className={cn(
-              "absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-card shadow-sm transition-transform duration-300 ease-out border border-border/30",
-              currentTheme === "dark" ? "translate-x-8" : "translate-x-0"
-            )} />
-            <div className="relative z-10 flex-1 flex items-center justify-center h-full">
-              <Sun className={cn("w-3.5 h-3.5 transition-colors duration-300", currentTheme === "light" ? "text-primary" : "text-muted-foreground")} />
-            </div>
-            <div className="relative z-10 flex-1 flex items-center justify-center h-full">
-              <Moon className={cn("w-3.5 h-3.5 transition-colors duration-300", currentTheme === "dark" ? "text-primary" : "text-muted-foreground")} />
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Body */}
       <div className="p-3 sm:p-5 space-y-4">
@@ -487,7 +444,9 @@ export default function AdminDashboard() {
                 </div>
               )}
               <div className="mt-3 pt-3 border-t border-border/50 flex items-center justify-between">
-                <p className="text-[9px] text-muted-foreground/60">ตรวจล่าสุด: {now}</p>
+                <p className="text-[9px] text-muted-foreground/60">
+                  ตรวจล่าสุด: {lastUpdated ? `${String(lastUpdated.getHours()).padStart(2, "0")}:${String(lastUpdated.getMinutes()).padStart(2, "0")}:${String(lastUpdated.getSeconds()).padStart(2, "0")}` : "—"}
+                </p>
                 <button onClick={() => fetchDashboard(true)} className="text-[9px] font-semibold text-primary hover:underline transition">
                   รีเฟรช
                 </button>

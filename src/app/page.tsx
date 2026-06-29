@@ -17,24 +17,30 @@ interface Game {
     image: string;
     category: string;
     label: "NONE" | "HOT" | "NEW" | "SALE";
+    packages?: any[];
 }
 
 // ---- Flash Sale Countdown ----
-function useCountdown(target: Date) {
-    const targetRef = useRef(target);
-    const calc = () => {
-        const diff = Math.max(0, targetRef.current.getTime() - Date.now());
+function useCountdown(target: number | null) {
+    const calc = (t: number | null) => {
+        if (!t) return { h: 0, m: 0, s: 0 };
+        const diff = Math.max(0, t - Date.now());
         return {
             h: Math.floor(diff / 3600000),
             m: Math.floor((diff % 3600000) / 60000),
             s: Math.floor((diff % 60000) / 1000),
         };
     };
-    const [time, setTime] = useState(calc);
+    const [time, setTime] = useState(() => calc(target));
+
     useEffect(() => {
-        const id = setInterval(() => setTime(calc()), 1000);
+        setTime(calc(target));
+        if (!target) return;
+        const id = setInterval(() => {
+            setTime(calc(target));
+        }, 1000);
         return () => clearInterval(id);
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [target]);
     return time;
 }
 
@@ -82,9 +88,12 @@ function getFlashSaleStock(name: string) {
 
 // ---- Flash Sale Card ----
 function FlashCard({ game }: { game: Game }) {
-    const badge = discountLabel[game.label] || discountLabel.NONE;
-    const { original, sale } = getFlashSalePrices(game.name);
-    const { percent, remaining } = getFlashSaleStock(game.name);
+    const activeFlashPkg = game.packages?.find((p: any) => p.flashSale && p.flashSale.isActive);
+    const sale = activeFlashPkg ? activeFlashPkg.effectivePrice : 0;
+    const original = activeFlashPkg ? activeFlashPkg.price : 0;
+    const percent = original > 0 ? Math.round((1 - sale / original) * 100) : 22;
+    const badge = `-${percent}% OFF`;
+    const remaining = activeFlashPkg?.quota?.remaining ?? activeFlashPkg?.quota?.limit ?? 15;
 
     return (
         <Link href={`/game/${game.slug}`} className="group block relative">
@@ -280,10 +289,6 @@ export default function Home() {
         }
     };
 
-    // Flash sale ends in a few hours
-    const flashEnd = useRef(new Date(Date.now() + 12 * 3600 * 1000 + 45 * 60 * 1000 + 8 * 1000));
-    const countdown = useCountdown(flashEnd.current);
-
     // Games state
     const [games, setGames] = useState<Game[]>([]);
     const [loadingGames, setLoadingGames] = useState(true);
@@ -291,7 +296,30 @@ export default function Home() {
     const [visibleGamesCount, setVisibleGamesCount] = useState(12);
     const [totalSuccess, setTotalSuccess] = useState(0);
 
-    const flashGames = games.slice(0, 10);
+    // Calculate earliest active flash sale end timestamp dynamically from loaded games/packages
+    const flashEndTimestamp = useMemo(() => {
+        let earliestTime = Infinity;
+        for (const game of games) {
+            if (!game.packages) continue;
+            for (const pkg of game.packages) {
+                if (pkg.flashSale?.isActive && pkg.flashSale.end) {
+                    const endTime = new Date(pkg.flashSale.end).getTime();
+                    if (endTime > Date.now()) {
+                        if (endTime < earliestTime) {
+                            earliestTime = endTime;
+                        }
+                    }
+                }
+            }
+        }
+        return earliestTime === Infinity ? null : earliestTime;
+    }, [games]);
+
+    const countdown = useCountdown(flashEndTimestamp);
+
+    const flashGames = games.filter(g =>
+        g.packages && g.packages.some((p: any) => p.flashSale && p.flashSale.isActive)
+    );
 
     useEffect(() => {
         api.getPublicStats()
@@ -409,34 +437,28 @@ export default function Home() {
             </div>
 
             {/* ── Flash Sale ── */}
-            <section className="container mx-auto px-4 mt-2 mb-8">
-                {/* Header row */}
-                <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                        <div className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-red-500 via-red-600 to-red-500 text-white border-transparent dark:from-red-950 dark:via-red-900 dark:to-red-950 dark:border-red-500/30 dark:text-red-500 text-xs sm:text-base font-black px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl shadow-[0_0_15px_rgba(239,68,68,0.15)] uppercase tracking-wider">
-                            <Zap className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 fill-current animate-bounce text-yellow-300 dark:text-yellow-500" />
-                            Flash Sale
-                        </div>
-                        {/* Countdown */}
-                        <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground ml-1.5 sm:ml-4">
-                            <span className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wider mr-1">จบใน</span>
-                            <Digit n={countdown.h} />
-                            <span className="text-sm font-black text-red-500 animate-pulse">:</span>
-                            <Digit n={countdown.m} />
-                            <span className="text-sm font-black text-red-500 animate-pulse">:</span>
-                            <Digit n={countdown.s} />
+            {!loadingGames && flashGames.length > 0 && (
+                <section className="container mx-auto px-4 mt-2 mb-8">
+                    {/* Header row */}
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="flex items-center gap-1.5 sm:gap-2 bg-gradient-to-r from-red-500 via-red-600 to-red-500 text-white border-transparent dark:from-red-950 dark:via-red-900 dark:to-red-950 dark:border-red-500/30 dark:text-red-500 text-xs sm:text-base font-black px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl shadow-[0_0_15px_rgba(239,68,68,0.15)] uppercase tracking-wider">
+                                <Zap className="w-3.5 h-3.5 sm:w-4.5 sm:h-4.5 fill-current animate-bounce text-yellow-300 dark:text-yellow-500" />
+                                Flash Sale
+                            </div>
+                            {/* Countdown */}
+                            <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground ml-1.5 sm:ml-4">
+                                <span className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wider mr-1">จบใน</span>
+                                <Digit n={countdown.h} />
+                                <span className="text-sm font-black text-red-500 animate-pulse">:</span>
+                                <Digit n={countdown.m} />
+                                <span className="text-sm font-black text-red-500 animate-pulse">:</span>
+                                <Digit n={countdown.s} />
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Flash cards */}
-                {loadingGames ? (
-                    <div className="flex gap-4 overflow-x-auto pt-4 pb-4 scrollbar-hide snap-x snap-mandatory">
-                        {[...Array(4)].map((_, i) => (
-                            <div key={i} className="w-[180px] sm:w-[260px] flex-shrink-0 snap-start glass-card rounded-xl h-48 shimmer" />
-                        ))}
-                    </div>
-                ) : flashGames.length > 0 ? (
+                    {/* Flash cards */}
                     <div className="relative group/slider w-full">
                         {/* Floating Arrow Left */}
                         <button
@@ -468,10 +490,8 @@ export default function Home() {
                             <ChevronRight className="w-5 h-5" />
                         </button>
                     </div>
-                ) : (
-                    <div className="text-center text-muted-foreground py-8 text-sm">ยังไม่มีสินค้า Flash Sale ในขณะนี้</div>
-                )}
-            </section>
+                </section>
+            )}
 
             {/* ── Game TOP-UP by UID ── */}
             <section id="all-games" className="container mx-auto px-4 mb-10">

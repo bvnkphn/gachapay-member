@@ -4,41 +4,37 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
+import { useTheme } from "next-themes";
+import { toast } from "sonner";
 import {
   LayoutDashboard, ShoppingCart, HeadphonesIcon,
   BarChart2, CreditCard, Settings, FileText,
-  Activity, Zap, Menu, X, ShoppingBag
+  Activity, Zap, Menu, X, ShoppingBag,
+  Clock, RotateCw, Sun, Moon
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navSections = [
   {
-    label: "การจัดการ",
+    label: "Management",
     items: [
       { id: "dashboard", label: "Dashboard",      icon: LayoutDashboard, path: "/admin"               },
-      { id: "games",     label: "จัดการเกม",      icon: ShoppingCart,    path: "/admin/games"         },
-      { id: "orders",    label: "รายการสั่งซื้อ", icon: FileText,        path: "/admin/orders"        },
-      { id: "support",   label: "ช่วยเหลือ",      icon: HeadphonesIcon,  path: "/admin/support-admin" },
+      { id: "games",     label: "Games",          icon: ShoppingCart,    path: "/admin/games"         },
+      { id: "orders",    label: "Orders",         icon: FileText,        path: "/admin/orders"        },
+      { id: "support",   label: "Support",        icon: HeadphonesIcon,  path: "/admin/support-admin" },
     ],
   },
   {
-    label: "การเงิน",
+    label: "Finance",
     items: [
-      { id: "report",   label: "รายงาน",   icon: BarChart2,  path: "/admin/report"         },
-      { id: "payment",  label: "Payment",  icon: CreditCard, path: "/admin/payment-admin"  },
-      { id: "settings", label: "ตั้งค่า",  icon: Settings,   path: "/admin/system-control" },
-      { id: "auditlog", label: "Audit Log",icon: Activity,   path: "/admin/audit-log"      },
+      { id: "report",   label: "Reports",         icon: BarChart2,  path: "/admin/report"         },
+      { id: "payment",  label: "Payment",         icon: CreditCard, path: "/admin/payment-admin"  },
+      { id: "settings", label: "Settings",        icon: Settings,   path: "/admin/system-control" },
     ],
   },
 ];
 
-const BOTTOM_NAV = [
-  { label: "Dashboard", icon: LayoutDashboard, path: "/admin"                },
-  { label: "เกม",       icon: ShoppingCart,    path: "/admin/games"          },
-  { label: "ออเดอร์",  icon: ShoppingBag,     path: "/admin/orders"         },
-  { label: "รายงาน",   icon: BarChart2,        path: "/admin/report"         },
-  { label: "ตั้งค่า",  icon: Settings,         path: "/admin/system-control" },
-];
+
 
 function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
   const pathname = usePathname();
@@ -84,43 +80,64 @@ function SidebarContent({ onNavClick }: { onNavClick?: () => void }) {
       <div className="px-3 py-4 space-y-1 flex-shrink-0 border-t border-border/80">
         <button onClick={() => { logout(); router.replace('/'); }}
           className="flex items-center gap-2.5 w-full px-3 py-2 rounded-xl text-xs font-semibold text-red-500 hover:text-red-400 hover:bg-red-500/5 transition">
-          ✗ ออกจากระบบ
+          ✗ Logout
         </button>
       </div>
     </div>
   );
 }
 
-function AdminBottomNav() {
-  const pathname = usePathname();
-  return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around px-1 bg-card/95 backdrop-blur-md border-t border-border/80 h-[60px] pb-[env(safe-area-inset-bottom)]">
-      {BOTTOM_NAV.map(item => {
-        const Icon = item.icon;
-        const on = pathname === item.path;
-        return (
-          <Link key={item.path} href={item.path}
-            className={cn(
-              "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-all",
-              on ? "text-primary font-bold" : "text-muted-foreground"
-            )}>
-            <div className="relative flex items-center justify-center">
-              {on && <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />}
-              <Icon size={20} />
-            </div>
-            <span className="text-[10px] font-semibold leading-none">{item.label}</span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
+
+
+const getPageTitle = (pathname: string) => {
+  if (pathname === '/admin') return 'Dashboard';
+  if (pathname === '/admin/games') return 'จัดการเกม';
+  if (pathname.includes('/packages')) return 'จัดการแพ็กเกจ';
+  if (pathname === '/admin/orders') return 'รายการสั่งซื้อ';
+  if (pathname === '/admin/support-admin') return 'ช่วยเหลือ';
+  if (pathname === '/admin/report') return 'รายงาน';
+  if (pathname === '/admin/payment-admin') return 'Payment';
+  if (pathname === '/admin/system-control') return 'ตั้งค่า';
+  if (pathname === '/admin/audit-log') return 'Audit Log';
+  return 'ระบบจัดการ GACHAPAY';
+};
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { token, _hydrated, admin } = useAdminAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const [now, setNow] = useState("");
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+    setLastUpdated(new Date());
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    const tick = () => {
+      const d = new Date();
+      setNow(`${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [mounted]);
+
+  const currentTheme = mounted ? (resolvedTheme ?? "dark") : "dark";
+
+  const handleRefresh = () => {
+    const event = new CustomEvent('admin-refresh');
+    window.dispatchEvent(event);
+    router.refresh();
+    setLastUpdated(new Date());
+    toast.success('รีเฟรชข้อมูลสำเร็จ');
+  };
 
   useEffect(() => { setMenuOpen(false); }, [pathname]);
   useEffect(() => {
@@ -155,18 +172,45 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Mobile Topbar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 bg-card border-b border-border/80 h-[52px]">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 bg-gradient-to-tr from-primary to-secondary">
-            <Zap size={13} className="text-white" />
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-3 bg-card border-b border-border/80 h-[56px] flex-shrink-0">
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Menu Drawer Toggle */}
+          <button onClick={() => setMenuOpen(v => !v)}
+            className="w-8 h-8 flex items-center justify-center rounded-xl bg-muted/40 border border-border/80 text-muted-foreground hover:text-foreground cursor-pointer flex-shrink-0">
+            {menuOpen ? <X size={16} /> : <Menu size={16} />}
+          </button>
+          <div className="flex flex-col min-w-0">
+            <p className="text-xs font-bold text-foreground truncate">{getPageTitle(pathname)}</p>
+            {mounted && lastUpdated && (
+              <p className="text-[8px] text-muted-foreground font-semibold">
+                อัปเดต {String(lastUpdated.getHours()).padStart(2, "0")}:{String(lastUpdated.getMinutes()).padStart(2, "0")}:{String(lastUpdated.getSeconds()).padStart(2, "0")}
+              </p>
+            )}
           </div>
-          <p className="text-sm font-extrabold text-foreground tracking-wide">CYBERPAY</p>
-          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold ml-1 bg-primary/10 text-primary">ADMIN</span>
         </div>
-        <button onClick={() => setMenuOpen(v => !v)}
-          className="w-9 h-9 flex items-center justify-center rounded-xl bg-muted/40 border border-border/80 text-muted-foreground hover:text-foreground">
-          {menuOpen ? <X size={18} /> : <Menu size={18} />}
-        </button>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {/* Refresh Button */}
+          <button onClick={handleRefresh} className="p-1.5 rounded-full border border-border/80 text-muted-foreground hover:text-foreground hover:bg-muted/40 transition cursor-pointer">
+            <RotateCw size={11} />
+          </button>
+
+          {/* Theme Toggle Switch */}
+          <div
+            className="relative flex items-center w-12 h-6 bg-muted border border-border/80 rounded-full p-0.5 cursor-pointer select-none transition-colors duration-300"
+            onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
+          >
+            <div className={cn(
+              "absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-card shadow-sm transition-transform duration-300 ease-out border border-border/30",
+              currentTheme === "dark" ? "translate-x-6" : "translate-x-0"
+            )} />
+            <div className="relative z-10 flex-1 flex items-center justify-center h-full">
+              <Sun className={cn("w-2.5 h-2.5 transition-colors duration-300", currentTheme === "light" ? "text-primary" : "text-muted-foreground")} />
+            </div>
+            <div className="relative z-10 flex-1 flex items-center justify-center h-full">
+              <Moon className={cn("w-2.5 h-2.5 transition-colors duration-300", currentTheme === "dark" ? "text-primary" : "text-muted-foreground")} />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Mobile Drawer Overlay */}
@@ -186,19 +230,63 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <SidebarContent onNavClick={() => setMenuOpen(false)} />
       </aside>
 
-      {/* Main Content */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
-        {/* Spacer สำหรับ mobile topbar */}
-        <div className="md:hidden h-[52px]" />
+      {/* Main Content with Desktop Top Navbar */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Desktop Top Navbar */}
+        <header className="hidden md:flex items-center justify-between px-6 bg-card border-b border-border/80 h-[56px] flex-shrink-0">
+          <div>
+            <h1 className="text-sm font-bold text-foreground leading-tight">{getPageTitle(pathname)}</h1>
+            {mounted && lastUpdated && (
+              <p className="text-[9px] text-muted-foreground mt-0.5">
+                อัปเดต {String(lastUpdated.getHours()).padStart(2, "0")}:{String(lastUpdated.getMinutes()).padStart(2, "0")}:{String(lastUpdated.getSeconds()).padStart(2, "0")}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2.5">
+            {/* Refresh Button */}
+            <button
+              onClick={handleRefresh}
+              className="p-1.5 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted border border-border/80 transition cursor-pointer"
+              title="รีเฟรช"
+            >
+              <RotateCw size={12} />
+            </button>
 
-        {children}
+            {/* Clock Pill */}
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-muted/40 border border-border/80">
+              <Clock size={11} className="text-primary" />
+              <span className="font-mono text-[11px] font-bold tracking-wider text-foreground">
+                {now || "--:--:--"}
+              </span>
+            </div>
 
-        {/* Padding ด้านล่างสำหรับ bottom nav บน mobile เท่านั้น */}
-        <div className="md:hidden h-[72px]" />
+            {/* Theme Toggle Switch */}
+            <div
+              className="relative flex items-center w-16 h-8 bg-muted border border-border/80 rounded-full p-1 cursor-pointer select-none transition-colors duration-300"
+              onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
+            >
+              <div className={cn(
+                "absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-card shadow-sm transition-transform duration-300 ease-out border border-border/30",
+                currentTheme === "dark" ? "translate-x-8" : "translate-x-0"
+              )} />
+              <div className="relative z-10 flex-1 flex items-center justify-center h-full">
+                <Sun className={cn("w-3.5 h-3.5 transition-colors duration-300", currentTheme === "light" ? "text-primary" : "text-muted-foreground")} />
+              </div>
+              <div className="relative z-10 flex-1 flex items-center justify-center h-full">
+                <Moon className={cn("w-3.5 h-3.5 transition-colors duration-300", currentTheme === "dark" ? "text-primary" : "text-muted-foreground")} />
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
+          {/* Spacer สำหรับ mobile topbar */}
+          <div className="md:hidden h-[56px]" />
+
+          {children}
+
+        </div>
       </div>
-
-      {/* Admin Bottom Nav */}
-      <AdminBottomNav />
     </div>
   );
 }
