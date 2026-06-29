@@ -303,38 +303,7 @@ export default function Home() {
             .catch((err) => console.error("Failed to load public stats:", err));
     }, []);
 
-    useEffect(() => {
-        if (typeof window !== "undefined") {
-            const showCelebration = sessionStorage.getItem("gachapay_show_celebration");
-            if (showCelebration === "true") {
-                sessionStorage.removeItem("gachapay_show_celebration");
-                import("canvas-confetti").then((confetti) => {
-                    const duration = 3.5 * 1000;
-                    const end = Date.now() + duration;
 
-                    const frame = () => {
-                        confetti.default({
-                            particleCount: 4,
-                            angle: 60,
-                            spread: 55,
-                            origin: { x: 0, y: 0.85 }
-                        });
-                        confetti.default({
-                            particleCount: 4,
-                            angle: 120,
-                            spread: 55,
-                            origin: { x: 1, y: 0.85 }
-                        });
-
-                        if (Date.now() < end) {
-                            requestAnimationFrame(frame);
-                        }
-                    };
-                    frame();
-                });
-            }
-        }
-    }, []);
 
     useEffect(() => {
         setVisibleGamesCount(12);

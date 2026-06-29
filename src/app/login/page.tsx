@@ -84,9 +84,6 @@ export default function LoginPage() {
             } else {
                 setAuth(response.user, response.token);
                 toast.success(t.success);
-                if (typeof window !== "undefined") {
-                    sessionStorage.setItem("gachapay_show_celebration", "true");
-                }
                 const searchParams = new URLSearchParams(window.location.search);
                 const redirectPath = searchParams.get("redirect");
                 if (redirectPath) {

@@ -304,6 +304,31 @@ export function Header() {
             setClaimedPrizeText(`ได้รับ ${prize.value} COINS!`);
             setShowPrizeClaimed(true);
 
+            import("canvas-confetti").then((confetti) => {
+                const duration = 3.5 * 1000;
+                const end = Date.now() + duration;
+
+                const frame = () => {
+                    confetti.default({
+                        particleCount: 4,
+                        angle: 60,
+                        spread: 55,
+                        origin: { x: 0, y: 0.85 }
+                    });
+                    confetti.default({
+                        particleCount: 4,
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1, y: 0.85 }
+                    });
+
+                    if (Date.now() < end) {
+                        requestAnimationFrame(frame);
+                    }
+                };
+                frame();
+            });
+
             try {
                 // Call dedicated gacha claim endpoint to increment wallet balance directly
                 const result = await api.claimGachaReward(prize.value);
