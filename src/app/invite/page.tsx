@@ -36,13 +36,22 @@ export default function AccountInvitePage() {
     }, []);
 
     const handleSaveReferrer = async () => {
-        if (!referrerInput.trim()) {
+        let code = referrerInput.trim();
+        if (!code) {
             toast.error("กรุณากรอกรหัสแนะนำเพื่อน");
             return;
         }
+
+        // Clean up full URLs to get the UUID or numeric ID only
+        if (code.includes("/ref/")) {
+            const parts = code.split("/ref/");
+            code = parts[parts.length - 1] || code;
+        }
+        code = code.split("?")[0].split("#")[0].replace(/\/+$/, "");
+
         setSubmittingReferrer(true);
         try {
-            await api.setReferrer(referrerInput.trim());
+            await api.setReferrer(code);
             toast.success("บันทึกผู้แนะนำสำเร็จ!");
             const updated = await api.getReferrals();
             setReferrals(updated.referrals || []);
