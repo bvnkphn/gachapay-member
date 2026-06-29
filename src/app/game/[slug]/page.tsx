@@ -191,9 +191,11 @@ export default function GameTopupPage() {
                     setSuccess(true);
                     setOrderId(currentOrderId);
                     window.dispatchEvent(new Event("balance-changed"));
+                    if (isLoggedIn) {
                         setTimeout(() => {
                             router.push(`/history`);
                         }, 2000);
+                    }
                 }
             } catch (err) {
                 console.error("Checking status fail:", err);
@@ -897,14 +899,25 @@ export default function GameTopupPage() {
                         <div className="bg-muted/40 rounded-xl px-4 py-2 w-full mb-6 text-xs text-muted-foreground text-left font-mono border border-border/30">
                             <span className="font-semibold text-foreground">Order ID:</span> {orderId}
                         </div>
-                        <Button 
-                            onClick={() => {
-                                router.push(`/history`);
-                            }}
-                            className="w-full font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors cursor-pointer"
-                        >
-                            ดูประวัติการสั่งซื้อ (View History)
-                        </Button>
+                        {isLoggedIn ? (
+                            <Button 
+                                onClick={() => {
+                                    router.push(`/history`);
+                                }}
+                                className="w-full font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors cursor-pointer"
+                            >
+                                ดูประวัติการสั่งซื้อ (View History)
+                            </Button>
+                        ) : (
+                            <Button 
+                                onClick={() => {
+                                    router.push(`/`);
+                                }}
+                                className="w-full font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl transition-colors cursor-pointer"
+                            >
+                                กลับหน้าแรก (Go Home)
+                            </Button>
+                        )}
                     </div>
                 </div>
             )}
