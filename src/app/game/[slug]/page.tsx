@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/language-context";
-import { ArrowLeft, Zap, Shield, Clock, AlertCircle, CheckCircle2, ShoppingCart, ChevronLeft, Coins, QrCode, AlertTriangle, Loader2, X, Bookmark } from "lucide-react";
+import { ArrowLeft, Zap, Shield, Clock, AlertCircle, CheckCircle2, ShoppingCart, ChevronLeft, Coins, QrCode, AlertTriangle, Loader2, X, Bookmark, Lock as LockIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api";
@@ -445,7 +445,7 @@ export default function GameTopupPage() {
                         {!isLoggedIn ? (
                             <div className="relative flex items-center justify-center w-full h-full">
                                 <Bookmark className="w-4.5 h-4.5 text-muted-foreground/30 opacity-40" />
-                                <Lock className="w-2.5 h-2.5 absolute bottom-0 right-0 text-red-500 fill-red-500" />
+                                <LockIcon className="w-2.5 h-2.5 absolute bottom-0 right-0 text-red-500 fill-red-500" />
                             </div>
                         ) : (
                             <Bookmark className={cn("w-4.5 h-4.5", isLoggedIn && isBookmarked && "fill-red-500 text-red-500")} />
@@ -500,7 +500,7 @@ export default function GameTopupPage() {
                             {!isLoggedIn ? (
                                 <div className="relative flex items-center justify-center w-full h-full">
                                     <Bookmark className="w-5 h-5 text-white/30 opacity-40" />
-                                    <Lock className="w-3.5 h-3.5 absolute bottom-0 right-0 text-red-500 fill-red-500" />
+                                    <LockIcon className="w-3.5 h-3.5 absolute bottom-0 right-0 text-red-500 fill-red-500" />
                                 </div>
                             ) : (
                                 <Bookmark className={cn("w-5 h-5 transition-transform duration-300", isLoggedIn && isBookmarked ? "fill-red-500 text-red-500 scale-110" : "hover:scale-105")} />
