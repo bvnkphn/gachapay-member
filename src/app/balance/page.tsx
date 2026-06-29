@@ -722,9 +722,7 @@ function PaymentFlowModal({
                     <button onClick={onRetry} className="w-full py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-sm mb-2 transition-colors flex items-center justify-center gap-2">
                         <RefreshCw className="w-4 h-4" /> {t.retryPayment}
                     </button>
-                    <button onClick={() => router.push("/support/create-ticket")} className="w-full py-3 rounded-xl border border-border/50 text-muted-foreground hover:bg-muted text-sm transition-colors mb-3">
-                        {t.contactSupport}
-                    </button>
+
                 </div>
                 <p className="text-center text-[11px] text-muted-foreground mt-4 mb-1">
                     {t.haveIssue}{" "}
