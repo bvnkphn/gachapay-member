@@ -37,32 +37,15 @@ export default function HistoryPage() {
     const fetchOrders = () => {
         if (!user) return;
         setLoading(true);
-        // Fetch both orders and top-up transactions and merge them
-        Promise.all([api.getOrders(), api.getTopupTransactions({ limit: 100 })])
-            .then(([ordersData, topupData]) => {
+        api.getOrders()
+            .then((ordersData) => {
                 const ordersList: any[] = Array.isArray(ordersData) ? ordersData : (ordersData?.items ?? []);
-                const topups: any[] = topupData?.items ?? [];
-
-                const mappedTopups = topups.map(tx => ({
-                    // create a recognizable id for topups
-                    order_id: tx.reference_id || `TOPUP-${tx.id}`,
-                    created_at: tx.created_at || tx.createdAt || tx.updated_at,
-                    status_label: (tx.status || '').toUpperCase(),
-                    package_name: "เติมเงิน",
-                    game_name: "",
-                    // tx.method from API can be an object { code, name, icon, color }
-                    payment_method: (typeof tx.method === 'string') ? tx.method : (tx.method?.name ?? tx.method?.code ?? tx.method_code ?? tx.payment_method ?? "Topup"),
-                    total_price: String(tx.amount ?? tx.amount_cents ?? 0),
-                    is_topup: true,
-                }));
-
-                const combined = [...ordersList, ...mappedTopups];
                 // sort by date desc
-                combined.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-                setOrders(combined);
+                ordersList.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+                setOrders(ordersList);
             })
             .catch((err) => {
-                console.error("Failed to fetch orders/topups:", err);
+                console.error("Failed to fetch orders:", err);
                 setOrders([]);
             })
             .finally(() => setLoading(false));
@@ -306,8 +289,8 @@ export default function HistoryPage() {
                                                 </span>
                                             </td>
                                             <td className="py-4 max-w-[200px] whitespace-nowrap">
-                                                <p className="font-medium text-foreground text-xs truncate">{order.package_name}</p>
-                                                <p className="text-[10px] text-muted-foreground truncate">{order.game_name}</p>
+                                                <p className="font-medium text-foreground text-xs truncate">{order.game_name}</p>
+                                                <p className="text-[10px] text-muted-foreground truncate">{order.package_name}</p>
                                             </td>
                                             <td className="py-4 text-muted-foreground font-mono text-xs whitespace-nowrap">
                                                 #{order.order_id}
