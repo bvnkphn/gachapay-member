@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { toast } from 'sonner';
 import {
   Search, Plus, X, Pencil, Upload, Package,
   Download, ChevronLeft, ChevronRight, CloudUpload, Info,
@@ -24,6 +25,7 @@ const CAT_COLOR: Record<string, { color: string; bg: string }> = {
   FPS:             { color: '#f87171', bg: 'rgba(248,113,113,0.18)' },
   RPG:             { color: '#34d399', bg: 'rgba(52,211,153,0.18)'  },
   'Battle Royale': { color: '#f59e0b', bg: 'rgba(245,158,11,0.18)'  },
+  BATT:            { color: '#f59e0b', bg: 'rgba(245,158,11,0.18)'  },
   default:         { color: '#94a3b8', bg: 'rgba(148,163,184,0.12)' },
 };
 function catStyle(name?: string) { return CAT_COLOR[name ?? ''] ?? CAT_COLOR.default; }
@@ -81,12 +83,13 @@ function UploadZone({ value, onChange, token, endpoint, aspect, label }: {
       const fd = new FormData(); fd.append('file', file);
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}${endpoint}`, fd,
         { headers: { Authorization:`Bearer ${token}`, 'Content-Type':'multipart/form-data' } });
-      onChange(`http://localhost:3001${res.data.url}`);
-    } catch { alert('อัปโหลดไม่สำเร็จ'); } finally { setUploading(false); }
+      const apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').origin;
+      onChange(`${apiOrigin}${res.data.url}`);
+    } catch { toast.error('อัปโหลดไม่สำเร็จ'); } finally { setUploading(false); }
   };
   return (
     <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading}
-      className="w-full rounded-2xl flex flex-col items-center justify-center gap-2 transition hover:opacity-90"
+      className="w-full rounded-2xl flex flex-col items-center justify-center gap-2 transition hover:opacity-90 animate-fade-in"
       style={{ height:130, border:'2px dashed #2a3a5a', background:'#0d1a2e', cursor:uploading?'wait':'pointer' }}>
       {value
         ? <img src={value} alt={label} className="w-full h-full object-cover rounded-2xl" />
@@ -141,6 +144,36 @@ function EditGameModal({ game, categories, onClose, onSuccess, token }: {
           <button onClick={onClose} className="p-1.5 rounded-lg" style={{ color:'#64748b' }}><X size={16} /></button>
         </div>
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4">
+          {/* ชื่อเกม & ป้ายกำกับ */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block font-semibold">ชื่อเกม *</label>
+              <input
+                value={form.name}
+                onChange={e => setForm({...form, name: e.target.value})}
+                required
+                placeholder="เช่น Garena Free Fire"
+                className="w-full bg-[#1e2d45] text-white px-3 py-2.5 rounded-xl border border-[#2a3a5a] text-sm focus:outline-none focus:border-cyan-500"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block font-semibold">ป้ายกำกับ (Label)</label>
+              <div className="relative">
+                <select
+                  value={form.label}
+                  onChange={e => setForm({...form, label: e.target.value})}
+                  className="w-full appearance-none px-3 py-2.5 rounded-xl text-sm font-semibold text-white focus:outline-none"
+                  style={{ background:'#1e2d45', border:'1px solid #2a3a5a' }}
+                >
+                  <option value="NONE">ไม่มีป้ายกำกับ</option>
+                  <option value="HOT">HOT</option>
+                  <option value="NEW">NEW</option>
+                  <option value="SALE">SALE</option>
+                </select>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 text-xs">▾</span>
+              </div>
+            </div>
+          </div>
 
           {/* 2 col บน sm ขึ้นไป, 1 col บน mobile */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -255,8 +288,9 @@ function AddGameModal({ categories, onClose, onSuccess, token }: {
       const fd = new FormData(); fd.append('file', file);
       const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/upload/game-image`, fd,
         { headers: { Authorization:`Bearer ${token}`, 'Content-Type':'multipart/form-data' } });
-      setForm(f => ({ ...f, image:`http://localhost:3001${res.data.url}` }));
-    } catch { alert('อัปโหลดไม่สำเร็จ'); } finally { setUploading(false); }
+      const apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api').origin;
+      setForm(f => ({ ...f, image:`${apiOrigin}${res.data.url}` }));
+    } catch { toast.error('อัปโหลดไม่สำเร็จ'); } finally { setUploading(false); }
   };
 
   return (
@@ -459,46 +493,46 @@ export default function GamesAdminPage() {
       </div>
 
       {/* Summary Cards — 2 col mobile, 4 col sm */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label:'เกมทั้งหมด', value:games.length,  sub:'รายการ', border:'#1e293b',               accent:'#94a3b8' },
-          { label:'เปิดบริการ', value:activeCount,   sub:'เกม',    border:'rgba(34,197,94,0.4)',    accent:'#22c55e' },
-          { label:'ปิดปรับปรุง',value:inactiveCount, sub:'เกม',    border:'rgba(251,191,36,0.4)',   accent:'#fbbf24' },
-          { label:'API Error',  value:apiErrCount,   sub:'จุด',    border:'rgba(248,113,113,0.4)',  accent:'#f87171' },
+          { label:'เกมทั้งหมด', value:games.length,  sub:'รายการ', border:'#1e293b',               accent:'#94a3b8', bg: 'from-slate-500/5 to-slate-500/10' },
+          { label:'เปิดบริการ', value:activeCount,   sub:'เกม',    border:'rgba(34,197,94,0.4)',    accent:'#22c55e', bg: 'from-emerald-500/5 to-emerald-500/10' },
+          { label:'ปิดปรับปรุง',value:inactiveCount, sub:'เกม',    border:'rgba(251,191,36,0.4)',   accent:'#fbbf24', bg: 'from-amber-500/5 to-amber-500/10' },
+          { label:'API Error',  value:apiErrCount,   sub:'จุด',    border:'rgba(248,113,113,0.4)',  accent:'#f87171', bg: 'from-red-500/5 to-red-500/10' },
         ].map(c => (
-          <div key={c.label} className="rounded-2xl p-4" style={{ background:'#0d1526', border:`1px solid ${c.border}` }}>
-            <p className="text-[11px] mb-2" style={{ color:'#64748b' }}>{c.label}</p>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-bold" style={{ color:(c.label!=='เกมทั้งหมด'&&c.value>0)?c.accent:'white' }}>{c.value}</span>
-              <span className="text-xs" style={{ color:'#64748b' }}>{c.sub}</span>
+          <div key={c.label} className={`rounded-2xl p-4.5 border border-border/40 bg-gradient-to-br ${c.bg} transition-all hover:scale-[1.02] duration-300 shadow-md`}>
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">{c.label}</p>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-2xl font-black tracking-tight" style={{ color:(c.label!=='เกมทั้งหมด'&&c.value>0)?c.accent:'white' }}>{c.value}</span>
+              <span className="text-xs text-muted-foreground font-semibold">{c.sub}</span>
             </div>
           </div>
         ))}
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center gap-2 flex-wrap">
-        <div className="flex items-center gap-2 rounded-xl px-3 py-2 flex-1 min-w-0"
-          style={{ background:'#162032', border:'1px solid #1e293b' }}>
-          <Search size={12} style={{ color:'#64748b' }} />
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/20 p-3 rounded-2xl border border-border/50">
+        <div className="flex flex-1 items-center gap-2 rounded-xl px-3 py-2.5 bg-muted/40 border border-border/50 focus-within:border-cyan-500/60 focus-within:ring-2 focus-within:ring-cyan-500/20 transition-all duration-300">
+          <Search size={14} className="text-muted-foreground" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ค้นหาเกม..."
-            className="bg-transparent outline-none text-xs text-white placeholder-[#3a4a6a] flex-1 min-w-0" />
-          {search && <button onClick={() => setSearch('')} style={{ color:'#64748b' }}><X size={11} /></button>}
+            className="bg-transparent outline-none text-xs text-white placeholder-muted-foreground/60 flex-1 min-w-0" />
+          {search && <button onClick={() => setSearch('')} className="text-muted-foreground hover:text-white transition-colors"><X size={13} /></button>}
         </div>
-        <div className="relative">
-          <select value={catFilter} onChange={e => setCatFilter(e.target.value)}
-            className="appearance-none pl-3 pr-7 py-2 rounded-xl text-xs font-semibold text-white focus:outline-none"
-            style={{ background:'#162032', border:'1px solid #1e293b' }}>
-            {catOptions.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-          <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500 text-xs">▾</span>
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <select value={catFilter} onChange={e => setCatFilter(e.target.value)}
+              className="appearance-none pl-3 pr-8 py-2.5 rounded-xl text-xs font-semibold text-white focus:outline-none bg-muted/40 border border-border/50 hover:bg-muted/60 transition-colors"
+              style={{ minWidth: 120 }}>
+              {catOptions.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground text-xs">▾</span>
+          </div>
+          <button onClick={handleExport}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-xs font-bold bg-muted/40 text-muted-foreground hover:text-white border border-border/50 hover:bg-muted/60 transition-all cursor-pointer">
+            <Download size={13} />
+            <span>Export</span>
+          </button>
         </div>
-        <button onClick={handleExport}
-          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold"
-          style={{ background:'#162032', color:'#94a3b8', border:'1px solid #1e293b' }}>
-          <Download size={12} />
-          <span className="hidden sm:inline">Export</span>
-        </button>
       </div>
 
       {/* Mobile: Cards / Desktop: Table */}
@@ -532,9 +566,9 @@ export default function GamesAdminPage() {
           </div>
 
           {/* Desktop: Table */}
-          <div className="hidden sm:block rounded-2xl overflow-hidden" style={{ background:'#0d1526', border:'1px solid #1e293b' }}>
-            <div className="grid text-[11px] font-bold px-5 py-3 gap-4"
-              style={{ gridTemplateColumns:'2.5fr 0.8fr 1.6fr 0.8fr 0.7fr 80px', color:'#475569', borderBottom:'1px solid #1e293b' }}>
+          <div className="hidden sm:block rounded-2xl overflow-hidden shadow-xl" style={{ background:'#0d1526', border:'1px solid #1e293b' }}>
+            <div className="grid text-[10px] font-bold uppercase tracking-wider px-6 py-4.5 gap-4"
+              style={{ gridTemplateColumns:'2.5fr 0.8fr 1.6fr 0.8fr 0.7fr 80px', color:'#64748b', borderBottom:'1px solid #1e293b' }}>
               <span>ชื่อเกม</span><span>หมวดหมู่</span><span>รูปแบบ UID</span>
               <span>API</span><span>เปิด</span><span className="text-right">จัดการ</span>
             </div>
@@ -542,44 +576,54 @@ export default function GamesAdminPage() {
               const cs  = catStyle(g.category?.name);
               const st  = apiStatus[g.slug];
               return (
-                <div key={g.id} className="grid items-center px-5 py-4 gap-4 hover:bg-white/[0.02] transition"
-                  style={{ gridTemplateColumns:'2.5fr 0.8fr 1.6fr 0.8fr 0.7fr 80px', borderBottom:i<paginated.length-1?'1px solid #0d1525':'none' }}>
+                <div key={g.id} className="grid items-center px-6 py-4 gap-4 hover:bg-white/[0.02] transition duration-200"
+                  style={{ gridTemplateColumns:'2.5fr 0.8fr 1.6fr 0.8fr 0.7fr 80px', borderBottom:i<paginated.length-1?'1px solid #1e293b':'none' }}>
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center"
-                      style={{ background:'#162032', border:'1px solid #1e293b' }}>
+                    <div className="w-10 h-10 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center bg-muted/40 border border-border/50 shadow-inner">
                       {g.image ? <img src={g.image} alt={g.name} className="w-full h-full object-cover" /> : <span className="text-sm">🎮</span>}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5">
                         <p className="text-sm font-semibold text-white truncate">{g.name}</p>
-                        {!g.isActive && <span className="text-[9px] px-1 py-0.5 rounded font-semibold flex-shrink-0"
-                          style={{ background:'rgba(251,191,36,0.12)', color:'#fbbf24' }}>ปิด</span>}
+                        {!g.isActive && <span className="text-[9px] px-1.5 py-0.5 rounded font-bold flex-shrink-0 bg-amber-500/10 text-amber-500 border border-amber-500/20">ปิด</span>}
+                        {g.label !== 'NONE' && (
+                          <span className={`text-[8px] px-1.5 py-0.5 rounded font-black flex-shrink-0 text-white uppercase tracking-wider ${
+                            g.label === 'HOT' ? 'bg-red-600' : g.label === 'NEW' ? 'bg-blue-600' : 'bg-orange-600'
+                          }`}>
+                            {g.label}
+                          </span>
+                        )}
                       </div>
-                      <p className="text-[10px] truncate" style={{ color:'#475569' }}>{g.slug.toUpperCase().slice(0,8)}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5 font-mono truncate">{g.slug}</p>
                     </div>
                   </div>
                   {g.category?.name
-                    ? <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold w-fit"
-                        style={{ background:cs.bg, color:cs.color }}>{g.category.name.slice(0,4).toUpperCase()}</span>
-                    : <span style={{ color:'#475569' }}>—</span>}
+                    ? <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold w-fit"
+                        style={{ background:cs.bg, color:cs.color, border: `1px solid ${cs.color}25` }}>{g.category.name.toUpperCase()}</span>
+                    : <span className="text-muted-foreground/45">—</span>}
                   <div>{uidSummary(g.inputFields)}</div>
                   <div className="flex items-center gap-1.5">
                     {st==null
-                      ? <span className="text-[10px]" style={{ color:'#475569' }}>...</span>
-                      : <><span className="w-2 h-2 rounded-full" style={{ background:st.online?'#22c55e':'#f87171' }} />
-                         <span className="text-[10px] font-semibold" style={{ color:st.online?'#22c55e':'#f87171' }}>{st.online?'On':'Off'}</span></>}
+                      ? <span className="w-2 h-2 rounded-full bg-slate-500 animate-pulse" />
+                      : <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border ${
+                          st.online 
+                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' 
+                            : 'bg-red-500/10 text-red-500 border-red-500/20'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${st.online ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
+                          {st.online ? 'Online' : 'Offline'}
+                        </span>
+                    }
                   </div>
                   <Toggle on={g.isActive} loading={togglingId===g.id} onToggle={() => handleToggle(g.id)} />
                   <div className="flex items-center justify-end gap-1.5">
                     <button onClick={() => router.push(`/admin/games/${g.id}/packages`)} title="แพ็กเกจ"
-                      className="w-7 h-7 rounded-lg flex items-center justify-center"
-                      style={{ background:'rgba(129,140,248,0.1)', color:'#818cf8', border:'1px solid rgba(129,140,248,0.2)' }}>
-                      <Package size={12} />
+                      className="w-8 h-8 rounded-xl flex items-center justify-center bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all cursor-pointer">
+                      <Package size={13} />
                     </button>
                     <button onClick={() => setEditGame(g)} title="แก้ไข"
-                      className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10"
-                      style={{ color:'#64748b' }}>
-                      <Pencil size={12} />
+                      className="w-8 h-8 rounded-xl flex items-center justify-center bg-muted/60 text-muted-foreground border border-border hover:bg-muted hover:text-white transition-all cursor-pointer">
+                      <Pencil size={13} />
                     </button>
                   </div>
                 </div>
