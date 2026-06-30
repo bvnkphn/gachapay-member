@@ -15,6 +15,7 @@ type Game = {
   id: string;
   name: string;
   slug: string;
+  description: string | null;
   image: string | null;
   categoryId: string | null;
   category: { id: string; name: string; slug: string } | null;
