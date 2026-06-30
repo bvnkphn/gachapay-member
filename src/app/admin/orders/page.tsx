@@ -48,6 +48,18 @@ const STATUS_TABS = [
     { key: 'cancelled',  label: 'Cancelled' },
 ];
 
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+    coin: 'Coin', wallet: 'Coin', gacha_wallet: 'Coin',
+    truemoney: 'TrueWallet', truewallet: 'TrueWallet', true_wallet: 'TrueWallet',
+    qr: 'QR', promptpay: 'QR',
+    bank_transfer: 'BankTransfer', banktransfer: 'BankTransfer',
+    free: 'Free',
+};
+function fmtMethod(raw: string | null | undefined): string {
+    if (!raw || raw === '-' || raw === 'unknown') return '-';
+    return PAYMENT_METHOD_LABELS[raw.toLowerCase()] ?? raw;
+}
+
 function fmt(n: number) { return n.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function fmtDate(iso: string) {
     return new Date(iso).toLocaleString('th-TH', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -173,7 +185,7 @@ function OrderDetailModal({ order, token, onClose, onEdit, onRetry }: {
                         { label: 'แพ็กเกจ', value: order.pkg },
                         { label: 'UID', value: order.uid },
                         { label: 'อีเมล', value: order.email },
-                        { label: 'วิธีชำระ', value: order.method },
+                        { label: 'วิธีชำระ', value: fmtMethod(order.method) },
                         { label: 'ยอดชำระ', value: `฿${fmt(order.amount)}` },
                         { label: 'ส่วนลด', value: order.discount > 0 ? `-฿${fmt(order.discount)}` : '-' },
                         { label: 'คูปอง', value: order.coupon ?? '-' },
@@ -341,7 +353,7 @@ export default function OrdersAdminPage() {
                 </div>
                 <div className="flex items-center gap-2">
                     <button onClick={handleExport} disabled={exporting}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20 hover:bg-green-500/20 transition disabled:opacity-50"
+                        className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl bg-foreground text-background text-xs font-bold hover:bg-foreground/90 transition disabled:opacity-50 cursor-pointer shadow-sm"
                     >
                         <Download size={12} />
                         <span className="hidden sm:inline">{exporting ? 'กำลัง Export...' : 'Export CSV'}</span>
@@ -454,7 +466,7 @@ export default function OrdersAdminPage() {
                                     <p className="text-xs font-bold text-foreground">฿{fmt(o.amount)}</p>
                                     {o.discount>0 && <p className="text-[10px] text-purple-500 font-bold">-฿{fmt(o.discount)}</p>}
                                 </div>
-                                <p className="text-xs truncate text-foreground/80 font-medium">{o.method}</p>
+                                <p className="text-xs truncate text-foreground/80 font-medium">{fmtMethod(o.method)}</p>
                                 <div>
                                     <StatusBadge status={o.status} />
                                 </div>

@@ -221,6 +221,48 @@ export function Header() {
         }
     }, [user?.balance]);
 
+    // Triggers a beautiful celebration confetti blast when the Gacha Wheel prize modal opens
+    useEffect(() => {
+        if (showPrizeClaimed && SEGMENTS[winningSegmentIndex]?.value > 0) {
+            import("canvas-confetti").then((module) => {
+                const confetti = module.default;
+                
+                // Burst of 150 particles from center of the screen
+                confetti({
+                    particleCount: 150,
+                    spread: 80,
+                    origin: { y: 0.45 }
+                });
+
+                // Extra shower effect from left and right corners for 2.5 seconds
+                const duration = 2.5 * 1000;
+                const end = Date.now() + duration;
+
+                const frame = () => {
+                    confetti({
+                        particleCount: 5,
+                        angle: 60,
+                        spread: 55,
+                        origin: { x: 0, y: 0.8 }
+                    });
+                    confetti({
+                        particleCount: 5,
+                        angle: 120,
+                        spread: 55,
+                        origin: { x: 1, y: 0.8 }
+                    });
+
+                    if (Date.now() < end) {
+                        requestAnimationFrame(frame);
+                    }
+                };
+                frame();
+            }).catch((err) => {
+                console.error("Confetti launch failed:", err);
+            });
+        }
+    }, [showPrizeClaimed, winningSegmentIndex]);
+
     // Gacha setup
     const SEGMENTS = [
         { value: 5, label: "5 COINS" },
@@ -303,31 +345,6 @@ export function Header() {
         if (prize.value > 0) {
             setClaimedPrizeText(`ได้รับ ${prize.value} COINS!`);
             setShowPrizeClaimed(true);
-
-            import("canvas-confetti").then((confetti) => {
-                const duration = 3.5 * 1000;
-                const end = Date.now() + duration;
-
-                const frame = () => {
-                    confetti.default({
-                        particleCount: 4,
-                        angle: 60,
-                        spread: 55,
-                        origin: { x: 0, y: 0.85 }
-                    });
-                    confetti.default({
-                        particleCount: 4,
-                        angle: 120,
-                        spread: 55,
-                        origin: { x: 1, y: 0.85 }
-                    });
-
-                    if (Date.now() < end) {
-                        requestAnimationFrame(frame);
-                    }
-                };
-                frame();
-            });
 
             try {
                 // Call dedicated gacha claim endpoint to increment wallet balance directly

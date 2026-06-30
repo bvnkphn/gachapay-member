@@ -3,97 +3,81 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
-import { useLanguage } from "@/components/language-context";
 import {
-  Monitor, Smartphone, Tablet, Activity,
-  Save, Check, RefreshCw, Languages,
-  Shield, Clock,
+  Save, Check, RefreshCw, Shield, Clock, Activity, AlertTriangle
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
-const cardStyle = { background: "rgba(11,15,32,0.85)", border: "1px solid #1c2540" };
-
-const BREAKPOINTS = [
-  { id: "mobile",  label: "Mobile",  icon: Smartphone, px: "< 768px",    ok: true },
-  { id: "tablet",  label: "Tablet",  icon: Tablet,     px: "768–1024px", ok: true },
-  { id: "desktop", label: "Desktop", icon: Monitor,    px: "> 1024px",   ok: true },
-];
-
-const LANGUAGES = [
-  { code: "th" as const, label: "ภาษาไทย", flag: "🇹🇭" },
-  { code: "en" as const, label: "English",  flag: "🇬🇧" },
-];
-
-function Toggle({ on, onChange, color = "#34d399", disabled = false }: {
-  on: boolean; onChange: () => void; color?: string; disabled?: boolean;
+// Modern Tailwind Switch Toggle Component
+function Toggle({ on, onChange, color = "bg-primary", disabled = false }: {
+  on: boolean;
+  onChange: () => void;
+  color?: string;
+  disabled?: boolean;
 }) {
   return (
-    <button onClick={onChange} disabled={disabled}
-      style={{
-        position: "relative", width: 44, height: 24, borderRadius: 12,
-        background: on ? color : "#334155", border: "none",
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.5 : 1,
-        flexShrink: 0, transition: "background 0.2s",
-      }}>
-      <span style={{
-        position: "absolute", top: 2, left: on ? 22 : 2,
-        width: 20, height: 20, borderRadius: "50%", background: "white",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.3)", transition: "left 0.2s", display: "block",
-      }} />
+    <button
+      type="button"
+      onClick={onChange}
+      disabled={disabled}
+      className={cn(
+        "relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed",
+        on ? color : "bg-slate-200 dark:bg-slate-800"
+      )}
+    >
+      <span
+        className={cn(
+          "pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out",
+          on ? "translate-x-5" : "translate-x-0"
+        )}
+      />
     </button>
-  );
-}
-
-function StatusDot({ on }: { on: boolean }) {
-  return (
-    <span className="relative flex items-center justify-center w-5 h-5 flex-shrink-0">
-      {on && <span className="absolute w-full h-full rounded-full animate-ping opacity-40" style={{ background: "#34d399" }} />}
-      <span className="w-2.5 h-2.5 rounded-full" style={{ background: on ? "#34d399" : "#f87171" }} />
-    </span>
   );
 }
 
 export default function SystemControl() {
   const { token } = useAdminAuth();
 
-  // ✅ เชื่อม Language Context จริง
-  const { lang, setLang } = useLanguage();
-
   const [maintenance, setMaintenance] = useState(false);
   const [maintMsg, setMaintMsg]       = useState("ระบบกำลังปิดปรับปรุงชั่วคราว จะกลับมาให้บริการในเร็วๆ นี้ครับ 🙏");
   const [maintETA, setMaintETA]       = useState("30");
-  const [multiLang, setMultiLang]     = useState(true);
   const [notify, setNotify] = useState({
-    newOrder: true, failedTransaction: true, lowApiBalance: true, dailyReport: false,
+    newOrder: true,
+    failedTransaction: true,
+    lowApiBalance: true,
+    dailyReport: false,
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving]   = useState(false);
   const [saved, setSaved]     = useState(false);
   const [error, setError]     = useState("");
 
-  // ── Clock ─────────────────────────────────────────────────────
-  const [now, setNow] = useState(() => {
-    const d = new Date();
-    return `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`;
-  });
+  // Clock state
+  const [now, setNow] = useState("");
   useEffect(() => {
     const tick = () => {
       const d = new Date();
-      setNow(`${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}:${String(d.getSeconds()).padStart(2,"0")}`);
+      setNow(
+        `${String(d.getHours()).padStart(2, "0")}:${String(
+          d.getMinutes()
+        ).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`
+      );
     };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
   }, []);
 
-  // ── โหลดสถานะจาก API ─────────────────────────────────────────
+  // Fetch status from API
   const fetchStatus = useCallback(async () => {
     if (!token) return;
     setLoading(true);
+    setError("");
     try {
       const res = await axios.get(
         `${process.env.NEXT_PUBLIC_API_URL}/system/status`,
-        { headers: { Authorization: `Bearer ${token}` } },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       const d = res.data;
       setMaintenance(d.maintenance?.enabled ?? false);
@@ -105,300 +89,274 @@ export default function SystemControl() {
         lowApiBalance:     d.notifications?.lowApiBalance     ?? true,
         dailyReport:       d.notifications?.dailyReport       ?? false,
       });
-    } catch { setError("โหลดข้อมูลไม่สำเร็จ"); }
-    finally  { setLoading(false); }
+    } catch (err: any) {
+      console.error("Failed to load system settings:", err);
+      setError("ไม่สามารถดึงข้อมูลการตั้งค่าระบบได้");
+    } finally {
+      setLoading(false);
+    }
   }, [token]);
 
-  useEffect(() => { fetchStatus(); }, [fetchStatus]);
+  useEffect(() => {
+    fetchStatus();
+  }, [fetchStatus]);
 
-  // ── บันทึก ────────────────────────────────────────────────────
+  // Handle Save
   const handleSave = async () => {
     if (!token) return;
-    setSaving(true); setError("");
+    setSaving(true);
+    setError("");
     try {
       await Promise.all([
-        axios.patch(`${process.env.NEXT_PUBLIC_API_URL}/system/maintenance`,
+        axios.patch(
+          `${process.env.NEXT_PUBLIC_API_URL}/system/maintenance`,
           { enabled: maintenance, message: maintMsg, etaMinutes: Number(maintETA) },
-          { headers: { Authorization: `Bearer ${token}` } }),
-        axios.patch(`${process.env.NEXT_PUBLIC_API_URL}/system/notifications`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        ),
+        axios.patch(
+          `${process.env.NEXT_PUBLIC_API_URL}/system/notifications`,
           notify,
-          { headers: { Authorization: `Bearer ${token}` } }),
+          { headers: { Authorization: `Bearer ${token}` } }
+        ),
       ]);
       setSaved(true);
-      setTimeout(() => setSaved(false), 2500);
-    } catch { setError("บันทึกไม่สำเร็จ กรุณาลองใหม่"); }
-    finally  { setSaving(false); }
+      toast.success("บันทึกการตั้งค่าระบบทั้งหมดเสร็จสิ้น");
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err: any) {
+      console.error("Failed to save settings:", err);
+      setError("บันทึกข้อมูลตั้งค่าไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+      toast.error("ไม่สามารถบันทึกการตั้งค่าได้");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  // ── Toggle maintenance → save ทันที ──────────────────────────
+  // Toggle maintenance mode with instant API callback
   const toggleMaintenance = async () => {
     if (!token) return;
     const next = !maintenance;
     setMaintenance(next);
     try {
-      await axios.patch(`${process.env.NEXT_PUBLIC_API_URL}/system/maintenance`,
+      await axios.patch(
+        `${process.env.NEXT_PUBLIC_API_URL}/system/maintenance`,
         { enabled: next, message: maintMsg, etaMinutes: Number(maintETA) },
-        { headers: { Authorization: `Bearer ${token}` } });
-    } catch {
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(
+        next ? "เปิดใช้งานโหมดปิดปรับปรุงแล้ว" : "ปิดโหมดปิดปรับปรุงแล้ว"
+      );
+    } catch (err: any) {
       setMaintenance(!next);
-      setError("เปลี่ยนสถานะไม่สำเร็จ");
+      toast.error("เปลี่ยนสถานะโหมดปิดปรับปรุงล้มเหลว");
     }
   };
 
-  // ✅ เปลี่ยนภาษา — เรียก setLang จาก context ทันที ไม่ต้องกด save
-  const handleLangChange = (code: "th" | "en") => {
-    setLang(code);
-  };
+  if (loading) {
+    return (
+      <div className="p-10 flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <RefreshCw className="animate-spin text-primary" size={32} />
+        <p className="text-sm text-muted-foreground font-bold">กำลังโหลดการตั้งค่าระบบ...</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen pb-6 px-3 sm:px-5 pt-5"
-      style={{ background: "linear-gradient(160deg,#080c18 0%,#0a0e1e 60%,#060911 100%)", fontFamily: "'Noto Sans Thai',sans-serif" }}>
-      <div className="relative max-w-7xl mx-auto space-y-4">
+    <div className="p-3 sm:p-5 space-y-6">
+      
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <p className="text-[10px] tracking-widest uppercase font-mono mb-1 text-muted-foreground">
+            Super Admin · System settings
+          </p>
+          <h1 className="text-2xl sm:text-3xl font-black text-foreground tracking-tight">
+            ตั้งค่าระบบ <span className="text-primary font-bold">(System Control)</span>
+          </h1>
+        </div>
+      </div>
 
-        {/* Header */}
-        <div className="flex items-start justify-between gap-3 flex-wrap">
-          <div>
-            <p className="text-[10px] tracking-widest uppercase font-mono mb-1" style={{ color: "#3a4a6a" }}>
-              Super Admin · System
-            </p>
-            <h1 className="text-2xl sm:text-3xl font-bold text-white leading-tight">
-              System{" "}
-              <span style={{ background: "linear-gradient(90deg,#38bdf8,#818cf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                Control Panel
-              </span>
-            </h1>
+      {error && (
+        <div className="flex items-center gap-2.5 p-4 rounded-xl text-sm bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 font-semibold shadow-sm animate-in fade-in duration-200">
+          <AlertTriangle size={16} className="flex-shrink-0" />
+          <span>{error}</span>
+        </div>
+      )}
+
+      {/* Grid Containers */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        {/* Card 1: Maintenance Settings */}
+        <div
+          className={cn(
+            "bg-card border rounded-2xl shadow-sm p-4 sm:p-5 transition-all duration-300",
+            maintenance ? "border-rose-500/30 ring-1 ring-rose-500/10 bg-rose-500/[0.01]" : "border-border"
+          )}
+        >
+          <div className="flex items-center justify-between pb-3 mb-4 gap-3 border-b border-border">
+            <div className="flex items-center gap-3">
+              <div
+                className={cn(
+                  "w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 border transition-colors",
+                  maintenance
+                    ? "bg-rose-500/10 border-rose-500/20 text-rose-500"
+                    : "bg-primary/10 border-primary/20 text-primary"
+                )}
+              >
+                <Shield size={16} />
+              </div>
+              <div>
+                <p className="text-sm font-black text-foreground">โหมดปิดปรับปรุงระบบ</p>
+                <p className="text-[11px] text-muted-foreground font-bold">Maintenance Mode</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 flex-shrink-0">
+              {maintenance && (
+                <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black animate-pulse bg-rose-500/10 border border-rose-500/30 text-rose-500">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                  ACTIVE
+                </span>
+              )}
+              <Toggle on={maintenance} onChange={toggleMaintenance} color="bg-rose-500" />
+            </div>
           </div>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-xl self-start mt-1"
-            style={{ background: "rgba(11,15,32,0.85)", border: "1px solid #1c2540" }}>
-            <Clock size={13} style={{ color: "#38bdf8" }} />
-            <span className="font-mono text-sm font-bold" style={{ color: "#e2e8f0", letterSpacing: "0.08em" }}>{now}</span>
+
+          <div className="space-y-4">
+            <div>
+              <label className="text-xs font-bold text-muted-foreground mb-1.5 block">
+                ข้อความประกาศปิดปรับปรุงถึงลูกค้า
+              </label>
+              <textarea
+                value={maintMsg}
+                onChange={e => setMaintMsg(e.target.value)}
+                rows={3}
+                disabled={!maintenance}
+                className={cn(
+                  "w-full rounded-xl px-3 py-2.5 text-sm text-foreground outline-none resize-none transition-all border",
+                  maintenance
+                    ? "bg-background border-rose-500/35 focus:ring-1 focus:ring-rose-500"
+                    : "bg-muted/40 border-border cursor-not-allowed text-muted-foreground/80"
+                )}
+                placeholder="ระบุข้อความประกาศ..."
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-muted-foreground mb-1.5 block">
+                ระยะเวลาปิดปรับปรุงโดยประมาณ (ETA)
+              </label>
+              <div className="flex gap-2">
+                {["15", "30", "60", "120"].map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setMaintETA(t)}
+                    disabled={!maintenance}
+                    className={cn(
+                      "flex-1 py-2 rounded-xl text-xs font-extrabold transition-all border",
+                      !maintenance
+                        ? "bg-muted/20 border-border/80 text-muted-foreground/50 cursor-not-allowed"
+                        : maintETA === t
+                        ? "bg-rose-500/10 border-rose-500/30 text-rose-500"
+                        : "bg-background hover:bg-muted/30 border-border text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {t} นาที
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {maintenance && (
+              <div className="rounded-xl p-3.5 bg-rose-500/5 border border-rose-500/10 space-y-1.5">
+                <p className="text-xs font-bold text-rose-600 dark:text-rose-400 flex items-center gap-1.5">
+                  <Shield size={13} />
+                  พรีวิวข้อความประกาศที่จะแสดง:
+                </p>
+                <p className="text-xs leading-relaxed text-muted-foreground font-medium">
+                  "{maintMsg}" (โดยประมาณ {maintETA} นาที)
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        ) : (
-          <>
-            {/* Row 1: Maintenance + Notifications */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-              {/* Maintenance Mode */}
-              <div className="rounded-2xl p-4 sm:p-5"
-                style={maintenance
-                  ? { background: "rgba(248,113,113,0.06)", border: "1px solid rgba(248,113,113,0.35)" }
-                  : cardStyle}>
-                <div className="flex items-center justify-between pb-3 mb-4 gap-3"
-                  style={{ borderBottom: "1px solid #1c2540" }}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: maintenance ? "rgba(248,113,113,0.2)" : "rgba(129,140,248,0.1)" }}>
-                      <Shield size={16} style={{ color: maintenance ? "#f87171" : "#818cf8" }} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-white">Maintenance Mode</p>
-                      <p className="text-xs" style={{ color: "#64748b" }}>ปิดปรับปรุงระบบชั่วคราว</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2.5 flex-shrink-0">
-                    {maintenance && (
-                      <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold animate-pulse"
-                        style={{ background: "rgba(248,113,113,0.15)", color: "#f87171", border: "1px solid rgba(248,113,113,0.4)" }}>
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-400" />ON
-                      </span>
-                    )}
-                    <Toggle on={maintenance} onChange={toggleMaintenance} color="#f87171" />
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#94a3b8" }}>ข้อความแจ้งเตือนผู้ใช้</label>
-                    <textarea value={maintMsg} onChange={e => setMaintMsg(e.target.value)}
-                      rows={3} disabled={!maintenance}
-                      className="w-full rounded-xl px-3 py-2.5 text-sm text-white outline-none resize-none"
-                      style={{
-                        background: maintenance ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
-                        border: maintenance ? "1px solid rgba(248,113,113,0.3)" : "1px solid #1c2540",
-                        color: maintenance ? "white" : "#3a4a6a",
-                      }} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#94a3b8" }}>เวลาโดยประมาณ (นาที)</label>
-                    <div className="flex gap-2">
-                      {["15", "30", "60", "120"].map(t => (
-                        <button key={t} onClick={() => setMaintETA(t)} disabled={!maintenance}
-                          className="flex-1 py-2 rounded-xl text-sm font-semibold transition-all"
-                          style={maintETA === t && maintenance
-                            ? { background: "rgba(248,113,113,0.2)", color: "#f87171", border: "1px solid rgba(248,113,113,0.4)" }
-                            : { background: "rgba(255,255,255,0.03)", color: "#64748b", border: "1px solid #1c2540" }}>
-                          {t}m
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {maintenance && (
-                    <div className="rounded-xl p-3 text-center"
-                      style={{ background: "rgba(248,113,113,0.07)", border: "1px solid rgba(248,113,113,0.2)" }}>
-                      <Shield size={16} className="mx-auto mb-1" style={{ color: "#f87171" }} />
-                      <p className="text-xs font-bold text-white mb-1">ปิดปรับปรุงระบบ</p>
-                      <p className="text-[10px] leading-relaxed" style={{ color: "#94a3b8" }}>
-                        {maintMsg.slice(0, 80)}{maintMsg.length > 80 ? "..." : ""}
-                      </p>
-                      <p className="text-[10px] mt-1" style={{ color: "#f87171" }}>~{maintETA} นาที</p>
-                    </div>
-                  )}
-                </div>
+        {/* Card 2: Notification Settings */}
+        <div className="bg-card border border-border rounded-2xl shadow-sm p-4 sm:p-5 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-3 pb-3 mb-4 border-b border-border">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-primary/10 border border-primary/20 text-primary">
+                <Activity size={16} />
               </div>
-
-              {/* Notification Settings */}
-              <div className="rounded-2xl p-4 sm:p-5" style={cardStyle}>
-                <div className="flex items-center gap-2 pb-3 mb-4" style={{ borderBottom: "1px solid #1c2540" }}>
-                  <Activity size={14} style={{ color: "#38bdf8", flexShrink: 0 }} />
-                  <p className="text-sm font-bold text-white">Notification Settings</p>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full ml-auto font-semibold"
-                    style={{ background: "rgba(56,189,248,0.1)", color: "#38bdf8", border: "1px solid rgba(56,189,248,0.2)" }}>
-                    ส่งผ่าน Email
-                  </span>
-                </div>
-                <div className="space-y-2">
-                  {[
-                    { key: "newOrder",          label: "New order alerts",         sub: "แจ้งเตือนเมื่อมีออเดอร์ใหม่"    },
-                    { key: "failedTransaction", label: "Failed transaction alerts", sub: "แจ้งเตือนเมื่อการชำระล้มเหลว"  },
-                    { key: "lowApiBalance",     label: "Low API balance alerts",   sub: "แจ้งเตือนเมื่อเครดิต API ต่ำ"  },
-                    { key: "dailyReport",       label: "Daily report email",       sub: "รายงานสรุปประจำวัน"             },
-                  ].map(n => (
-                    <div key={n.key} className="flex items-center justify-between rounded-xl px-3 py-3 gap-3"
-                      style={{ background: "rgba(255,255,255,0.025)", border: "1px solid #141c30" }}>
-                      <div className="min-w-0">
-                        <p className="text-sm text-white font-medium truncate">{n.label}</p>
-                        <p className="text-[10px]" style={{ color: "#64748b" }}>{n.sub}</p>
-                      </div>
-                      <Toggle
-                        on={notify[n.key as keyof typeof notify]}
-                        onChange={() => setNotify(prev => ({ ...prev, [n.key]: !prev[n.key as keyof typeof notify] }))}
-                        color="#38bdf8"
-                      />
-                    </div>
-                  ))}
-                </div>
+              <div>
+                <p className="text-sm font-black text-foreground">การแจ้งเตือนและระบบบริการ</p>
+                <p className="text-[11px] text-muted-foreground font-bold">Notification & Reports</p>
               </div>
+              <span className="text-[10px] px-2 py-0.5 rounded-full ml-auto font-bold bg-sky-500/10 border border-sky-500/20 text-sky-500 select-none">
+                EMAIL SERVICE
+              </span>
             </div>
 
-            {/* Row 2: Language + Responsive */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-              {/* ✅ Language Settings — เชื่อม context จริง */}
-              <div className="rounded-2xl p-4 sm:p-5" style={cardStyle}>
-                <div className="flex items-center gap-2 pb-3 mb-4" style={{ borderBottom: "1px solid #1c2540" }}>
-                  <Languages size={14} style={{ color: "#fbbf24", flexShrink: 0 }} />
-                  <p className="text-sm font-bold text-white">Language Settings</p>
-                  {/* แสดงภาษาที่ใช้งานอยู่จริง */}
-                  <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full font-semibold"
-                    style={{ background: "rgba(251,191,36,0.12)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.3)" }}>
-                    ใช้งานอยู่: {lang === "th" ? "ภาษาไทย" : "English"}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between mb-4 rounded-xl px-3 py-3 gap-3"
-                  style={{ background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.2)" }}>
+            <div className="space-y-3">
+              {[
+                { key: "newOrder",          label: "New order alerts",         sub: "ส่งอีเมลแจ้งเตือนผู้ดูแลระบบเมื่อมีคำสั่งซื้อใหม่"    },
+                { key: "failedTransaction", label: "Failed transaction alerts", sub: "ส่งอีเมลแจ้งเตือนเมื่อการชำระเงินไม่ผ่านหรือถูกปฏิเสธ"  },
+                { key: "lowApiBalance",     label: "Low API balance alerts",   sub: "ส่งอีเมลแจ้งเตือนทันทีเมื่อยอดเครดิต API คู่ค้าหลังบ้านต่ำ"  },
+                { key: "dailyReport",       label: "Daily report email",       sub: "รับรายงานสรุปยอดขาย ประจำวันทุกคืนเวลา 00:00 น."             },
+              ].map(n => (
+                <div
+                  key={n.key}
+                  className="flex items-center justify-between rounded-xl px-3.5 py-3 gap-3 bg-muted/20 border border-border/80"
+                >
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-white">Multi-language Support</p>
-                    <p className="text-xs" style={{ color: "#64748b" }}>เปิดใช้งานระบบหลายภาษา (TH / EN)</p>
+                    <p className="text-xs text-foreground font-extrabold">{n.label}</p>
+                    <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{n.sub}</p>
                   </div>
-                  <Toggle on={multiLang} onChange={() => {
-                    const next = !multiLang;
-                    setMultiLang(next);
-                    // ถ้าปิด multi-lang → reset กลับ TH
-                    if (!next) setLang("th");
-                  }} color="#fbbf24" />
+                  <Toggle
+                    on={notify[n.key as keyof typeof notify]}
+                    onChange={() =>
+                      setNotify(prev => ({ ...prev, [n.key]: !prev[n.key as keyof typeof notify] }))
+                    }
+                  />
                 </div>
-
-                <p className="text-xs font-semibold mb-2" style={{ color: "#64748b" }}>
-                  ภาษาเริ่มต้น{" "}
-                  <span style={{ color: "#3a4a6a" }}>— เปลี่ยนทันที ไม่ต้องกดบันทึก</span>
-                </p>
-                <div className="flex gap-2">
-                  {LANGUAGES.map(l => (
-                    <button key={l.code}
-                      onClick={() => handleLangChange(l.code)}
-                      disabled={!multiLang && l.code !== "th"}
-                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40"
-                      style={lang === l.code
-                        ? { background: "rgba(251,191,36,0.18)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.4)" }
-                        : { background: "rgba(255,255,255,0.03)", color: "#64748b", border: "1px solid #1c2540" }}>
-                      <span className="text-base">{l.flag}</span>
-                      <span>{l.label}</span>
-                      {lang === l.code && <Check size={12} />}
-                    </button>
-                  ))}
-                </div>
-
-                {/* แสดง preview ข้อความตามภาษา */}
-                <div className="mt-3 px-3 py-2.5 rounded-xl"
-                  style={{ background: "rgba(255,255,255,0.03)", border: "1px solid #1c2540" }}>
-                  <p className="text-[10px] font-semibold mb-1" style={{ color: "#64748b" }}>PREVIEW</p>
-                  <p className="text-xs text-white">
-                    {lang === "th" ? "🇹🇭 หน้าเว็บแสดงเป็นภาษาไทย" : "🇬🇧 Website displayed in English"}
-                  </p>
-                  <p className="text-[10px] mt-1" style={{ color: "#64748b" }}>
-                    {lang === "th" ? "เมนู, ปุ่ม และข้อความทั้งหมดเป็นภาษาไทย" : "All menus, buttons and text in English"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Responsive Status */}
-              <div className="rounded-2xl p-4 sm:p-5" style={cardStyle}>
-                <div className="flex items-center gap-2 pb-3 mb-4" style={{ borderBottom: "1px solid #1c2540" }}>
-                  <Monitor size={14} style={{ color: "#a78bfa", flexShrink: 0 }} />
-                  <p className="text-sm font-bold text-white">Responsive Status</p>
-                </div>
-                <div className="space-y-2.5">
-                  {BREAKPOINTS.map(bp => {
-                    const Icon = bp.icon;
-                    return (
-                      <div key={bp.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5"
-                        style={{ background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.15)" }}>
-                        <Icon size={16} style={{ color: "#a78bfa", flexShrink: 0 }} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-white">{bp.label}</p>
-                          <p className="text-xs font-mono" style={{ color: "#64748b" }}>{bp.px}</p>
-                        </div>
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <StatusDot on={bp.ok} />
-                          <span className="text-xs font-semibold" style={{ color: bp.ok ? "#34d399" : "#f87171" }}>
-                            {bp.ok ? "Passed" : "Failed"}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+              ))}
             </div>
+          </div>
 
-            {error && (
-              <div className="px-4 py-3 rounded-xl text-sm text-red-400"
-                style={{ background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.25)" }}>
-                {error}
-              </div>
-            )}
+          {/* Save Action inside container footer */}
+          <div className="pt-4 border-t border-border mt-4 flex justify-end">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving}
+              className={cn(
+                "flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-black transition-all shadow-md disabled:opacity-50 cursor-pointer",
+                saved
+                  ? "bg-emerald-500 hover:bg-emerald-600 text-white"
+                  : "bg-foreground text-background hover:bg-foreground/90"
+              )}
+            >
+              {saved ? (
+                <>
+                  <Check size={14} />
+                  บันทึกสำเร็จ
+                </>
+              ) : saving ? (
+                <>
+                  <RefreshCw size={14} className="animate-spin" />
+                  กำลังบันทึก...
+                </>
+              ) : (
+                <>
+                  <Save size={14} />
+                  บันทึกการตั้งค่าทั้งหมด
+                </>
+              )}
+            </button>
+          </div>
+        </div>
 
-            {/* Save Button (Maintenance + Notifications เท่านั้น) */}
-            <div className="flex justify-end pb-2">
-              <button onClick={handleSave} disabled={saving}
-                className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
-                style={saved
-                  ? { background: "rgba(52,211,153,0.2)", color: "#34d399", border: "1px solid rgba(52,211,153,0.4)" }
-                  : { background: "linear-gradient(135deg,#38bdf8,#818cf8)", color: "white" }}>
-                {saved   ? <><Check size={15} /> บันทึกแล้ว</>
-                 : saving ? <><RefreshCw size={15} className="animate-spin" /> กำลังบันทึก...</>
-                 : <><Save size={15} /> บันทึกการตั้งค่าทั้งหมด</>}
-              </button>
-            </div>
-          </>
-        )}
       </div>
+
     </div>
   );
 }

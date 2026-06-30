@@ -18,6 +18,18 @@ function fmt(n: number) {
   return n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  coin: 'Coin', wallet: 'Coin', gacha_wallet: 'Coin',
+  truemoney: 'TrueWallet', truewallet: 'TrueWallet', true_wallet: 'TrueWallet',
+  qr: 'QR', promptpay: 'QR',
+  bank_transfer: 'BankTransfer', banktransfer: 'BankTransfer',
+  free: 'Free',
+};
+function fmtMethod(raw: string | null | undefined): string {
+  if (!raw || raw === '-' || raw === 'unknown') return '-';
+  return PAYMENT_METHOD_LABELS[raw.toLowerCase()] ?? raw;
+}
+
 function StatCard({ label, value, sub, icon: Icon, trend }: {
   label: string; value: string; sub?: string; icon: any; trend?: "up" | "down";
 }) {
@@ -402,7 +414,7 @@ export default function FinancialDashboard() {
                   <td className="px-4 py-3 font-mono text-xs text-purple-600 dark:text-purple-400 whitespace-nowrap">฿{fmt(r.vat)}</td>
                   <td className="px-4 py-3 font-mono text-xs text-rose-500 whitespace-nowrap">฿{fmt(r.cost)}</td>
                   <td className="px-4 py-3 font-bold font-mono text-xs text-emerald-500 whitespace-nowrap">฿{fmt(r.profit)}</td>
-                  <td className="px-4 py-3 text-xs text-muted-foreground font-bold whitespace-nowrap">{r.paymentMethod}</td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground font-bold whitespace-nowrap">{fmtMethod(r.paymentMethod)}</td>
                   <td className="px-4 py-3">
                     <span className={cn(
                       "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap border",

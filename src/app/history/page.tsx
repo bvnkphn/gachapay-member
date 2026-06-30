@@ -8,6 +8,7 @@ import { useSidebar } from "@/components/sidebar-context";
 import { api } from "@/lib/api";
 import { ChevronLeft, Search, Loader2, Download, SlidersHorizontal, History } from "lucide-react";
 import { cn } from "@/lib/utils";
+import ReceiptModal from "@/components/receipt-modal";
 
 const STATUS_STYLE: Record<string, { label: string; color: string }> = {
     COMPLETED: { label: "จัดการคำสั่งซื้อแล้ว", color: "bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/10 dark:text-emerald-400" },
@@ -27,11 +28,30 @@ export default function HistoryPage() {
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
     const [paymentFilter, setPaymentFilter] = useState<string>("all");
+
+    const PAYMENT_METHOD_LABELS: Record<string, string> = {
+        coin: 'Coin', wallet: 'Coin', gacha_wallet: 'Coin',
+        truemoney: 'TrueWallet', truewallet: 'TrueWallet', true_wallet: 'TrueWallet',
+        qr: 'QR', promptpay: 'QR',
+        bank_transfer: 'BankTransfer', banktransfer: 'BankTransfer',
+        free: 'Free',
+    };
+    function fmtMethod(raw: string | null | undefined): string {
+        if (!raw || raw === '-' || raw === 'unknown') return '-';
+        return PAYMENT_METHOD_LABELS[raw.toLowerCase()] ?? raw;
+    }
+    function matchPaymentFilter(method: string | null | undefined, filter: string): boolean {
+        if (filter === 'all') return true;
+        if (!method) return false;
+        const label = fmtMethod(method);
+        return label === filter;
+    }
     const [dateFilter, setDateFilter] = useState<string>("all");
     const [minAmount, setMinAmount] = useState<string>("");
     const [maxAmount, setMaxAmount] = useState<string>("");
     const [currentPage, setCurrentPage] = useState(1);
     const [showFilters, setShowFilters] = useState(false);
+    const [receiptOrder, setReceiptOrder] = useState<any | null>(null);
     const ITEMS_PER_PAGE = 10;
 
     const fetchOrders = () => {
@@ -70,7 +90,7 @@ export default function HistoryPage() {
             o.order_id?.toLowerCase().includes(search.toLowerCase()) ||
             o.game_name?.toLowerCase().includes(search.toLowerCase());
         const matchesStatus = statusFilter === "all" || o.status_label === statusFilter;
-        const matchesPayment = paymentFilter === "all" || o.payment_method === paymentFilter;
+        const matchesPayment = matchPaymentFilter(o.payment_method, paymentFilter);
         const matchesDate = dateFilter === "all" || (() => {
             const orderDate = new Date(o.created_at);
             const today = new Date();
@@ -95,6 +115,7 @@ export default function HistoryPage() {
     );
 
     return (
+        <>
         <div className="min-h-screen pt-16 pb-24">
             <div className="container mx-auto px-6 max-w-5xl pt-8">
 
@@ -214,9 +235,11 @@ export default function HistoryPage() {
                                         className="w-full bg-muted/40 border border-border/50 rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer h-[34px]"
                                     >
                                         <option value="all">ทั้งหมด</option>
-                                        <option value="PromptPay">QR</option>
-                                        <option value="Wallet">True Wallet</option>
-                                        <option value="Bank Transfer">Bank Transfer</option>
+                                        <option value="Coin">Coin</option>
+                                        <option value="TrueWallet">TrueWallet</option>
+                                        <option value="QR">QR</option>
+                                        <option value="BankTransfer">BankTransfer</option>
+                                        <option value="Free">Free</option>
                                     </select>
                                 </div>
 
@@ -296,7 +319,7 @@ export default function HistoryPage() {
                                                 #{order.order_id}
                                             </td>
                                             <td className="py-4 text-muted-foreground text-xs whitespace-nowrap">
-                                                {order.payment_method ?? '-'}
+                                                {fmtMethod(order.payment_method)}
                                             </td>
                                             <td className="py-4 text-right font-semibold text-foreground whitespace-nowrap">
                                                 ฿{parseFloat(order.total_price).toFixed(2)}
@@ -305,9 +328,7 @@ export default function HistoryPage() {
                                                 <div className="flex items-center justify-end gap-3">
                                                     {order.status_label === "COMPLETED" && (
                                                         <button
-                                                            onClick={() => {
-                                                                console.log("Request receipt for order:", order.order_id);
-                                                            }}
+                                                            onClick={() => setReceiptOrder(order)}
                                                             className="text-xs text-primary hover:text-primary/80 flex items-center gap-2 cursor-pointer font-semibold"
                                                             title="ขอใบเสร็จ"
                                                         >
@@ -354,5 +375,15 @@ export default function HistoryPage() {
                 </div>
             </div>
         </div>
+
+        {/* Receipt Modal */}
+        {receiptOrder && (
+            <ReceiptModal
+                order={receiptOrder}
+                user={user}
+                onClose={() => setReceiptOrder(null)}
+            />
+        )}
+    </>
     );
 }

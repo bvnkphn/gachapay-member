@@ -29,6 +29,7 @@ const navSections = [
     items: [
       { id: "report",   label: "Reports",         icon: BarChart2,  path: "/admin/report"         },
       { id: "payment",  label: "Payment",         icon: CreditCard, path: "/admin/payment-admin"  },
+      { id: "credit",   label: "Credit",          icon: Zap,        path: "/admin/api-credit"     },
       { id: "settings", label: "Settings",        icon: Settings,   path: "/admin/system-control" },
     ],
   },
@@ -97,6 +98,7 @@ const getPageTitle = (pathname: string) => {
   if (pathname === '/admin/support-admin') return 'ช่วยเหลือ';
   if (pathname === '/admin/report') return 'รายงาน';
   if (pathname === '/admin/payment-admin') return 'Payment';
+  if (pathname === '/admin/api-credit') return 'API Credit';
   if (pathname === '/admin/system-control') return 'ตั้งค่า';
   if (pathname === '/admin/audit-log') return 'Audit Log';
   return 'ระบบจัดการ GACHAPAY';

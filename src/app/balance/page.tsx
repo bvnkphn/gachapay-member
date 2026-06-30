@@ -203,83 +203,112 @@ function PaymentFlowModal({
     const overlay = "fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200";
     const card = "bg-card border border-border/80 rounded-3xl w-full max-w-md p-4 sm:p-5 relative shadow-2xl text-foreground max-h-[85vh] overflow-y-auto custom-scrollbar flex flex-col";
 
-    const DevNav = () => (
-        <div className="w-full mt-4">
-            <button
-                type="button"
-                onClick={() => setShowAdminPanel(!showAdminPanel)}
-                className="w-full py-2 rounded-xl border border-dashed border-yellow-500/30 hover:border-yellow-500/60 bg-yellow-500/5 hover:bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 font-bold text-[10px] flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
-            >
-                {showAdminPanel ? "🔒 ปิดแผงควบคุมจำลอง (Close Panel)" : "🛠️ เปิดแผงควบคุมจำลอง (Admin Panel)"}
-            </button>
-            
-            {showAdminPanel && (
-                <div className="bg-muted/40 border border-border/45 rounded-2xl p-3.5 mt-3 animate-in slide-in-from-top-2 duration-300">
-                    <p className="text-[9px] font-extrabold text-yellow-600 dark:text-yellow-400 uppercase tracking-widest text-center mb-2 flex items-center justify-center gap-1.5 select-none">
-                        ⚙️ Admin Simulator Controller
-                    </p>
-                    <div className="grid grid-cols-4 gap-1.5">
-                        <button
-                            type="button"
-                            onClick={() => setStep("qr")}
-                            className={cn(
-                                "text-[10px] py-1.5 rounded-lg font-bold transition-all cursor-pointer text-center",
-                                step === "qr" 
-                                    ? "bg-primary text-white shadow-[0_0_10px_rgba(108,99,255,0.4)]" 
-                                    : "bg-muted/60 dark:bg-white/5 text-muted-foreground hover:bg-muted/80 dark:hover:bg-white/10"
+    const DevNav = () => {
+        // Show simulator for all methods so the user can test payment success/failure in sandbox mode
+        const isBank = method.id === "bank_transfer";
+
+        return (
+            <div className="w-full mt-4">
+                <button
+                    type="button"
+                    onClick={() => setShowAdminPanel(!showAdminPanel)}
+                    className="w-full py-2 rounded-xl border border-dashed border-yellow-500/30 hover:border-yellow-500/60 bg-yellow-500/5 hover:bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 font-bold text-[10px] flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+                >
+                    {showAdminPanel ? "🔒 ปิดแผงควบคุมจำลอง (Close Panel)" : "🛠️ เปิดแผงควบคุมจำลอง (Admin Panel)"}
+                </button>
+                
+                {showAdminPanel && (
+                    <div className="bg-muted/40 border border-border/45 rounded-2xl p-3.5 mt-3 animate-in slide-in-from-top-2 duration-300">
+                        <p className="text-[9px] font-extrabold text-yellow-600 dark:text-yellow-400 uppercase tracking-widest text-center mb-2 flex items-center justify-center gap-1.5 select-none">
+                            ⚙️ Admin Simulator Controller
+                        </p>
+                        <div className={cn("grid gap-1.5", isBank ? "grid-cols-3" : "grid-cols-2")}>
+                            {isBank && (
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        setUploading(true);
+                                        try {
+                                            if (selectedFile) {
+                                                const uploadResult = await api.uploadSlip(selectedFile);
+                                                await api.submitSlip(txId, uploadResult.url, bankDetails?.code);
+                                            }
+                                            setStep("awaiting_review");
+                                        } catch (err: any) {
+                                            toast.error("อัพโหลดสลิปจำลองล้มเหลว: " + err.message);
+                                        } finally {
+                                            setUploading(false);
+                                        }
+                                    }}
+                                    className={cn(
+                                        "text-[10px] py-1.5 rounded-lg font-bold transition-all cursor-pointer text-center",
+                                        step === "awaiting_review" 
+                                            ? "bg-primary text-white shadow-[0_0_10px_rgba(108,99,255,0.4)]" 
+                                            : "bg-muted/60 dark:bg-white/5 text-muted-foreground hover:bg-muted/80 dark:hover:bg-white/10"
+                                    )}
+                                >
+                                    ตรวจสลิป
+                                </button>
                             )}
-                        >
-                            QR Code
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setStep("processing")}
-                            className={cn(
-                                "text-[10px] py-1.5 rounded-lg font-bold transition-all cursor-pointer text-center",
-                                step === "processing" 
-                                    ? "bg-indigo-600 text-white shadow-[0_0_10px_rgba(79,70,229,0.4)]" 
-                                    : "bg-muted/60 dark:bg-white/5 text-muted-foreground hover:bg-muted/80 dark:hover:bg-white/10"
-                            )}
-                        >
-                            ตรวจเงิน
-                        </button>
-                        <button
-                            type="button"
-                            onClick={async () => {
-                                try {
-                                    await api.simulateTopupComplete(txId);
-                                    setStep("success");
-                                    onSuccess?.();
-                                } catch {
-                                    setStep("failed");
-                                }
-                            }}
-                            className={cn(
-                                "text-[10px] py-1.5 rounded-lg font-bold transition-all cursor-pointer text-center",
-                                step === "success" 
-                                    ? "bg-green-600 text-white shadow-[0_0_10px_rgba(22,163,74,0.4)]" 
-                                    : "bg-green-500/10 dark:bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/20 dark:hover:bg-green-500/30"
-                            )}
-                        >
-                            สำเร็จ
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setStep("failed")}
-                            className={cn(
-                                "text-[10px] py-1.5 rounded-lg font-bold transition-all cursor-pointer text-center",
-                                step === "failed" 
-                                    ? "bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.4)]" 
-                                    : "bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/20 dark:hover:bg-red-500/30"
-                            )}
-                        >
-                            ล้มเหลว
-                        </button>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    setUploading(true);
+                                    try {
+                                        if (isBank && selectedFile) {
+                                            const uploadResult = await api.uploadSlip(selectedFile);
+                                            await api.submitSlip(txId, uploadResult.url, bankDetails?.code);
+                                        }
+                                        await api.simulateTopupComplete(txId);
+                                        setStep("success");
+                                        onSuccess?.();
+                                    } catch (err: any) {
+                                        toast.error("จำลองสถานะสำเร็จล้มเหลว: " + err.message);
+                                    } finally {
+                                        setUploading(false);
+                                    }
+                                }}
+                                className={cn(
+                                    "text-[10px] py-1.5 rounded-lg font-bold transition-all cursor-pointer text-center",
+                                    step === "success" 
+                                        ? "bg-green-600 text-white shadow-[0_0_10px_rgba(22,163,74,0.4)]" 
+                                        : "bg-green-500/10 dark:bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/20 dark:hover:bg-green-500/30"
+                                )}
+                            >
+                                สำเร็จ
+                            </button>
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    setUploading(true);
+                                    try {
+                                        if (isBank && selectedFile) {
+                                            const uploadResult = await api.uploadSlip(selectedFile);
+                                            await api.submitSlip(txId, uploadResult.url, bankDetails?.code);
+                                        }
+                                        await api.simulateTopupCancel(txId);
+                                        setStep("failed");
+                                    } catch (err: any) {
+                                        toast.error("จำลองสถานะล้มเหลวล้มเหลว: " + err.message);
+                                    } finally {
+                                        setUploading(false);
+                                    }
+                                }}
+                                className={cn(
+                                    "text-[10px] py-1.5 rounded-lg font-bold transition-all cursor-pointer text-center",
+                                    step === "failed" 
+                                        ? "bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.4)]" 
+                                        : "bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/20 dark:hover:bg-green-500/30"
+                                )}
+                            >
+                                ล้มเหลว
+                            </button>
+                        </div>
                     </div>
-                </div>
-            )}
-        </div>
-    );
+                )}
+            </div>
+        );
+    };
 
     if (step === "qr" && method.id === "bank_transfer") {
         return (
@@ -518,31 +547,7 @@ function PaymentFlowModal({
                         </div>
                     )}
 
-                    <div className="space-y-3">
-                        <button
-                            disabled={uploading}
-                            onClick={handleForceComplete}
-                            className="w-full py-3 rounded-xl bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600 transition"
-                        >
-                            ขอให้ระบบทำรายการสำเร็จอีกครั้ง
-                        </button>
-                        <button 
-                            onClick={() => {
-                                onSuccess?.();
-                                onClose();
-                            }}
-                            className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
-                        >
-                            <History className="w-4 h-4" />
-                            ดูประวัติการเติมเงิน
-                        </button>
-                        <button 
-                            onClick={onClose}
-                            className="w-full py-2.5 rounded-xl border border-border/50 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-all cursor-pointer"
-                        >
-                            ปิด
-                        </button>
-                    </div>
+                    {/* Buttons removed as requested */}
                 </div>
             </div>
         </div>
@@ -1066,6 +1071,7 @@ export default function BalancePage() {
     const [minAmount, setMinAmount] = useState("");
     const [maxAmount, setMaxAmount] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
+    const [vatRate, setVatRate] = useState<number>(7);
 
     const infoText = useMemo(() => {
         switch (selectedMethod) {
@@ -1117,6 +1123,9 @@ export default function BalancePage() {
                 setMethods(d ?? []);
                 if (d?.length) setSelectedMethod(d[0].code);
             }),
+            api.getPaymentVatRate().then((d) => {
+                if (d && typeof d.vatRate === "number") setVatRate(d.vatRate);
+            }).catch(() => {}),
             api.getTopupTransactions({ limit: 100 }).then((d) => setTxHistory(d?.items ?? [])),
             // restore pending tx if exists
             api.getTopupTransactions({ status: "pending", limit: 1 }).then((d) => {
@@ -1191,7 +1200,10 @@ export default function BalancePage() {
     }, [filteredHistory, historyPage]);
 
     const topupAmount = selectedAmount ?? (customAmount ? parseFloat(customAmount) || 0 : 0);
-    const fee = selectedMethod === "truemoney" ? Math.round(topupAmount * 0.015 * 100) / 100 : 0.0;
+    const activeMethodObj = methods.find(m => m.code === selectedMethod);
+    const methodFeePercent = activeMethodObj ? activeMethodObj.fee ?? 0 : (selectedMethod === "truemoney" ? 1.5 : 0);
+    const fee = Math.round(topupAmount * (methodFeePercent / 100) * 100) / 100;
+    const vat = 0;
     const total = topupAmount + fee;
 
     const handleConfirmTopup = async () => {
@@ -1208,7 +1220,16 @@ export default function BalancePage() {
         }
     };
 
-    const activeMethod = methods.find(m => m.code === selectedMethod) ?? PAYMENT_METHODS.find(m => m.id === selectedMethod);
+    const mergedMethods = PAYMENT_METHODS.map(staticMethod => {
+        const dbMethod = methods.find(m => m.code === staticMethod.id);
+        return {
+            ...staticMethod,
+            disabled: !dbMethod,
+            fee: dbMethod ? dbMethod.fee : (staticMethod.id === "truemoney" ? 1.5 : 0),
+        };
+    });
+
+    const activeMethod = methods.find(m => m.code === selectedMethod) ?? mergedMethods.find(m => m.id === selectedMethod);
 
     return (
         <div className="min-h-screen pt-16 pb-24">
@@ -1250,28 +1271,44 @@ export default function BalancePage() {
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
                             {/* Left Side: Wallet Icon and Balance */}
                             <div className="flex items-center gap-4 sm:gap-6">
-                                <div className="w-16 h-16 rounded-2xl bg-primary/10 dark:bg-primary/20 border border-primary/20 dark:border-primary/30 flex items-center justify-center shadow-[0_0_20px_rgba(108,99,255,0.1)] dark:shadow-[0_0_20px_rgba(108,99,255,0.15)] shrink-0">
-                                    <Wallet className="w-8 h-8 text-primary" />
+                                <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-sky-500/10 to-indigo-500/10 dark:from-sky-500/20 dark:to-indigo-500/20 border border-sky-500/20 dark:border-sky-500/30 flex items-center justify-center shadow-[0_0_20px_rgba(14,165,233,0.15)] shrink-0">
+                                    <Wallet className="w-8 h-8 text-sky-500" />
                                 </div>
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                     <p className="text-[10px] font-extrabold tracking-widest uppercase text-muted-foreground">GACHAPAY WALLET</p>
-                                    <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600">
-                                        {(walletBalance).toFixed(2)} <span className="text-sm font-bold text-foreground/70 select-none">COIN</span>
-                                    </h2>
+                                    <div className="flex flex-col gap-0.5">
+                                        <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 leading-none">
+                                            {(walletBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-black text-amber-500 tracking-wider">COIN</span>
+                                        </h2>
+                                        <p className="text-xs font-bold text-muted-foreground flex items-center gap-1.5 mt-0.5 select-none flex-wrap">
+                                            <span className="text-[10px] text-muted-foreground/60 font-medium">มูลค่าโดยประมาณ:</span>
+                                            <span className="text-foreground/80 font-extrabold">฿{(walletBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                            <span className="text-[9px] text-muted-foreground/60 mr-1">THB</span>
+                                            <span className="text-[10px] text-muted-foreground/40 font-bold">
+                                                (1 COIN ≈ 1.00 THB)
+                                            </span>
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Right Side: Wallet details grid */}
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-6 pt-4 md:pt-0 border-t md:border-t-0 md:border-l border-border/50 pl-0 md:pl-8 flex-1 max-w-xl">
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                     <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">ยอดเงินที่เติม</p>
-                                    <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{(depositedBalance).toFixed(2)} COIN</p>
+                                    <p className="text-base font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                                        {(depositedBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        <span className="text-[9px] font-bold text-muted-foreground/50">COIN</span>
+                                    </p>
                                 </div>
-                                <div className="space-y-1">
+                                <div className="space-y-1.5">
                                     <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">โบนัสสะสม</p>
-                                    <p className="text-sm font-bold text-amber-600 dark:text-yellow-400">{(bonusBalance).toFixed(2)} COIN</p>
+                                    <p className="text-base font-extrabold text-amber-600 dark:text-yellow-400 flex items-center gap-1.5">
+                                        {(bonusBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        <span className="text-[9px] font-bold text-muted-foreground/50">COIN</span>
+                                    </p>
                                 </div>
-                                <div className="space-y-1 col-span-2 sm:col-span-1">
+                                <div className="space-y-1.5 col-span-2 sm:col-span-1">
                                     <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">เจ้าของกระเป๋า</p>
                                     <p className="text-sm font-bold text-foreground/90 truncate max-w-[180px]">{user?.email?.split('@')[0] || "MEMBER"}</p>
                                 </div>
@@ -1327,7 +1364,7 @@ export default function BalancePage() {
                                 </p>
                                 
                                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    {PAYMENT_METHODS.map(m => (
+                                    {mergedMethods.map(m => (
                                         <button
                                             key={m.id}
                                             type="button"
@@ -1454,7 +1491,7 @@ export default function BalancePage() {
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-muted-foreground">
-                                            {t.feeLabel} {selectedMethod === "truemoney" && "(1.5%)"}
+                                            {t.feeLabel} ({methodFeePercent}%)
                                         </span>
                                         <span className={cn(
                                             "font-medium text-xs px-2.5 py-0.5 rounded-full select-none",

@@ -38,7 +38,27 @@ export async function apiRequest(
     });
 
     if (!response.ok) {
+        if (response.status === 503) {
+            try {
+                const clone = response.clone();
+                const body = await clone.json();
+                if (body && body.maintenance) {
+                    if (typeof window !== "undefined") {
+                        const isAdminPage = window.location.pathname.startsWith("/admin");
+                        if (!isAdminPage && window.location.pathname !== "/maintenance") {
+                            window.location.href = `/maintenance?msg=${encodeURIComponent(body.message || "")}`;
+                            return null;
+                        }
+                    }
+                }
+            } catch {}
+        }
         if (response.status === 401) {
+            // Do not intercept login attempts with session expiration redirects/messages
+            if (endpoint.includes("/auth/login")) {
+                const error = await response.json().catch(() => ({ message: "อีเมลหรือรหัสผ่านไม่ถูกต้อง" }));
+                throw new Error(error.message || "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+            }
             if (typeof window !== "undefined") {
                 const isAdminPage = window.location.pathname.startsWith("/admin");
                 if (!isAdminPage) {
@@ -186,6 +206,10 @@ export const api = {
         apiRequest("/payments/admin/settings", { method: "POST", body: JSON.stringify({ settings }) }),
     getActivePaymentMethods: () => apiRequest("/payments/active-methods"),
     getPaymentAdminLogs: () => apiRequest("/payments/admin/logs"),
+    getPaymentVatRate: () => apiRequest("/payments/vat"),
+    getPaymentAdminVatRate: () => apiRequest("/payments/admin/vat"),
+    savePaymentAdminVatRate: (vatRate: number) =>
+        apiRequest("/payments/admin/vat", { method: "POST", body: JSON.stringify({ vatRate }) }),
     adminUpdateTopupStatus: (referenceId: string, status: 'completed' | 'failed', adminNote?: string) =>
         apiRequest(`/topup/${referenceId}/admin-status`, {
             method: 'PATCH',

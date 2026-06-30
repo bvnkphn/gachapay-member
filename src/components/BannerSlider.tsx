@@ -40,7 +40,7 @@ const MOCK_BANNERS: Banner[] = [
     image: '/banner_welcome.png',
     title: 'ยินดีต้อนรับเว็บเปิดใหม่',
     description: 'กรอกโค้ด "WELCOME" เพื่อรับส่วนลดสุดพิเศษ (สำหรับใช้เติมเงินครั้งแรกเท่านั้น)',
-    redirectUrl: '/balance',
+    redirectUrl: '/#all-games',
     order: 2,
     isActive: true,
     createdAt: new Date().toISOString(),
@@ -83,6 +83,21 @@ export default function BannerSlider() {
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const dragStart = useRef<number | null>(null)
   const [selectedBanner, setSelectedBanner] = useState<Banner | null>(null)
+
+  const handleRedirect = (url: string) => {
+    setSelectedBanner(null);
+    if (url.startsWith("/#") || url.startsWith("#")) {
+      const id = url.includes("#") ? url.split("#")[1] : url;
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+      } else {
+        router.push(url);
+      }
+    } else {
+      router.push(url);
+    }
+  };
 
   // Track responsive screen size
   useEffect(() => {
@@ -341,8 +356,7 @@ export default function BannerSlider() {
                     onClick={() => {
                       navigator.clipboard.writeText("WELCOME");
                       toast.success("คัดลอกโค้ดส่วนลด WELCOME เรียบร้อยแล้ว!");
-                      setSelectedBanner(null);
-                      router.push(selectedBanner.redirectUrl);
+                      handleRedirect(selectedBanner.redirectUrl);
                     }}
                     className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-semibold transition cursor-pointer shadow-lg shadow-cyan-500/20"
                   >
@@ -351,8 +365,7 @@ export default function BannerSlider() {
                 ) : selectedBanner.redirectUrl ? (
                   <button
                     onClick={() => {
-                      setSelectedBanner(null);
-                      router.push(selectedBanner.redirectUrl);
+                      handleRedirect(selectedBanner.redirectUrl);
                     }}
                     className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-semibold transition cursor-pointer shadow-lg shadow-cyan-500/20"
                   >

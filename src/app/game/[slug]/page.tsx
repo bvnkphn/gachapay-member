@@ -111,8 +111,9 @@ export default function GameTopupPage() {
             try {
                 const data = await api.getActivePaymentMethods();
                 if (Array.isArray(data)) {
-                    setActiveMethods(data);
-                    const enabled = data.filter(m => m.enabled);
+                    const filtered = data.filter(m => m.id === "promptpay" || m.id === "wallet");
+                    setActiveMethods(filtered);
+                    const enabled = filtered.filter(m => m.enabled);
                     if (enabled.length > 0) {
                         const first = enabled[0].id;
                         if (first === "wallet") setPaymentMethod("coin");
@@ -127,7 +128,18 @@ export default function GameTopupPage() {
         loadMethods();
     }, []);
 
-    const totalAmount = useMemo(() => selectedPackage ? selectedPackagePrice * (1 - (appliedCoupon?.discount ?? 0) / 100) : 0, [selectedPackage, selectedPackagePrice, appliedCoupon]);
+    const [vatRate, setVatRate] = useState<number>(7);
+    useEffect(() => {
+        api.getPaymentVatRate()
+            .then(d => {
+                if (d && typeof d.vatRate === "number") setVatRate(d.vatRate);
+            })
+            .catch(() => {});
+    }, []);
+
+    const priceAfterDiscount = useMemo(() => selectedPackage ? selectedPackagePrice * (1 - (appliedCoupon?.discount ?? 0) / 100) : 0, [selectedPackage, selectedPackagePrice, appliedCoupon]);
+    const vatAmount = useMemo(() => selectedPackage ? priceAfterDiscount * (vatRate / 100) : 0, [selectedPackage, priceAfterDiscount, vatRate]);
+    const totalAmount = useMemo(() => selectedPackage ? priceAfterDiscount + vatAmount : 0, [selectedPackage, priceAfterDiscount, vatAmount]);
 
     // Auto select paymentMethod to free if totalAmount is 0
     useEffect(() => {
@@ -898,10 +910,16 @@ export default function GameTopupPage() {
                                             <span>-฿ {(selectedPackagePrice * appliedCoupon.discount / 100).toFixed(2)}</span>
                                         </div>
                                     )}
+                                    {selectedPackage && (
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">ภาษีมูลค่าเพิ่ม (VAT {vatRate}%)</span>
+                                            <span className="font-semibold">฿ {vatAmount.toFixed(2)}</span>
+                                        </div>
+                                    )}
                                     <div className="flex justify-between text-lg font-bold pt-2 border-t border-primary/20">
                                         <span>{t.totalLabel}</span>
                                         <span className="text-primary">
-                                            ฿ {selectedPackage ? (selectedPackagePrice * (1 - (appliedCoupon?.discount ?? 0) / 100)).toFixed(2) : "0.00"}
+                                            ฿ {totalAmount.toFixed(2)}
                                         </span>
                                     </div>
                                 </div>
@@ -1004,7 +1022,7 @@ export default function GameTopupPage() {
                                 <div className="flex justify-between text-xs text-muted-foreground border-b border-border/20 pb-2">
                                     <span>ยอดชำระ:</span>
                                     <span className="font-bold text-primary">
-                                        ฿ {selectedPackage ? (selectedPackagePrice * (1 - (appliedCoupon?.discount ?? 0) / 100)).toFixed(2) : "0.00"}
+                                        ฿ {totalAmount.toFixed(2)}
                                     </span>
                                 </div>
                                 <div className="flex justify-between text-xs text-muted-foreground">
