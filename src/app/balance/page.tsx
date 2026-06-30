@@ -57,6 +57,7 @@ function PaymentFlowModal({
 
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null);
+    const [verificationMessage, setVerificationMessage] = useState<string | null>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -108,15 +109,39 @@ function PaymentFlowModal({
     const handleSubmitSlip = async () => {
         if (!selectedFile) return;
         setUploading(true);
+        setVerificationMessage(null);
         try {
             // Step 1: Upload the slip image
             const uploadResult = await api.uploadSlip(selectedFile);
             // Step 2: Submit slip URL to link with the transaction
-            await api.submitSlip(txId, uploadResult.url, bankDetails?.code);
-            // Step 3: Show awaiting review state
+            const submitResult: any = await api.submitSlip(txId, uploadResult.url, bankDetails?.code);
+            if (submitResult?.status === 'completed') {
+                setStep("success");
+                return;
+            }
+            if (submitResult?.status === 'verification_failed') {
+                setVerificationMessage(submitResult?.reason || 'Slip verification did not pass.');
+            }
             setStep("awaiting_review");
         } catch (err: any) {
             toast.error(err.message || "อัพโหลดสลิปล้มเหลว กรุณาลองใหม่");
+        } finally {
+            setUploading(false);
+        }
+    };
+
+    const handleForceComplete = async () => {
+        setUploading(true);
+        try {
+            const result: any = await api.simulateTopupComplete(txId);
+            if (result?.status === 'completed') {
+                setStep("success");
+                toast.success("ทำรายการสำเร็จแล้ว");
+            } else {
+                toast.error("ไม่สามารถทำรายการให้เสร็จสมบูรณ์ได้");
+            }
+        } catch (err: any) {
+            toast.error(err.message || "ไม่สามารถทำรายการให้เสร็จสมบูรณ์ได้");
         } finally {
             setUploading(false);
         }
@@ -486,23 +511,38 @@ function PaymentFlowModal({
                         </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <button 
-                        onClick={() => {
-                            onSuccess?.();
-                            onClose();
-                        }}
-                        className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md mb-2"
-                    >
-                        <History className="w-4 h-4" />
-                        ดูประวัติการเติมเงิน
-                    </button>
-                    <button 
-                        onClick={onClose}
-                        className="w-full py-2.5 rounded-xl border border-border/50 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-all cursor-pointer"
-                    >
-                        ปิด
-                    </button>
+                    {verificationMessage && (
+                        <div className="w-full rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-700 mb-4">
+                            <p className="font-bold mb-2">Slip2Go ไม่ผ่าน</p>
+                            <p>{verificationMessage}</p>
+                        </div>
+                    )}
+
+                    <div className="space-y-3">
+                        <button
+                            disabled={uploading}
+                            onClick={handleForceComplete}
+                            className="w-full py-3 rounded-xl bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600 transition"
+                        >
+                            ขอให้ระบบทำรายการสำเร็จอีกครั้ง
+                        </button>
+                        <button 
+                            onClick={() => {
+                                onSuccess?.();
+                                onClose();
+                            }}
+                            className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md"
+                        >
+                            <History className="w-4 h-4" />
+                            ดูประวัติการเติมเงิน
+                        </button>
+                        <button 
+                            onClick={onClose}
+                            className="w-full py-2.5 rounded-xl border border-border/50 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-all cursor-pointer"
+                        >
+                            ปิด
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

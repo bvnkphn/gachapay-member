@@ -186,6 +186,11 @@ export const api = {
         apiRequest("/payments/admin/settings", { method: "POST", body: JSON.stringify({ settings }) }),
     getActivePaymentMethods: () => apiRequest("/payments/active-methods"),
     getPaymentAdminLogs: () => apiRequest("/payments/admin/logs"),
+    adminUpdateTopupStatus: (referenceId: string, status: 'completed' | 'failed', adminNote?: string) =>
+        apiRequest(`/topup/${referenceId}/admin-status`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status, adminNote }),
+        }),
 
     // Slip upload (multipart/form-data — needs raw fetch, not JSON)
     uploadSlip: async (file: File) => {

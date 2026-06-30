@@ -1,15 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   CreditCard, Wallet, Zap, Eye, EyeOff,
   Save, RefreshCw, CheckCircle2, XCircle,
   AlertCircle, ChevronDown, Shield, Activity,
-  ToggleLeft, ToggleRight, Copy, Check
+  ToggleLeft, ToggleRight, Copy, Check, Image,
+  Search, FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+
+const BACKEND_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api").replace(/\/api\/?$/, "");
+
+const makeSlipImageUrl = (url: string | null | undefined) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
+  if (url.startsWith('/api/') || url.startsWith('/uploads/')) return `${BACKEND_BASE_URL}${url}`;
+  return `${BACKEND_BASE_URL}/${url}`;
+};
 
 // ── Types ─────────────────────────────────────────────────────────
 type PaymentStatus = "success" | "failed" | "pending";
@@ -76,7 +86,27 @@ export default function PaymentGatewayAdmin() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [logFilter, setLogFilter] = useState<PaymentStatus | "all">("all");
+  const [methodFilter, setMethodFilter] = useState<"all" | "promptpay" | "truemoney" | "bank_transfer" | "wallet">("all");
   const [logs, setLogs] = useState<any[]>([]);
+  const [selectedTopup, setSelectedTopup] = useState<any | null>(null);
+
+  const getTopupBadgeStatus = (tx: any): PaymentStatus => {
+    if (!tx) return "pending";
+    if (tx.transactionStatus === "completed") return "success";
+    if (tx.transactionStatus === "failed") return "failed";
+    return "pending";
+  };
+
+  const refreshLogs = async () => {
+    try {
+      const logsData = await api.getPaymentAdminLogs();
+      if (Array.isArray(logsData)) {
+        setLogs(logsData);
+      }
+    } catch (err: any) {
+      toast.error("โหลดประวัติล้มเหลว: " + err.message);
+    }
+  };
 
   const loadSettings = async () => {
     setLoading(true);
@@ -113,6 +143,18 @@ export default function PaymentGatewayAdmin() {
     window.addEventListener("admin-refresh", handleRefresh);
     return () => window.removeEventListener("admin-refresh", handleRefresh);
   }, []);
+
+  const handleAdminUpdateStatus = async (status: "completed" | "failed") => {
+    if (!selectedTopup) return;
+    try {
+      const result = await api.adminUpdateTopupStatus(selectedTopup.referenceId, status, status === "failed" ? "Rejected manually by admin" : "Approved manually by admin");
+      toast.success(`อัปเดตสถานะสำเร็จ: ${result.status}`);
+      await refreshLogs();
+      setSelectedTopup((prev: any) => prev ? { ...prev, transactionStatus: result.status, adminNote: result.adminNote ?? prev.adminNote, completedAt: result.completed_at ?? prev.completedAt } : prev);
+    } catch (err: any) {
+      toast.error(err.message || "อัปเดตสถานะล้มเหลว");
+    }
+  };
 
   const updateSelectedField = (field: keyof PaymentMethod, value: any) => {
     if (!selected) return;
@@ -152,7 +194,16 @@ export default function PaymentGatewayAdmin() {
     }
   };
 
-  const filteredLogs = logFilter === "all" ? logs : logs.filter(l => l.status === logFilter);
+  const filteredLogs = useMemo(() => {
+    let result = logFilter === "all" ? logs : logs.filter(l => l.status === logFilter);
+    if (methodFilter !== "all") {
+      result = result.filter(log => {
+        const methodValue = (log.methodCode || log.method || "").toString().toLowerCase();
+        return methodValue === methodFilter;
+      });
+    }
+    return result;
+  }, [logs, logFilter, methodFilter]);
 
   const logCounts = {
     success: logs.filter(l => l.status === "success").length,
@@ -339,30 +390,39 @@ export default function PaymentGatewayAdmin() {
             <Activity size={15} className="text-primary" />
             <p className="text-sm font-bold text-foreground">Gateway Log</p>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-bold">
-              {mockLogs.length} รายการ
+              {logs.length} รายการ
             </span>
           </div>
-          <div className="flex gap-1.5 flex-wrap">
-            <button onClick={() => setLogFilter("all")}
-              className={cn(
-                "px-3 py-1 rounded-full text-xs font-bold border transition",
-                logFilter === "all"
-                  ? "bg-primary/10 text-primary border-primary/30"
-                  : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-border"
-              )}>
-              ทั้งหมด
-            </button>
-            {(["success", "failed", "pending"] as PaymentStatus[]).map(s => (
-              <button key={s} onClick={() => setLogFilter(s)}
-                className={cn(
-                  "px-3 py-1 rounded-full text-xs font-bold border transition",
-                  logFilter === s
-                    ? STATUS_CFG[s].bg + " " + STATUS_CFG[s].color + " " + STATUS_CFG[s].border
-                    : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-border"
-                )}>
-                {STATUS_CFG[s].label} ({logCounts[s]})
-              </button>
-            ))}
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between w-full">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex flex-col gap-1 ml-auto">
+                <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Status</label>
+                <select
+                  value={logFilter}
+                  onChange={e => setLogFilter(e.target.value as PaymentStatus | "all")}
+                  className="min-w-[140px] rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-xs text-foreground shadow-sm outline-none"
+                >
+                  <option value="all">ทั้งหมด</option>
+                  <option value="success">สำเร็จ</option>
+                  <option value="failed">ล้มเหลว</option>
+                  <option value="pending">รอผล</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Payment</label>
+                <select
+                  value={methodFilter}
+                  onChange={e => setMethodFilter(e.target.value as typeof methodFilter)}
+                  className="min-w-[150px] rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-xs text-foreground shadow-sm outline-none"
+                >
+                  <option value="all">ทุกประเภท</option>
+                  <option value="promptpay">PromptPay</option>
+                  <option value="truemoney">TrueMoney</option>
+                  <option value="bank_transfer">Bank Transfer</option>
+                  <option value="wallet">Wallet</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -370,7 +430,7 @@ export default function PaymentGatewayAdmin() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border/60 bg-muted/20">
-                {["Log ID", "เวลา", "ช่องทาง", "Event Type", "Order ID", "ยอดเงิน", "Latency", "สถานะ"].map(h => (
+                {["Log ID", "เวลา", "ช่องทาง", "Event Type", "Order ID", "ยอดเงิน", "Latency", "สถานะ", "Slip"].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-[10px] font-bold text-muted-foreground uppercase whitespace-nowrap">{h}</th>
                 ))}
               </tr>
@@ -391,6 +451,13 @@ export default function PaymentGatewayAdmin() {
                     {log.latency}
                   </td>
                   <td className="px-4 py-3"><StatusBadge status={log.status} /></td>
+                  <td className="px-4 py-3 text-xs text-foreground">
+                    {log.methodCode === 'bank_transfer' && log.slipUrl ? (
+                      <button onClick={() => setSelectedTopup(log)} className="rounded-full px-3 py-1 bg-primary/10 text-primary text-[10px] font-bold hover:bg-primary/20 transition">
+                        ดูสลิป
+                      </button>
+                    ) : '-'}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -398,6 +465,80 @@ export default function PaymentGatewayAdmin() {
         </div>
       </div>
 
+
+      {selectedTopup && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-card border border-border/80 rounded-3xl w-full max-w-3xl p-5 shadow-2xl text-card-foreground overflow-y-auto max-h-[90vh]">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <p className="text-sm font-bold">Slip Preview — {selectedTopup.reference_id}</p>
+                <p className="text-xs text-muted-foreground">Bank: {selectedTopup.bank_code || '-'}</p>
+              </div>
+              <button onClick={() => setSelectedTopup(null)} className="text-muted-foreground hover:text-foreground">Close</button>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+              <div className="rounded-3xl overflow-hidden border border-border/50 bg-black/5">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                {selectedTopup.slipUrl ? (
+                  <img src={makeSlipImageUrl(selectedTopup.slipUrl)} alt="Slip Image" className="w-full h-full object-contain max-h-[520px] bg-black/10" />
+                ) : (
+                  <div className="flex h-[320px] items-center justify-center text-sm text-muted-foreground">ไม่มีรูปสลิปที่สามารถแสดงได้</div>
+                )}
+              </div>
+              <div className="space-y-3">
+                <div className="rounded-2xl bg-muted/40 border border-border/40 p-4 space-y-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Status</span>
+                    <StatusBadge status={getTopupBadgeStatus(selectedTopup)} />
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-2">
+                    <div><span className="font-bold text-foreground">Reference:</span> {selectedTopup.reference_id}</div>
+                    <div><span className="font-bold text-foreground">Amount:</span> ฿{Number(selectedTopup.amount).toFixed(2)}</div>
+                    <div><span className="font-bold text-foreground">Bank Code:</span> {selectedTopup.bank_code || '-'}</div>
+                    {selectedTopup.userEmail && (
+                      <div><span className="font-bold text-foreground">ผู้ใช้:</span> {selectedTopup.userEmail}</div>
+                    )}
+                    {selectedTopup.slipUrl && (
+                      <div className="break-words"><span className="font-bold text-foreground">Slip URL:</span> {selectedTopup.slipUrl}</div>
+                    )}
+                    <div><span className="font-bold text-foreground">Created:</span> {new Date(selectedTopup.created_at).toLocaleString('th-TH')}</div>
+                    <div><span className="font-bold text-foreground">Completed:</span> {selectedTopup.completed_at ? new Date(selectedTopup.completed_at).toLocaleString('th-TH') : '-'}</div>
+                  </div>
+                </div>
+                <div className="rounded-2xl bg-muted/40 border border-border/40 p-4 space-y-3">
+                  <div>
+                    <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">Admin Note / Verification Reason</p>
+                    <p className="text-xs text-foreground leading-relaxed">{selectedTopup.admin_note || 'ไม่มีหมายเหตุ'}</p>
+                  </div>
+                  {selectedTopup.verification && (
+                    <div className="rounded-2xl bg-background p-3 border border-border/60">
+                      <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground mb-2">Verification Data</p>
+                      <pre className="whitespace-pre-wrap text-[10px] text-muted-foreground">{JSON.stringify(selectedTopup.verification, null, 2)}</pre>
+                    </div>
+                  )}
+                </div>
+                {(selectedTopup.transactionStatus === 'awaiting_review' || selectedTopup.transactionStatus === 'verification_failed') && (
+                  <div className="grid gap-3">
+                    <button
+                      onClick={() => handleAdminUpdateStatus('completed')}
+                      className="w-full py-3 rounded-xl bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600 transition"
+                    >
+                      อนุมัติสลิป (สำเร็จ)
+                    </button>
+                    <button
+                      onClick={() => handleAdminUpdateStatus('failed')}
+                      className="w-full py-3 rounded-xl bg-rose-500 text-white text-xs font-bold hover:bg-rose-600 transition"
+                    >
+                      ปฏิเสธสลิป (ล้มเหลว)
+                    </button>
+                  </div>
+                )}
+                <button onClick={() => setSelectedTopup(null)} className="w-full py-3 rounded-xl bg-primary text-white text-xs font-bold">ปิด</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
