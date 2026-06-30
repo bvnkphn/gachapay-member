@@ -242,6 +242,16 @@ export default function AdminDashboard() {
       {/* Body */}
       <div className="p-3 sm:p-5 space-y-4">
 
+        {/* Header */}
+        <div>
+          <p className="text-[10px] tracking-widest uppercase font-mono mb-1 text-muted-foreground">
+            Super Admin · Dashboard
+          </p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+            ภาพรวม <span className="text-primary">ระบบและสถิติการใช้งาน</span>
+          </h1>
+        </div>
+
         {/* Stat Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {statCards.map((c, i) => {

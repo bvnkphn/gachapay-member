@@ -9,34 +9,34 @@ import {
   FileSpreadsheet, FileText, Filter, RefreshCw,
   Gamepad2, ChevronLeft, ChevronRight,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type Period = "today" | "week" | "month" | "year" | "custom";
-
-const cardStyle = { background: "rgba(11,15,32,0.85)", border: "1px solid #1c2540" };
 
 function fmt(n: number) {
   return n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function StatCard({ label, value, sub, icon: Icon, accent, trend }: {
-  label: string; value: string; sub?: string; icon: any; accent: string; trend?: "up" | "down";
+function StatCard({ label, value, sub, icon: Icon, trend }: {
+  label: string; value: string; sub?: string; icon: any; trend?: "up" | "down";
 }) {
   return (
-    <div style={cardStyle} className="rounded-2xl p-4 sm:p-5 relative overflow-hidden">
-      <div className="absolute inset-0 rounded-2xl pointer-events-none"
-        style={{ background: `radial-gradient(circle at 80% 20%, ${accent}14, transparent 60%)` }} />
+    <div className="rounded-2xl p-4 sm:p-5 relative overflow-hidden bg-card border border-border/80 shadow-sm text-card-foreground">
       <div className="relative">
         <div className="flex items-start justify-between mb-3">
-          <p className="text-[10px] tracking-widest uppercase font-semibold" style={{ color: "#94a3b8" }}>{label}</p>
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `${accent}1a` }}>
-            <Icon size={16} style={{ color: accent }} />
+          <p className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">{label}</p>
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-primary/10 text-primary">
+            <Icon size={16} />
           </div>
         </div>
-        <p className="text-xl sm:text-2xl font-bold text-white leading-none mb-1">{value}</p>
-        {sub && <p className="text-[11px] mt-1" style={{ color: "#94a3b8" }}>{sub}</p>}
+        <p className="text-xl sm:text-2xl font-extrabold text-foreground leading-none mb-1">{value}</p>
+        {sub && <p className="text-[11px] mt-1 text-muted-foreground font-medium">{sub}</p>}
         {trend && (
-          <div className="flex items-center gap-1 mt-2 text-[11px] font-semibold"
-            style={{ color: trend === "up" ? "#34d399" : "#f87171" }}>
+          <div className={cn(
+            "flex items-center gap-1 mt-2 text-[11px] font-bold",
+            trend === "up" ? "text-emerald-500" : "text-rose-500"
+          )}>
             {trend === "up" ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
             {trend === "up" ? "เพิ่มขึ้น" : "ลดลง"}
           </div>
@@ -50,16 +50,16 @@ function StatCard({ label, value, sub, icon: Icon, accent, trend }: {
 function MiniBarChart({ data }: { data: { label: string; revenue: number; cost: number }[] }) {
   const maxVal = Math.max(...data.map(d => d.revenue));
   return (
-    <div className="flex items-end gap-1.5 w-full" style={{ height: 80 }}>
+    <div className="flex items-end gap-2 w-full" style={{ height: 80 }}>
       {data.map((d, i) => (
-        <div key={i} className="flex-1 flex flex-col items-center gap-0.5">
-          <div className="w-full flex gap-0.5 items-end" style={{ height: 70 }}>
-            <div className="flex-1 rounded-t-sm transition-all"
-              style={{ height: `${maxVal > 0 ? (d.revenue / maxVal) * 100 : 0}%`, background: "linear-gradient(180deg,#38bdf8,#0e7490)", minHeight: 2 }} />
-            <div className="flex-1 rounded-t-sm transition-all"
-              style={{ height: `${maxVal > 0 ? (d.cost / maxVal) * 100 : 0}%`, background: "linear-gradient(180deg,#818cf8,#4338ca)", minHeight: 2 }} />
+        <div key={i} className="flex-1 flex flex-col items-center gap-1">
+          <div className="w-full flex gap-1 items-end" style={{ height: 70 }}>
+            <div className="flex-1 rounded-t transition-all bg-primary"
+              style={{ height: `${maxVal > 0 ? (d.revenue / maxVal) * 100 : 0}%`, minHeight: 2 }} />
+            <div className="flex-1 rounded-t transition-all bg-muted-foreground/30"
+              style={{ height: `${maxVal > 0 ? (d.cost / maxVal) * 100 : 0}%`, minHeight: 2 }} />
           </div>
-          <p className="text-[9px] truncate w-full text-center" style={{ color: "#64748b" }}>{d.label}</p>
+          <p className="text-[9px] truncate w-full text-center text-muted-foreground font-bold">{d.label}</p>
         </div>
       ))}
     </div>
@@ -105,6 +105,15 @@ export default function FinancialDashboard() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
+  // Handle global navbar refresh action
+  useEffect(() => {
+    const handleRefresh = () => {
+      fetchAll();
+    };
+    window.addEventListener("admin-refresh", handleRefresh);
+    return () => window.removeEventListener("admin-refresh", handleRefresh);
+  }, [fetchAll]);
+
   const handleExport = async (format: "csv" | "xlsx") => {
     if (!token) return;
     setExporting(true);
@@ -118,8 +127,10 @@ export default function FinancialDashboard() {
       a.download = `report_${period}_${new Date().toISOString().slice(0,10)}.${format}`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch { alert("Export ไม่สำเร็จ"); }
-    finally { setExporting(false); setExportOpen(false); }
+      toast.success("ส่งออกรายงานสำเร็จ");
+    } catch { 
+      toast.error("ส่งออกรายงานไม่สำเร็จ"); 
+    } finally { setExporting(false); setExportOpen(false); }
   };
 
   // Build daily chart data
@@ -142,61 +153,59 @@ export default function FinancialDashboard() {
   const margin  = rev > 0 ? ((profit / rev) * 100).toFixed(1) : "0.0";
 
   return (
-    <div className="min-h-screen p-3 sm:p-5 space-y-5"
-      style={{ background: "linear-gradient(160deg,#080c18 0%,#0a0e1e 60%,#060911 100%)", fontFamily: "'Noto Sans Thai',sans-serif" }}>
+    <div className="p-3 sm:p-5 space-y-5">
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <p className="text-[10px] tracking-widest uppercase font-mono mb-1" style={{ color: "#3a4a6a" }}>
+          <p className="text-[10px] tracking-widest uppercase font-mono mb-1 text-muted-foreground">
             Super Admin · Financial Report
           </p>
-          <h1 className="text-xl sm:text-2xl font-bold text-white">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">
             รายงานการเงิน{" "}
-            <span style={{ background: "linear-gradient(90deg,#38bdf8,#818cf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+            <span className="text-primary">
               {periodLabel[period]}
             </span>
           </h1>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {/* Period */}
-          <div className="flex gap-1 p-1 rounded-xl" style={cardStyle}>
-            {(["today","week","month","year"] as Period[]).map(p => (
+          <div className="flex gap-1 p-1 rounded-xl bg-card border border-border/80 shadow-sm flex-shrink-0">
+            {(["today","week","month","year","custom"] as Period[]).map(p => (
               <button key={p} onClick={() => { setPeriod(p); setPage(1); }}
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                style={period === p
-                  ? { background: "rgba(88,50,210,0.3)", color: "#a5b4fc", border: "1px solid rgba(129,140,248,0.4)" }
-                  : { color: "#94a3b8" }}>
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-bold transition-all",
+                  period === p
+                    ? "bg-primary text-primary-foreground shadow"
+                    : "text-muted-foreground hover:text-foreground"
+                )}>
                 {periodLabel[p]}
               </button>
             ))}
           </div>
           {/* Refresh */}
           <button onClick={fetchAll} disabled={loading}
-            className="p-2 rounded-xl disabled:opacity-50"
-            style={cardStyle}>
-            <RefreshCw size={15} className={loading ? "animate-spin" : ""} style={{ color: "#64748b" }} />
+            className="p-2 rounded-xl border border-border/80 bg-card text-muted-foreground hover:text-foreground transition disabled:opacity-50">
+            <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
           </button>
           {/* Export */}
           <div className="relative">
             <button onClick={() => setExportOpen(v => !v)} disabled={exporting}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-50"
-              style={{ background: "rgba(52,211,153,0.1)", border: "1px solid rgba(52,211,153,0.3)", color: "#34d399" }}>
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-foreground text-background hover:opacity-90 transition disabled:opacity-50">
               {exporting ? <RefreshCw size={14} className="animate-spin" /> : <Download size={14} />}
               Export
-              <ChevronDown size={12} className={`transition-transform ${exportOpen ? "rotate-180" : ""}`} />
+              <ChevronDown size={12} className={cn("transition-transform", exportOpen && "rotate-180")} />
             </button>
             {exportOpen && (
-              <div className="absolute right-0 top-full mt-1.5 z-50 rounded-xl overflow-hidden shadow-2xl"
-                style={{ background: "rgba(8,10,22,0.98)", border: "1px solid #1c2540", minWidth: 200 }}>
+              <div className="absolute right-0 top-full mt-1.5 z-50 rounded-xl overflow-hidden shadow-2xl bg-card border border-border/80 min-w-[200px]">
                 <button onClick={() => handleExport("xlsx")}
-                  className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-white hover:bg-white/5 transition">
-                  <FileSpreadsheet size={14} style={{ color: "#34d399" }} /> Export .xlsx (Excel)
+                  className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-foreground hover:bg-muted transition font-bold">
+                  <FileSpreadsheet size={14} className="text-emerald-500" /> Export .xlsx (Excel)
                 </button>
-                <div style={{ borderTop: "1px solid #1c2540" }}>
+                <div className="border-t border-border/40">
                   <button onClick={() => handleExport("csv")}
-                    className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-white hover:bg-white/5 transition">
-                    <FileText size={14} style={{ color: "#38bdf8" }} /> Export .csv
+                    className="flex items-center gap-2.5 w-full px-4 py-3 text-sm text-foreground hover:bg-muted transition font-bold">
+                    <FileText size={14} className="text-sky-500" /> Export .csv
                   </button>
                 </div>
               </div>
@@ -207,19 +216,21 @@ export default function FinancialDashboard() {
 
       {/* Custom date range */}
       {period === "custom" && (
-        <div className="flex gap-3 flex-wrap items-end">
+        <div className="flex gap-3 flex-wrap items-end bg-card border border-border/80 p-4 rounded-2xl max-w-md shadow-sm">
           <div>
-            <label className="text-[10px] mb-1 block" style={{ color: "#64748b" }}>ตั้งแต่</label>
+            <label className="text-[10px] mb-1.5 block text-muted-foreground font-bold">ตั้งแต่</label>
             <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-              className="rounded-xl px-3 py-2 text-sm text-white outline-none"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #1c2540" }} />
+              className="rounded-xl px-3 py-2 text-xs bg-muted text-foreground border border-border outline-none" />
           </div>
           <div>
-            <label className="text-[10px] mb-1 block" style={{ color: "#64748b" }}>ถึง</label>
+            <label className="text-[10px] mb-1.5 block text-muted-foreground font-bold">ถึง</label>
             <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-              className="rounded-xl px-3 py-2 text-sm text-white outline-none"
-              style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #1c2540" }} />
+              className="rounded-xl px-3 py-2 text-xs bg-muted text-foreground border border-border outline-none" />
           </div>
+          <button onClick={fetchAll} disabled={loading}
+            className="px-4 py-2 rounded-xl text-xs font-bold bg-primary text-primary-foreground shadow hover:opacity-90 transition">
+            ตกลง
+          </button>
         </div>
       )}
 
@@ -227,19 +238,19 @@ export default function FinancialDashboard() {
       {loading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-2xl p-5 animate-pulse" style={cardStyle}>
-              <div className="h-3 w-20 rounded mb-3" style={{ background: "#1c2540" }} />
-              <div className="h-7 w-28 rounded mb-2" style={{ background: "#1c2540" }} />
-              <div className="h-2 w-16 rounded" style={{ background: "#1c2540" }} />
+            <div key={i} className="rounded-2xl p-5 animate-pulse bg-card border border-border/60">
+              <div className="h-3 w-20 rounded bg-muted/60 mb-3" />
+              <div className="h-7 w-28 rounded bg-muted/60 mb-2" />
+              <div className="h-2 w-16 rounded bg-muted/60" />
             </div>
           ))}
         </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          <StatCard label="กำไรสุทธิ"  value={`฿${fmt(profit)}`} sub={`Margin ${margin}%`}                              icon={TrendingUp}   accent="#38bdf8" trend="up"   />
-          <StatCard label="รายได้รวม"  value={`฿${fmt(rev)}`}    sub={`${summary?.orders?.total ?? 0} ออเดอร์`}        icon={DollarSign}   accent="#818cf8" trend="up"   />
-          <StatCard label="ต้นทุนรวม"  value={`฿${fmt(cost)}`}   sub={`${rev > 0 ? ((cost/rev)*100).toFixed(1) : 0}% ของรายได้`} icon={TrendingDown} accent="#f472b6" />
-          <StatCard label="VAT 7%"     value={`฿${fmt(vat)}`}    sub={`Success ${summary?.orders?.successRate ?? 0}%`} icon={Receipt}      accent="#a78bfa" />
+          <StatCard label="กำไรสุทธิ"  value={`฿${fmt(profit)}`} sub={`Margin ${margin}%`}               icon={TrendingUp}   trend="up"   />
+          <StatCard label="รายได้รวม"  value={`฿${fmt(rev)}`}    sub={`${summary?.orders?.total ?? 0} ออเดอร์`} icon={DollarSign}   trend="up"   />
+          <StatCard label="ต้นทุนรวม"  value={`฿${fmt(cost)}`}   sub={`${rev > 0 ? ((cost/rev)*100).toFixed(1) : 0}% ของรายได้`} icon={TrendingDown} />
+          <StatCard label="VAT 7%"     value={`฿${fmt(vat)}`}    sub={`Success ${summary?.orders?.successRate ?? 0}%`} icon={Receipt}      />
         </div>
       )}
 
@@ -247,47 +258,52 @@ export default function FinancialDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
 
         {/* Chart */}
-        <div className="lg:col-span-3 rounded-2xl p-5" style={cardStyle}>
+        <div className="lg:col-span-3 rounded-2xl p-5 bg-card border border-border/80 shadow-sm text-card-foreground">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-sm font-bold text-white">รายได้รายวัน</p>
+            <p className="text-sm font-bold text-foreground">รายได้รายวัน</p>
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-1.5"><div className="w-3 h-1 rounded" style={{ background: "#38bdf8" }} /><span className="text-[10px]" style={{ color: "#64748b" }}>รายได้</span></div>
+              <div className="flex items-center gap-1.5">
+                <div className="w-3 h-1.5 rounded bg-primary" />
+                <span className="text-[10px] text-muted-foreground font-bold">รายได้</span>
+              </div>
             </div>
           </div>
           {loading ? (
-            <div className="animate-pulse rounded-xl" style={{ height: 80, background: "#1c2540" }} />
+            <div className="animate-pulse rounded-xl bg-muted/60" style={{ height: 80 }} />
           ) : chartData.length === 0 ? (
-            <p className="text-center py-8 text-sm" style={{ color: "#64748b" }}>ยังไม่มีข้อมูล</p>
+            <p className="text-center py-8 text-sm text-muted-foreground">ยังไม่มีข้อมูล</p>
           ) : (
             <MiniBarChart data={chartData} />
           )}
         </div>
 
         {/* VAT Breakdown */}
-        <div className="lg:col-span-2 rounded-2xl p-5" style={cardStyle}>
-          <p className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-            <Receipt size={14} style={{ color: "#a78bfa" }} /> รายละเอียดภาษี (VAT)
+        <div className="lg:col-span-2 rounded-2xl p-5 bg-card border border-border/80 shadow-sm text-card-foreground">
+          <p className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+            <Receipt size={14} className="text-primary" /> รายละเอียดภาษี (VAT)
           </p>
           {loading ? (
-            <div className="space-y-3">{Array.from({length:3}).map((_,i) => (
-              <div key={i} className="animate-pulse h-8 rounded" style={{ background: "#1c2540" }} />
-            ))}</div>
+            <div className="space-y-3">
+              {Array.from({length:4}).map((_,i) => (
+                <div key={i} className="animate-pulse h-8 rounded bg-muted/60" />
+              ))}
+            </div>
           ) : (
             <div className="space-y-4">
               {[
-                { label: "รายได้รวม (incl. VAT)", value: rev,                  color: "#818cf8" },
-                { label: "VAT 7%",                 value: vat,                  color: "#f472b6" },
-                { label: "รายได้ (excl. VAT)",     value: summary?.revenue?.exVat ?? 0, color: "#38bdf8" },
-                { label: "กำไรสุทธิ",               value: profit,              color: "#34d399" },
+                { label: "รายได้รวม (incl. VAT)", value: rev,                  color: "bg-primary" },
+                { label: "VAT 7%",                 value: vat,                  color: "bg-rose-500" },
+                { label: "รายได้ (excl. VAT)",     value: summary?.revenue?.exVat ?? 0, color: "bg-sky-500" },
+                { label: "กำไรสุทธิ",               value: profit,              color: "bg-emerald-500" },
               ].map(item => (
                 <div key={item.label}>
-                  <div className="flex justify-between items-center mb-1.5">
-                    <p className="text-xs" style={{ color: "#94a3b8" }}>{item.label}</p>
-                    <p className="text-sm font-bold" style={{ color: item.color }}>฿{fmt(item.value)}</p>
+                  <div className="flex justify-between items-center mb-1.5 text-xs">
+                    <p className="text-muted-foreground font-semibold">{item.label}</p>
+                    <p className="font-extrabold text-foreground">฿{fmt(item.value)}</p>
                   </div>
-                  <div className="w-full h-1 rounded-full" style={{ background: "rgba(255,255,255,0.05)" }}>
-                    <div className="h-full rounded-full transition-all"
-                      style={{ width: `${rev > 0 ? Math.min(100, (item.value / rev) * 100) : 0}%`, background: item.color }} />
+                  <div className="w-full h-1.5 rounded-full bg-muted/40 overflow-hidden">
+                    <div className={cn("h-full rounded-full transition-all", item.color)}
+                      style={{ width: `${rev > 0 ? Math.min(100, (item.value / rev) * 100) : 0}%` }} />
                   </div>
                 </div>
               ))}
@@ -298,27 +314,27 @@ export default function FinancialDashboard() {
 
       {/* By Game */}
       {financial?.byGame?.length > 0 && (
-        <div className="rounded-2xl p-5" style={cardStyle}>
-          <p className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-            <Gamepad2 size={14} style={{ color: "#38bdf8" }} /> รายได้แยกตามเกม
+        <div className="rounded-2xl p-5 bg-card border border-border/80 shadow-sm text-card-foreground">
+          <p className="text-sm font-bold text-foreground mb-4 flex items-center gap-2">
+            <Gamepad2 size={14} className="text-primary" /> รายได้แยกตามเกม
           </p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr style={{ borderBottom: "1px solid #1c2540" }}>
+                <tr className="border-b border-border/60 bg-muted/20">
                   {["เกม", "รายได้", "ต้นทุน", "กำไร", "ออเดอร์"].map(h => (
-                    <th key={h} className="pb-2 text-left text-[11px] font-semibold pr-4 whitespace-nowrap" style={{ color: "#64748b" }}>{h}</th>
+                    <th key={h} className="pb-2 pt-2 px-3 text-left text-[10px] font-bold text-muted-foreground uppercase">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {financial.byGame.map((g: any, i: number) => (
-                  <tr key={i} style={{ borderBottom: "1px solid #0d1525" }}>
-                    <td className="py-2.5 pr-4 font-semibold text-white">{g.game}</td>
-                    <td className="py-2.5 pr-4 font-bold" style={{ color: "#7dd3fc" }}>฿{fmt(g.revenue)}</td>
-                    <td className="py-2.5 pr-4" style={{ color: "#f9a8d4" }}>฿{fmt(g.cost)}</td>
-                    <td className="py-2.5 pr-4 font-bold" style={{ color: g.profit >= 0 ? "#34d399" : "#f87171" }}>฿{fmt(g.profit)}</td>
-                    <td className="py-2.5 pr-4" style={{ color: "#94a3b8" }}>{g.orders}</td>
+                  <tr key={i} className="border-b border-border/45 hover:bg-muted/10 transition">
+                    <td className="py-3 px-3 font-extrabold text-foreground">{g.game}</td>
+                    <td className="py-3 px-3 font-bold font-mono text-cyan-600 dark:text-cyan-400">฿{fmt(g.revenue)}</td>
+                    <td className="py-3 px-3 font-mono text-rose-500">฿{fmt(g.cost)}</td>
+                    <td className="py-3 px-3 font-bold font-mono text-emerald-500">฿{fmt(g.profit)}</td>
+                    <td className="py-3 px-3 text-muted-foreground font-semibold">{g.orders}</td>
                   </tr>
                 ))}
               </tbody>
@@ -328,22 +344,23 @@ export default function FinancialDashboard() {
       )}
 
       {/* Transactions Table */}
-      <div className="rounded-2xl overflow-hidden" style={cardStyle}>
-        <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-3"
-          style={{ borderBottom: "1px solid #1c2540" }}>
-          <p className="text-sm font-bold text-white">รายการธุรกรรม</p>
+      <div className="rounded-2xl overflow-hidden bg-card border border-border/80 shadow-sm text-card-foreground">
+        <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-3 border-b border-border/60 bg-muted/20">
+          <p className="text-sm font-bold text-foreground">รายการธุรกรรม</p>
           <div className="flex items-center gap-2">
-            <Filter size={12} style={{ color: "#64748b" }} />
+            <Filter size={12} className="text-muted-foreground" />
             {(["all", "completed", "failed"] as const).map(f => (
               <button key={f} onClick={() => { setStatusFilter(f); setPage(1); }}
-                className="px-3 py-1 rounded-full text-xs font-semibold transition"
-                style={statusFilter === f
-                  ? f === "all"
-                    ? { background: "rgba(88,50,210,0.25)", color: "#a5b4fc", border: "1px solid rgba(129,140,248,0.4)" }
-                    : f === "completed"
-                    ? { background: "rgba(52,211,153,0.15)", color: "#34d399", border: "1px solid rgba(52,211,153,0.35)" }
-                    : { background: "rgba(248,113,113,0.15)", color: "#f87171", border: "1px solid rgba(248,113,113,0.35)" }
-                  : { color: "#64748b", border: "1px solid #1c2540" }}>
+                className={cn(
+                  "px-3 py-1 rounded-full text-xs font-bold transition border",
+                  statusFilter === f
+                    ? f === "all"
+                      ? "bg-primary/10 text-primary border-primary/30"
+                      : f === "completed"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/25"
+                      : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/25"
+                    : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:border-border"
+                )}>
                 {{ all: "ทั้งหมด", completed: "สำเร็จ", failed: "ล้มเหลว" }[f]}
               </button>
             ))}
@@ -353,45 +370,47 @@ export default function FinancialDashboard() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr style={{ borderBottom: "1px solid #1c2540", background: "rgba(5,7,18,0.5)" }}>
+              <tr className="border-b border-border/60 bg-muted/20">
                 {["Order ID","วันที่","เกม / แพ็กเกจ","UID","รายได้","VAT 7%","ต้นทุน","กำไร","วิธีชำระ","สถานะ"].map(h => (
-                  <th key={h} className="px-4 py-2.5 text-left text-[10px] font-semibold whitespace-nowrap" style={{ color: "#64748b" }}>{h}</th>
+                  <th key={h} className="px-4 py-2.5 text-left text-[10px] font-bold text-muted-foreground uppercase whitespace-nowrap">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {loading ? Array.from({length:5}).map((_,i) => (
-                <tr key={i} style={{ borderBottom: "1px solid #0d1525" }}>
-                  {Array.from({length:10}).map((_,j) => (
+                <tr key={i} className="border-b border-border/40">
+                  {Array.from({length:10}).map((_, j) => (
                     <td key={j} className="px-4 py-3">
-                      <div className="h-3 rounded animate-pulse" style={{ background: "#1c2540", width: j === 2 ? 120 : 60 }} />
+                      <div className="h-3 rounded animate-pulse bg-muted/60" style={{ width: j === 2 ? 120 : 60 }} />
                     </td>
                   ))}
                 </tr>
               )) : transactions?.data?.length === 0 ? (
-                <tr><td colSpan={10} className="text-center py-12 text-sm" style={{ color: "#64748b" }}>ไม่พบรายการ</td></tr>
+                <tr><td colSpan={10} className="text-center py-12 text-sm text-muted-foreground font-semibold">ไม่พบรายการ</td></tr>
               ) : transactions?.data?.map((r: any, i: number) => (
-                <tr key={i} className="hover:bg-white/[0.02] transition" style={{ borderBottom: "1px solid #0d1525" }}>
-                  <td className="px-4 py-3 font-mono text-xs" style={{ color: "#67e8f9" }}>{r.orderId}</td>
-                  <td className="px-4 py-3 text-xs whitespace-nowrap" style={{ color: "#94a3b8" }}>
+                <tr key={i} className="hover:bg-muted/10 transition border-b border-border/40">
+                  <td className="px-4 py-3 font-mono text-xs font-bold text-cyan-600 dark:text-cyan-400">{r.orderId}</td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground font-medium whitespace-nowrap">
                     {new Date(r.createdAt).toLocaleDateString("th-TH", { day:"numeric",month:"short",year:"2-digit" })}
                   </td>
                   <td className="px-4 py-3">
-                    <p className="font-semibold text-white text-xs">{r.gameName}</p>
-                    <p className="text-[10px] truncate max-w-[120px]" style={{ color: "#64748b" }}>{r.packageName}</p>
+                    <p className="font-extrabold text-foreground text-xs">{r.gameName}</p>
+                    <p className="text-[10px] text-muted-foreground font-semibold truncate max-w-[120px]">{r.packageName}</p>
                   </td>
-                  <td className="px-4 py-3 font-mono text-xs" style={{ color: "#94a3b8" }}>{r.uid}</td>
-                  <td className="px-4 py-3 font-bold whitespace-nowrap text-xs" style={{ color: "#7dd3fc" }}>฿{fmt(r.revenue)}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-xs" style={{ color: "#c4b5fd" }}>฿{fmt(r.vat)}</td>
-                  <td className="px-4 py-3 whitespace-nowrap text-xs" style={{ color: "#f9a8d4" }}>฿{fmt(r.cost)}</td>
-                  <td className="px-4 py-3 font-bold whitespace-nowrap text-xs" style={{ color: r.profit >= 0 ? "#34d399" : "#f87171" }}>฿{fmt(r.profit)}</td>
-                  <td className="px-4 py-3 text-xs whitespace-nowrap" style={{ color: "#94a3b8" }}>{r.paymentMethod}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-muted-foreground font-semibold">{r.uid}</td>
+                  <td className="px-4 py-3 font-bold font-mono text-xs text-cyan-600 dark:text-cyan-400 whitespace-nowrap">฿{fmt(r.revenue)}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-purple-600 dark:text-purple-400 whitespace-nowrap">฿{fmt(r.vat)}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-rose-500 whitespace-nowrap">฿{fmt(r.cost)}</td>
+                  <td className="px-4 py-3 font-bold font-mono text-xs text-emerald-500 whitespace-nowrap">฿{fmt(r.profit)}</td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground font-bold whitespace-nowrap">{r.paymentMethod}</td>
                   <td className="px-4 py-3">
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold whitespace-nowrap"
-                      style={r.status === "completed"
-                        ? { background: "rgba(52,211,153,0.12)", color: "#34d399", border: "1px solid rgba(52,211,153,0.3)" }
-                        : { background: "rgba(248,113,113,0.12)", color: "#f87171", border: "1px solid rgba(248,113,113,0.3)" }}>
-                      <span className="w-1 h-1 rounded-full" style={{ background: r.status === "completed" ? "#34d399" : "#f87171" }} />
+                    <span className={cn(
+                      "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold whitespace-nowrap border",
+                      r.status === "completed"
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                        : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20"
+                    )}>
+                      <span className={cn("w-1 h-1 rounded-full", r.status === "completed" ? "bg-emerald-500" : "bg-rose-500")} />
                       {r.status === "completed" ? "สำเร็จ" : "ล้มเหลว"}
                     </span>
                   </td>
@@ -403,19 +422,17 @@ export default function FinancialDashboard() {
 
         {/* Pagination */}
         {transactions?.pagination && transactions.pagination.totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3" style={{ borderTop: "1px solid #1c2540" }}>
-            <p className="text-xs" style={{ color: "#64748b" }}>
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border/50 bg-muted/10">
+            <p className="text-xs text-muted-foreground font-bold">
               {transactions.pagination.page}/{transactions.pagination.totalPages} · {transactions.pagination.total.toLocaleString()} รายการ
             </p>
             <div className="flex gap-1.5">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page <= 1}
-                className="p-1.5 rounded-lg disabled:opacity-30"
-                style={{ border: "1px solid #1c2540", color: "#94a3b8" }}>
+                className="p-1.5 rounded-lg border border-border/80 bg-card text-muted-foreground hover:text-foreground transition disabled:opacity-30">
                 <ChevronLeft size={14} />
               </button>
               <button onClick={() => setPage(p => p + 1)} disabled={page >= transactions.pagination.totalPages}
-                className="p-1.5 rounded-lg disabled:opacity-30"
-                style={{ border: "1px solid #1c2540", color: "#94a3b8" }}>
+                className="p-1.5 rounded-lg border border-border/80 bg-card text-muted-foreground hover:text-foreground transition disabled:opacity-30">
                 <ChevronRight size={14} />
               </button>
             </div>

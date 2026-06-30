@@ -332,8 +332,12 @@ export default function OrdersAdminPage() {
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                    <h1 className="text-lg font-bold text-foreground">ระบบคำสั่งซื้อ</h1>
-                    <p className="text-[10px] text-muted-foreground">ทั้งหมด {pagination.total.toLocaleString()} ออเดอร์</p>
+                    <p className="text-[10px] tracking-widest uppercase font-mono mb-1 text-muted-foreground">
+                        Super Admin · Orders
+                    </p>
+                    <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+                        ระบบ <span className="text-primary">จัดการคำสั่งซื้อทั้งหมด</span>
+                    </h1>
                 </div>
                 <div className="flex items-center gap-2">
                     <button onClick={handleExport} disabled={exporting}

@@ -4,8 +4,24 @@ export async function apiRequest(
     endpoint: string,
     options: RequestInit = {}
 ) {
-    const token = localStorage.getItem("auth-storage");
-    const parsedToken = token ? JSON.parse(token).state.token : null;
+    // Try admin token first (admin-auth-storage), then fallback to user token (auth-storage)
+    let parsedToken: string | null = null;
+    try {
+        const adminAuth = localStorage.getItem("admin-auth-storage");
+        if (adminAuth) {
+            const adminState = JSON.parse(adminAuth);
+            parsedToken = adminState?.state?.token || null;
+        }
+    } catch {}
+    if (!parsedToken) {
+        try {
+            const userAuth = localStorage.getItem("auth-storage");
+            if (userAuth) {
+                const userState = JSON.parse(userAuth);
+                parsedToken = userState?.state?.token || null;
+            }
+        } catch {}
+    }
 
     const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -24,8 +40,12 @@ export async function apiRequest(
     if (!response.ok) {
         if (response.status === 401) {
             if (typeof window !== "undefined") {
-                localStorage.removeItem("auth-storage");
-                window.location.href = "/login?expired=true";
+                const isAdminPage = window.location.pathname.startsWith("/admin");
+                if (!isAdminPage) {
+                    // Only clear user auth and redirect for non-admin pages
+                    localStorage.removeItem("auth-storage");
+                    window.location.href = "/login?expired=true";
+                }
             }
             throw new Error("เซสชันการใช้งานหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
         }
@@ -157,10 +177,15 @@ export const api = {
     },
     processWalletPayment: (data: { orderId: number; amount: number; paymentMethod: string }) =>
         apiRequest("/payments/process-wallet-payment", { method: "POST", body: JSON.stringify(data) }),
-    generateQRCode: (data: { orderId: number; amount: number; method: "promptpay" | "truemoney" }) =>
+    generateQRCode: (data: { orderId: number; amount: number; method: "promptpay" | "truemoney" | "bank_transfer" }) =>
         apiRequest("/payments/generate-qr", { method: "POST", body: JSON.stringify(data) }),
     checkPaymentStatus: (orderId: string) =>
         apiRequest(`/payments/check-status?orderId=${orderId}`),
+    getPaymentAdminSettings: () => apiRequest("/payments/admin/settings"),
+    savePaymentAdminSettings: (settings: any) =>
+        apiRequest("/payments/admin/settings", { method: "POST", body: JSON.stringify({ settings }) }),
+    getActivePaymentMethods: () => apiRequest("/payments/active-methods"),
+    getPaymentAdminLogs: () => apiRequest("/payments/admin/logs"),
 
     // Slip upload (multipart/form-data — needs raw fetch, not JSON)
     uploadSlip: async (file: File) => {

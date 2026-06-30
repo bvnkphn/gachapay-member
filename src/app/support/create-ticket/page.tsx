@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import {
@@ -8,6 +8,7 @@ import {
     ArrowLeft,
     Ticket,
     AlertCircle,
+    RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,10 +23,12 @@ import {
 } from "@/components/ui/select";
 import { useLanguage } from "@/components/language-context";
 import { toast } from "sonner";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function CreateTicketPage() {
     const router = useRouter();
     const { lang, t } = useLanguage();
+    const { user, token } = useAuth();
     const [formData, setFormData] = useState({
         problemType: "",
         userId: "",
@@ -35,6 +38,16 @@ export default function CreateTicketPage() {
     });
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+
+    useEffect(() => {
+        if (user?.email) {
+            setFormData(prev => ({
+                ...prev,
+                email: user.email
+            }));
+        }
+    }, [user]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -43,12 +56,12 @@ export default function CreateTicketPage() {
             if (validTypes.includes(file.type)) {
                 setSelectedFile(file);
             } else {
-                alert(t.invalidFileType);
+                toast.error(t.invalidFileType || "รองรับเฉพาะไฟล์รูปภาพเท่านั้น");
             }
         }
     };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
         const needsOrderId = ["missing-payment", "incorrect-amount", "wrong-user-id", "payment-gateway"]
@@ -59,7 +72,80 @@ export default function CreateTicketPage() {
             return;
         }
 
-        setShowSuccess(true);
+        setSubmitting(true);
+        try {
+            let uploadedImageUrl = "";
+
+            // 1. Upload file if selected
+            if (selectedFile) {
+                if (!token) {
+                    toast.error(lang === "th" ? "กรุณาเข้าสู่ระบบก่อนแนบรูปภาพ" : "Please log in to attach an image.");
+                    setSubmitting(false);
+                    return;
+                }
+                const fData = new FormData();
+                fData.append("file", selectedFile);
+                const uploadRes = await fetch(
+                    `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/upload/slip`,
+                    {
+                        method: "POST",
+                        headers: { Authorization: `Bearer ${token}` },
+                        body: fData,
+                    }
+                );
+                if (uploadRes.ok) {
+                    const uploadData = await uploadRes.json();
+                    uploadedImageUrl = uploadData.url;
+                } else {
+                    toast.error(lang === "th" ? "อัปโหลดรูปภาพไม่สำเร็จ" : "Image upload failed.");
+                }
+            }
+
+            // 2. Map problem category and subject
+            const categoryMap: Record<string, string> = {
+                "missing-payment": "payment",
+                "incorrect-amount": "payment",
+                "wrong-user-id": "topup",
+                "payment-gateway": "payment",
+                "vip-privileges": "vip",
+                "general-question": "general",
+                "other": "general"
+            };
+
+            const category = categoryMap[formData.problemType] || "general";
+            const subject = t.problemTypes[formData.problemType as keyof typeof t.problemTypes] || formData.problemType;
+
+            // 3. Post to backend
+            const createRes = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api"}/support/tickets`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        name: user?.name || user?.email?.split("@")[0] || "Anonymous",
+                        email: formData.email,
+                        subject,
+                        category,
+                        orderId: needsOrderId ? formData.userId : undefined,
+                        message: formData.description,
+                        imageUrl: uploadedImageUrl || undefined,
+                        userId: user?.id || undefined,
+                    }),
+                }
+            );
+
+            if (!createRes.ok) {
+                const errData = await createRes.json().catch(() => ({}));
+                throw new Error(errData.message || "Failed to create ticket");
+            }
+
+            setShowSuccess(true);
+        } catch (err: any) {
+            console.error("Ticket submission error:", err);
+            toast.error(lang === "th" ? `ส่งข้อมูลไม่สำเร็จ: ${err.message}` : `Failed to submit: ${err.message}`);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     if (showSuccess) {
@@ -296,12 +382,12 @@ export default function CreateTicketPage() {
                             </p>
                         </div>
 
-
-
                         <Button
                             type="submit"
-                            className="w-full h-12 bg-foreground text-background hover:bg-foreground/90 text-sm font-bold transition-all duration-200"
+                            disabled={submitting}
+                            className="w-full h-12 bg-foreground text-background hover:bg-foreground/90 text-sm font-bold transition-all duration-200 flex items-center justify-center gap-2"
                         >
+                            {submitting && <RefreshCw size={15} className="animate-spin" />}
                             {t.submit}
                         </Button>
                     </form>

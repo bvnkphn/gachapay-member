@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useLanguage } from "@/components/language-context";
-import { ArrowLeft, Zap, Shield, Clock, AlertCircle, CheckCircle2, ShoppingCart, ChevronLeft, Coins, QrCode, AlertTriangle, Loader2, X, Bookmark, Lock as LockIcon } from "lucide-react";
+import { ArrowLeft, Zap, Shield, Clock, AlertCircle, CheckCircle2, ShoppingCart, ChevronLeft, Coins, QrCode, AlertTriangle, Loader2, X, Bookmark, Lock as LockIcon, Gift, CreditCard, Wallet, Landmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { api } from "@/lib/api";
@@ -103,7 +103,63 @@ export default function GameTopupPage() {
         }
     };
 
-    const [paymentMethod, setPaymentMethod] = useState<"coin" | "qr">("coin");
+    const [paymentMethod, setPaymentMethod] = useState<string>("coin");
+    const [activeMethods, setActiveMethods] = useState<any[]>([]);
+
+    useEffect(() => {
+        const loadMethods = async () => {
+            try {
+                const data = await api.getActivePaymentMethods();
+                if (Array.isArray(data)) {
+                    setActiveMethods(data);
+                    const enabled = data.filter(m => m.enabled);
+                    if (enabled.length > 0) {
+                        const first = enabled[0].id;
+                        if (first === "wallet") setPaymentMethod("coin");
+                        else if (first === "promptpay") setPaymentMethod("qr");
+                        else setPaymentMethod(first);
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load active methods", e);
+            }
+        };
+        loadMethods();
+    }, []);
+
+    const totalAmount = useMemo(() => selectedPackage ? selectedPackagePrice * (1 - (appliedCoupon?.discount ?? 0) / 100) : 0, [selectedPackage, selectedPackagePrice, appliedCoupon]);
+
+    // Auto select paymentMethod to free if totalAmount is 0
+    useEffect(() => {
+        if (selectedPackage && totalAmount <= 0) {
+            setPaymentMethod("free");
+        } else if (paymentMethod === "free") {
+            const first = activeMethods.find(m => m.enabled);
+            if (first) {
+                const mCode = first.id === "wallet" ? "coin" : first.id === "promptpay" ? "qr" : first.id;
+                setPaymentMethod(mCode);
+            }
+        }
+    }, [totalAmount, selectedPackage, activeMethods]);
+
+    // Ensure selected paymentMethod is always enabled
+    useEffect(() => {
+        if (activeMethods.length === 0 || paymentMethod === "free") return;
+        
+        const currentGatewayId = paymentMethod === "coin" ? "wallet" 
+            : paymentMethod === "qr" ? "promptpay" 
+            : paymentMethod;
+            
+        const currentMethod = activeMethods.find(m => m.id === currentGatewayId);
+        if (currentMethod && !currentMethod.enabled) {
+            const firstEnabled = activeMethods.find(m => m.enabled);
+            if (firstEnabled) {
+                const defaultMethod = firstEnabled.id === "wallet" ? "coin" : firstEnabled.id === "promptpay" ? "qr" : firstEnabled.id;
+                setPaymentMethod(defaultMethod);
+            }
+        }
+    }, [paymentMethod, activeMethods]);
+
     const [walletBalance, setWalletBalance] = useState(0);
     const [showWarningModal, setShowWarningModal] = useState(false);
     const [warningText, setWarningText] = useState("");
@@ -282,10 +338,10 @@ export default function GameTopupPage() {
             return;
         }
 
-        const totalAmount = selectedPackagePrice * (1 - (appliedCoupon?.discount ?? 0) / 100);
+        // totalAmount is already memoized above
 
-        // Check balance for Coin payment
-        if (paymentMethod === "coin") {
+        // Check balance for Coin payment (skip for free checkout)
+        if (paymentMethod === "coin" && totalAmount > 0) {
             if (!isLoggedIn) {
                 setWarningText("กรุณาเข้าสู่ระบบเพื่อสั่งซื้อด้วยคอยน์สะสม");
                 setShowWarningModal(true);
@@ -302,6 +358,12 @@ export default function GameTopupPage() {
             setSubmitting(true);
             setError(null);
 
+            // Map internal payment method code to backend payment method name
+            const resolvedPaymentMethod = paymentMethod === "coin" ? "gacha_wallet"
+                : paymentMethod === "qr" ? "promptpay"
+                : paymentMethod === "free" ? "free"
+                : paymentMethod; // truemoney, credit, etc.
+
             // Create order via backend API with correct structure
             const orderData = {
                 gameId: game.slug || String(game.id),
@@ -312,6 +374,7 @@ export default function GameTopupPage() {
                 uid: uidValue,
                 email: isLoggedIn ? user?.email : formData.email,
                 couponCode: appliedCoupon?.code,
+                paymentMethod: resolvedPaymentMethod,
             };
 
             const response = await api.createOrder(orderData);
@@ -319,6 +382,17 @@ export default function GameTopupPage() {
             if (response && response.id) {
                 const createdOrderId = String(response.id);
                 setCurrentOrderId(createdOrderId);
+
+                if (response.status === "completed") {
+                    setSuccess(true);
+                    setOrderId(createdOrderId);
+                    window.dispatchEvent(new Event("balance-changed"));
+                    toast.success("สั่งซื้อสำเร็จ!");
+                    setTimeout(() => {
+                        router.push(`/history`);
+                    }, 2000);
+                    return;
+                }
 
                 if (paymentMethod === "coin") {
                     // Pay with wallet balance
@@ -339,7 +413,7 @@ export default function GameTopupPage() {
                     } else {
                         throw new Error(payResult.message || "การชำระเงินด้วยคอยน์สะสมล้มเหลว");
                     }
-                } else {
+                } else if (paymentMethod === "qr") {
                     // Pay with QR Code
                     const qrResult = await api.generateQRCode({
                         orderId: Number(createdOrderId),
@@ -354,6 +428,48 @@ export default function GameTopupPage() {
                     } else {
                         throw new Error(qrResult.message || "ไม่สามารถสร้าง QR Code สแกนจ่ายได้");
                     }
+                } else if (paymentMethod === "truemoney") {
+                    // Pay with TrueMoney Wallet (QR promptpay with method 'truemoney')
+                    const qrResult = await api.generateQRCode({
+                        orderId: Number(createdOrderId),
+                        amount: totalAmount,
+                        method: "truemoney"
+                    });
+
+                    if (qrResult && qrResult.success) {
+                        setQrCodeUrl(qrResult.data.qrCode);
+                        setPaymentRef(qrResult.data.referenceNumber);
+                        setShowQrPaymentModal(true);
+                    } else {
+                        throw new Error(qrResult.message || "ไม่สามารถสร้าง QR Code สแกนจ่ายได้");
+                    }
+                } else if (paymentMethod === "bank_transfer") {
+                    // Bank Transfer
+                    const qrResult = await api.generateQRCode({
+                        orderId: Number(createdOrderId),
+                        amount: totalAmount,
+                        method: "bank_transfer"
+                    });
+
+                    if (qrResult && qrResult.success) {
+                        setQrCodeUrl(qrResult.data.qrCode);
+                        setPaymentRef(qrResult.data.referenceNumber);
+                        setShowQrPaymentModal(true);
+                    } else {
+                        throw new Error(qrResult.message || "ไม่สามารถสร้างรายการโอนเงินได้");
+                    }
+                } else if (paymentMethod === "free") {
+                    // Free Checkout fallback
+                    setSuccess(true);
+                    setOrderId(createdOrderId);
+                    window.dispatchEvent(new Event("balance-changed"));
+                    toast.success("สั่งซื้อสำเร็จ!");
+                    setTimeout(() => {
+                        router.push(`/history`);
+                    }, 2000);
+                    return;
+                } else {
+                    throw new Error("ยังไม่เปิดระบบชำระเงินทางเลือกอื่น");
                 }
             } else {
                 console.error("Unexpected response structure:", response);
@@ -380,8 +496,8 @@ export default function GameTopupPage() {
             
             const res = await api.validateCoupon({
                 code: code,
-                gameId: game.id,
-                packageId: selectedPackage.id,
+                gameId: game?.id,
+                packageId: selectedPackage ? Number(selectedPackage.id) : undefined,
                 amount: selectedPackagePrice
             }, user?.id || "1");
 
@@ -672,43 +788,65 @@ export default function GameTopupPage() {
                                     วิธีการชำระเงิน (Payment Method)
                                 </p>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <button
-                                        type="button"
-                                        disabled={!isLoggedIn}
-                                        onClick={() => setPaymentMethod("coin")}
-                                        className={cn(
-                                            "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all select-none",
-                                            !isLoggedIn
-                                                ? "opacity-50 cursor-not-allowed border-border/20 bg-muted/10 text-muted-foreground"
-                                                : paymentMethod === "coin"
-                                                    ? "border-primary bg-primary/10 text-primary font-bold cursor-pointer"
-                                                    : "border-border/30 hover:border-primary/50 text-muted-foreground cursor-pointer"
-                                        )}
-                                    >
-                                        <Coins className="w-5 h-5 mb-1 text-amber-500 fill-current" />
-                                        <span className="text-[11px]">Coin (฿{walletBalance.toFixed(2)})</span>
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            if (!isLoggedIn) {
-                                                toast.error("ต้องเข้าสู่ระบบก่อนทำรายการ");
-                                                return;
-                                            }
-                                            setPaymentMethod("qr");
-                                        }}
-                                        className={cn(
-                                            "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all select-none",
-                                            !isLoggedIn
-                                                ? "opacity-50 border-border/20 bg-muted/10 text-muted-foreground cursor-pointer"
-                                                : paymentMethod === "qr"
-                                                    ? "border-primary bg-primary/10 text-primary font-bold cursor-pointer"
-                                                    : "border-border/30 hover:border-primary/50 text-muted-foreground cursor-pointer"
-                                        )}
-                                    >
-                                        <QrCode className={cn("w-5 h-5 mb-1", !isLoggedIn ? "text-muted-foreground/60" : "text-primary")} />
-                                        <span className="text-[11px]">QR Code</span>
-                                    </button>
+                                    {selectedPackage && totalAmount <= 0 ? (
+                                        <button
+                                            type="button"
+                                            disabled={!isLoggedIn}
+                                            onClick={() => setPaymentMethod("free")}
+                                            className={cn(
+                                                "col-span-2 flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all select-none border-primary bg-primary/10 text-primary font-bold cursor-pointer"
+                                            )}
+                                        >
+                                            <Gift className="w-5 h-5 mb-1 text-emerald-500 fill-current" />
+                                            <span className="text-[11px]">ชำระฟรี (Free Checkout)</span>
+                                        </button>
+                                    ) : (
+                                        <>
+                                            {activeMethods.filter(m => m.enabled).map(m => {
+                                                const mCode = m.id === "wallet" ? "coin" : m.id === "promptpay" ? "qr" : m.id;
+                                                const isSel = paymentMethod === mCode;
+                                                let iconEl = <Coins className="w-5 h-5 mb-1 text-amber-500 fill-current" />;
+                                                if (m.id === "promptpay") {
+                                                    iconEl = <QrCode className={cn("w-5 h-5 mb-1", !isLoggedIn ? "text-muted-foreground/60" : "text-primary")} />;
+                                                } else if (m.id === "truemoney") {
+                                                    iconEl = <Wallet className="w-5 h-5 mb-1 text-orange-500 fill-current" />;
+                                                } else if (m.id === "bank_transfer") {
+                                                    iconEl = <Landmark className="w-5 h-5 mb-1 text-purple-500" />;
+                                                }
+
+                                                let label = m.name;
+                                                if (m.id === "wallet") {
+                                                    label = `Coin (฿${walletBalance.toFixed(2)})`;
+                                                }
+
+                                                return (
+                                                    <button
+                                                        key={m.id}
+                                                        type="button"
+                                                        disabled={!isLoggedIn}
+                                                        onClick={() => {
+                                                            if (!isLoggedIn) {
+                                                                toast.error("ต้องเข้าสู่ระบบก่อนทำรายการ");
+                                                                return;
+                                                            }
+                                                            setPaymentMethod(mCode);
+                                                        }}
+                                                        className={cn(
+                                                            "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all select-none",
+                                                            !isLoggedIn
+                                                                ? "opacity-50 cursor-not-allowed border-border/20 bg-muted/10 text-muted-foreground"
+                                                                : isSel
+                                                                    ? "border-primary bg-primary/10 text-primary font-bold cursor-pointer"
+                                                                    : "border-border/30 hover:border-primary/50 text-muted-foreground cursor-pointer"
+                                                        )}
+                                                    >
+                                                        {iconEl}
+                                                        <span className="text-[11px] whitespace-nowrap">{label}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </>
+                                    )}
                                 </div>
                             </div>
 

@@ -427,6 +427,16 @@ export default function GamesAdminPage() {
       )}
 
       <div className="p-3 sm:p-5 space-y-4">
+        {/* Header */}
+        <div>
+          <p className="text-[10px] tracking-widest uppercase font-mono mb-1 text-muted-foreground">
+            Super Admin · Games
+          </p>
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+            จัดการ <span className="text-primary">ข้อมูลเกมทั้งหมด</span>
+          </h1>
+        </div>
+
         {/* Summary Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {[

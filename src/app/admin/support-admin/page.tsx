@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import axios from "axios";
 import { useAdminAuth } from "@/hooks/use-admin-auth";
 import {
@@ -8,8 +8,10 @@ import {
   Plus, Trash2, Edit3, X, Check, AlertCircle,
   CheckCircle2, XCircle, RefreshCw, FileImage,
   Link2, ShoppingCart, History, User,
-  Eye, Youtube, Tag, CreditCard, Gamepad2, TrendingUp,
+  Eye, Youtube, Tag,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type TicketStatus = "new" | "inprogress" | "resolved" | "closed";
 type TicketItem = {
@@ -77,7 +79,6 @@ const ALLOWED: Record<TicketStatus, TicketStatus[]> = {
   resolved:   ["closed", "inprogress"],
   closed:     [],
 };
-const cardStyle = { background: "rgba(11,15,32,0.85)", border: "1px solid #1c2540" };
 
 function fmtDate(iso: string) {
   const d = new Date(iso);
@@ -97,11 +98,12 @@ function getYoutubeEmbedUrl(url: string): string | null {
 }
 
 function StatusBadge({ status }: { status: TicketStatus }) {
-  const c = STATUS_CFG[status]; const Icon = c.icon;
+  const c = STATUS_CFG[status] ?? STATUS_CFG.closed; const Icon = c.icon;
   return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap"
-      style={{ background: c.bg, color: c.color, border: `1px solid ${c.border}` }}>
-      <Icon size={11} />{c.label}
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border whitespace-nowrap"
+      style={{ backgroundColor: c.bg, color: c.color, borderColor: c.border }}>
+      <Icon size={11} className="shrink-0" />
+      {c.label}
     </span>
   );
 }
@@ -121,18 +123,16 @@ function OrderRefCard({ order }: { order: OrderRef }) {
   const txCfg = txStatusCfg[order.status] ?? { label: order.status.toUpperCase(), color: "#94a3b8", bg: "rgba(148,163,184,0.1)" };
 
   return (
-    <div className="rounded-2xl overflow-hidden" style={{ background: "#0d1526", border: "1px solid #1c2540" }}>
-
+    <div className="rounded-2xl overflow-hidden border border-border bg-card shadow-sm text-card-foreground">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: "1px solid #1c2540" }}>
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border/60 bg-muted/20">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-            style={{ background: "rgba(129,140,248,0.12)" }}>
-            <ShoppingCart size={16} style={{ color: "#818cf8" }} />
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-primary/10 text-primary flex-shrink-0">
+            <ShoppingCart size={16} />
           </div>
           <div>
-            <p className="text-sm font-bold text-white">Order #{order.id}</p>
-            <p className="text-[10px]" style={{ color: "#64748b" }}>
+            <p className="text-sm font-bold text-foreground">Order #{order.id}</p>
+            <p className="text-[10px] text-muted-foreground">
               Created on {new Date(order.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "2-digit", day: "2-digit" })}
               {" "}{new Date(order.createdAt).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}
             </p>
@@ -141,73 +141,36 @@ function OrderRefCard({ order }: { order: OrderRef }) {
       </div>
 
       {/* Transaction Status */}
-      <div className="flex items-center justify-between px-5 py-3" style={{ borderBottom: "1px solid #1c2540" }}>
+      <div className="flex items-center justify-between px-5 py-3 border-b border-border/40">
         <div>
-          <p className="text-[10px] tracking-widest font-semibold mb-1.5" style={{ color: "#64748b" }}>TRANSACTION STATUS</p>
+          <p className="text-[10px] tracking-widest font-bold mb-1.5 text-muted-foreground">TRANSACTION STATUS</p>
           <span className="px-3 py-1 rounded-lg text-xs font-bold"
-            style={{ background: txCfg.bg, color: txCfg.color }}>
+            style={{ backgroundColor: txCfg.bg, color: txCfg.color }}>
             {txCfg.label}
           </span>
         </div>
-        <div className="text-right">
-          <p className="text-[10px] tracking-widest font-semibold mb-1.5" style={{ color: "#64748b" }}>PAYMENT METHOD</p>
-          <p className="text-sm font-bold text-white">{order.paymentMethod ?? "—"}</p>
-        </div>
       </div>
 
-      {/* Game Details + Financials */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-0">
-
-        {/* Game Details */}
-        <div className="px-5 py-4" style={{ borderRight: "1px solid #1c2540" }}>
-          <div className="flex items-center gap-2 mb-3">
-            <Gamepad2 size={12} style={{ color: "#38bdf8" }} />
-            <p className="text-[10px] tracking-widest font-bold" style={{ color: "#38bdf8" }}>GAME DETAILS</p>
+      {/* Details */}
+      <div className="px-5 py-4 space-y-3.5 text-xs">
+        {[
+          { label: "GAME NAME", value: order.gameName },
+          { label: "PACKAGE", value: order.packageName },
+          { label: "GAME UID", value: order.uid, mono: true },
+          { label: "PAYMENT METHOD", value: order.paymentMethod ?? "Unknown" },
+          { label: "FINAL PRICE", value: fmtMoney(finalPrice), bold: true },
+          { label: "ESTIMATED PROFIT", value: profit > 0 ? fmtMoney(profit) : "-", bold: true, color: profit > 0 ? "text-green-500" : "" },
+        ].map(({ label, value, mono, bold, color }) => (
+          <div key={label} className="flex justify-between items-center py-0.5">
+            <span className="text-muted-foreground font-bold tracking-wider text-[10px]">{label}</span>
+            <span className={cn(
+              "text-foreground text-right max-w-[65%] truncate",
+              mono && "font-mono font-semibold",
+              bold && "font-extrabold text-sm",
+              color
+            )}>{value}</span>
           </div>
-          <div className="space-y-2.5">
-            {[
-              { label: "Game Name:",       value: order.gameName },
-              { label: "Package:",         value: order.packageName },
-              { label: "Player ID (UID):", value: order.uid },
-            ].map(({ label, value }) => (
-              <div key={label} className="flex items-start justify-between gap-3">
-                <span className="text-xs flex-shrink-0" style={{ color: "#64748b" }}>{label}</span>
-                <span className="text-sm font-semibold text-white text-right truncate max-w-[55%]">{value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Financials */}
-        <div className="px-5 py-4">
-          <div className="flex items-center gap-2 mb-3">
-            <CreditCard size={12} style={{ color: "#34d399" }} />
-            <p className="text-[10px] tracking-widest font-bold" style={{ color: "#34d399" }}>FINANCIALS</p>
-          </div>
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <span className="text-xs" style={{ color: "#64748b" }}>Total Amount:</span>
-              <span className="text-sm font-bold text-white">{fmtMoney(finalPrice)}</span>
-            </div>
-            {cost > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-xs" style={{ color: "#64748b" }}>Cost Price:</span>
-                <span className="text-sm" style={{ color: "#94a3b8" }}>{fmtMoney(cost)}</span>
-              </div>
-            )}
-            {cost > 0 && (
-              <div className="flex items-center justify-between pt-2" style={{ borderTop: "1px solid #1c2540" }}>
-                <div className="flex items-center gap-1.5">
-                  <TrendingUp size={11} style={{ color: "#34d399" }} />
-                  <span className="text-xs font-bold" style={{ color: "#34d399" }}>ADMIN PROFIT:</span>
-                </div>
-                <span className="text-base font-bold" style={{ color: profit >= 0 ? "#34d399" : "#f87171" }}>
-                  {fmtMoney(profit)}
-                </span>
-              </div>
-            )}
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
@@ -219,60 +182,57 @@ function FaqForm({ initial, onSave, onCancel, saving }: {
   const [form, setForm] = useState<FaqDraft>(initial);
   const embedUrl = getYoutubeEmbedUrl(form.videoUrl);
   return (
-    <div className="rounded-2xl p-5 space-y-4"
-      style={{ background: "rgba(88,50,210,0.08)", border: "1px solid rgba(129,140,248,0.3)" }}>
+    <div className="rounded-2xl p-5 space-y-4 bg-muted/30 border border-border/80">
       <div>
-        <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#94a3b8" }}>หมวดหมู่</label>
+        <label className="text-xs font-bold mb-1.5 block text-muted-foreground">หมวดหมู่</label>
         <div className="flex gap-2 flex-wrap">
           {FAQ_CATEGORIES.filter(c => c.value !== "all").map(c => (
             <button key={c.value} type="button" onClick={() => setForm(p => ({ ...p, category: c.value }))}
-              className="px-3 py-1 rounded-full text-xs font-semibold transition"
-              style={form.category === c.value
-                ? { background: "rgba(129,140,248,0.25)", color: "#a5b4fc", border: "1px solid rgba(129,140,248,0.5)" }
-                : { color: "#64748b", border: "1px solid #1c2540" }}>
+              className={cn(
+                "px-3.5 py-1.5 rounded-full text-xs font-bold border transition",
+                form.category === c.value
+                  ? "bg-primary/10 text-primary border-primary/30"
+                  : "bg-card text-muted-foreground border-border/80 hover:text-foreground"
+              )}>
               {c.label}
             </button>
           ))}
         </div>
       </div>
       <div>
-        <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#94a3b8" }}>คำถาม *</label>
+        <label className="text-xs font-bold mb-1.5 block text-muted-foreground">คำถาม *</label>
         <input value={form.question} onChange={e => setForm(p => ({ ...p, question: e.target.value }))}
           placeholder="เช่น: วิธีเติมเกมทำอย่างไร?"
-          className="w-full rounded-xl px-4 py-2.5 text-sm text-white outline-none"
-          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #1c2540" }} />
+          className="w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-card border border-border outline-none placeholder:text-muted-foreground/50" />
       </div>
       <div>
-        <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#94a3b8" }}>คำตอบ *</label>
+        <label className="text-xs font-bold mb-1.5 block text-muted-foreground">คำตอบ *</label>
         <textarea value={form.answer} onChange={e => setForm(p => ({ ...p, answer: e.target.value }))}
           placeholder="อธิบายคำตอบให้ชัดเจน..." rows={4}
-          className="w-full rounded-xl px-4 py-2.5 text-sm text-white outline-none resize-none"
-          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #1c2540" }} />
+          className="w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-card border border-border outline-none resize-none placeholder:text-muted-foreground/50" />
       </div>
       <div>
-        <label className="text-xs font-semibold mb-1.5 flex items-center gap-1.5" style={{ color: "#94a3b8" }}>
-          <Youtube size={12} style={{ color: "#f87171" }} /> Video URL (YouTube) — ไม่บังคับ
+        <label className="text-xs font-bold mb-1.5 flex items-center gap-1.5 text-muted-foreground">
+          <Youtube size={12} className="text-red-500 shrink-0" /> Video URL (YouTube) — ไม่บังคับ
         </label>
         <input value={form.videoUrl} onChange={e => setForm(p => ({ ...p, videoUrl: e.target.value }))}
           placeholder="https://youtube.com/watch?v=..."
-          className="w-full rounded-xl px-4 py-2.5 text-sm text-white outline-none"
-          style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #1c2540" }} />
+          className="w-full rounded-xl px-4 py-2.5 text-sm text-foreground bg-card border border-border outline-none placeholder:text-muted-foreground/50" />
         {embedUrl && (
-          <div className="mt-3 rounded-xl overflow-hidden" style={{ border: "1px solid #1c2540" }}>
+          <div className="mt-3 rounded-xl overflow-hidden border border-border shadow-sm">
             <iframe src={embedUrl} width="100%" height="180"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen className="block" />
           </div>
         )}
-        {form.videoUrl && !embedUrl && <p className="text-xs mt-1" style={{ color: "#f87171" }}>URL ไม่ถูกต้อง</p>}
+        {form.videoUrl && !embedUrl && <p className="text-xs mt-1 text-red-500">URL ไม่ถูกต้อง</p>}
       </div>
       <div className="flex gap-2 pt-1">
         <button onClick={() => onSave(form)} disabled={saving || !form.question.trim() || !form.answer.trim()}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-50"
-          style={{ background: "rgba(52,211,153,0.2)", color: "#34d399", border: "1px solid rgba(52,211,153,0.3)" }}>
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/20 hover:bg-green-500/20 transition disabled:opacity-50">
           {saving ? <RefreshCw size={12} className="animate-spin" /> : <Check size={13} />} บันทึก
         </button>
-        <button onClick={onCancel} className="px-4 py-2 rounded-xl text-sm" style={{ color: "#94a3b8", border: "1px solid #1c2540" }}>
+        <button onClick={onCancel} className="px-4 py-2 rounded-xl text-sm font-bold bg-muted text-muted-foreground border border-border hover:bg-muted/80 transition">
           ยกเลิก
         </button>
       </div>
@@ -344,6 +304,19 @@ export default function SupportDashboard() {
 
   useEffect(() => { if (tab === "faq") fetchFaqs(); }, [tab, fetchFaqs]);
 
+  // Handle global navbar refresh action
+  useEffect(() => {
+    const handleRefresh = () => {
+      if (tab === "tickets") {
+        fetchTickets();
+      } else {
+        fetchFaqs();
+      }
+    };
+    window.addEventListener("admin-refresh", handleRefresh);
+    return () => window.removeEventListener("admin-refresh", handleRefresh);
+  }, [tab, fetchTickets, fetchFaqs]);
+
   const fetchDetail = useCallback(async (id: string) => {
     if (!token) return;
     setLoadingDetail(true);
@@ -366,8 +339,11 @@ export default function SupportDashboard() {
     if (!token) return;
     try {
       await axios.patch(`${process.env.NEXT_PUBLIC_API_URL}/support/admin/tickets/${id}/status`, { status }, { headers:{ Authorization:`Bearer ${token}` } });
+      toast.success("เปลี่ยนสถานะตั๋วสำเร็จ");
       await Promise.all([fetchTickets(), fetchDetail(id)]);
-    } catch (e: any) { alert(e?.response?.data?.message ?? "เปลี่ยนสถานะไม่สำเร็จ"); }
+    } catch (e: any) { 
+      toast.error(e?.response?.data?.message ?? "เปลี่ยนสถานะไม่สำเร็จ"); 
+    }
   };
 
   const sendReply = async () => {
@@ -377,32 +353,42 @@ export default function SupportDashboard() {
       await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/support/admin/tickets/${selected.id}/reply`, { message: msgInput }, { headers:{ Authorization:`Bearer ${token}` } });
       setMsgInput("");
       await fetchDetail(selected.id);
-    } catch (e: any) { alert(e?.response?.data?.message ?? "ส่งไม่สำเร็จ"); }
-    finally { setSending(false); }
+    } catch (e: any) { 
+      toast.error(e?.response?.data?.message ?? "ส่งไม่สำเร็จ"); 
+    } finally { setSending(false); }
   };
 
   const createFaq = async (data: FaqDraft) => {
     if (!token) return; setFaqSaving(true);
     try {
       await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/faq/admin`, { question:data.question, answer:data.answer, videoUrl:data.videoUrl||null, category:data.category }, { headers:{ Authorization:`Bearer ${token}` } });
+      toast.success("สร้าง FAQ สำเร็จ");
       setShowNewFaq(false); await fetchFaqs();
-    } catch (e: any) { alert(e?.response?.data?.message ?? "สร้างไม่สำเร็จ"); }
-    finally { setFaqSaving(false); }
+    } catch (e: any) { 
+      toast.error(e?.response?.data?.message ?? "สร้างไม่สำเร็จ"); 
+    } finally { setFaqSaving(false); }
   };
 
   const updateFaq = async (id: number, data: FaqDraft) => {
     if (!token) return; setFaqSaving(true);
     try {
       await axios.patch(`${process.env.NEXT_PUBLIC_API_URL}/faq/admin/${id}`, { question:data.question, answer:data.answer, videoUrl:data.videoUrl||null, category:data.category }, { headers:{ Authorization:`Bearer ${token}` } });
+      toast.success("อัปเดต FAQ สำเร็จ");
       setEditFaqId(null); await fetchFaqs();
-    } catch (e: any) { alert(e?.response?.data?.message ?? "แก้ไขไม่สำเร็จ"); }
-    finally { setFaqSaving(false); }
+    } catch (e: any) { 
+      toast.error(e?.response?.data?.message ?? "แก้ไขไม่สำเร็จ"); 
+    } finally { setFaqSaving(false); }
   };
 
   const deleteFaq = async (id: number) => {
     if (!token || !confirm("ลบ FAQ นี้?")) return;
-    try { await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/faq/admin/${id}`, { headers:{ Authorization:`Bearer ${token}` } }); await fetchFaqs(); }
-    catch (e: any) { alert(e?.response?.data?.message ?? "ลบไม่สำเร็จ"); }
+    try { 
+      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/faq/admin/${id}`, { headers:{ Authorization:`Bearer ${token}` } }); 
+      toast.success("ลบ FAQ สำเร็จ");
+      await fetchFaqs(); 
+    } catch (e: any) { 
+      toast.error(e?.response?.data?.message ?? "ลบไม่สำเร็จ"); 
+    }
   };
 
   const toggleFaqActive = async (faq: FaqItem) => {
@@ -410,37 +396,39 @@ export default function SupportDashboard() {
     try {
       await axios.patch(`${process.env.NEXT_PUBLIC_API_URL}/faq/admin/${faq.id}`, { isActive: !faq.isActive }, { headers:{ Authorization:`Bearer ${token}` } });
       setFaqs(p => p.map(f => f.id === faq.id ? {...f, isActive:!f.isActive} : f));
+      toast.success(faq.isActive ? "ปิดการแสดงผล FAQ" : "เปิดการแสดงผล FAQ");
     } catch (e) { console.error(e); }
   };
 
   const filteredFaqs = faqs.filter(f => faqCatFilter === "all" || f.category === faqCatFilter);
 
   return (
-    <div className="min-h-screen p-3 sm:p-5 space-y-4"
-      style={{ background:"linear-gradient(160deg,#080c18 0%,#0a0e1e 60%,#060911 100%)", fontFamily:"'Noto Sans Thai',sans-serif" }}>
+    <div className="p-3 sm:p-5 space-y-4">
 
       <div>
-        <p className="text-[10px] text-[#3a4a6a] tracking-widest uppercase font-mono mb-1">Super Admin · Support</p>
-        <h1 className="text-xl sm:text-2xl font-bold text-white">
-          จัดการ <span style={{ background:"linear-gradient(90deg,#38bdf8,#818cf8)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent" }}>Support & FAQ</span>
+        <p className="text-[10px] text-muted-foreground tracking-widest uppercase font-mono mb-1">Super Admin · Support</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground">
+          จัดการ <span className="text-primary">Support & FAQ</span>
         </h1>
       </div>
 
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
         {([
-          { key:"total",      label:"ทั้งหมด",        color:"#94a3b8" },
-          { key:"new",        label:"ใหม่",            color:"#38bdf8" },
-          { key:"inprogress", label:"กำลังดำเนินการ", color:"#fbbf24" },
-          { key:"resolved",   label:"แก้ไขแล้ว",      color:"#34d399" },
-          { key:"closed",     label:"ปิดเคส",          color:"#64748b" },
-          { key:"urgent",     label:"เร่งด่วน",        color:"#f87171" },
+          { key:"total",      label:"ทั้งหมด",        color:"text-foreground" },
+          { key:"new",        label:"ใหม่",            color:"text-sky-500" },
+          { key:"inprogress", label:"กำลังดำเนินการ", color:"text-amber-500" },
+          { key:"resolved",   label:"แก้ไขแล้ว",      color:"text-emerald-500" },
+          { key:"closed",     label:"ปิดเคส",          color:"text-muted-foreground" },
+          { key:"urgent",     label:"เร่งด่วน",        color:"text-red-500" },
         ] as const).map(s => (
           <div key={s.key}
             onClick={() => s.key !== "total" && s.key !== "urgent" && setStatusFilter(s.key === statusFilter ? "all" : s.key as TicketStatus)}
-            className="rounded-2xl p-3 cursor-pointer transition"
-            style={{ ...cardStyle, border: statusFilter===s.key ? `1px solid ${s.color}` : "1px solid #1c2540" }}>
-            <p className="text-[9px] mb-1" style={{ color:"#64748b" }}>{s.label}</p>
-            <p className="text-xl font-bold" style={{ color:s.color }}>{stats[s.key]}</p>
+            className={cn(
+              "rounded-2xl p-3.5 cursor-pointer transition border bg-card text-card-foreground shadow-sm",
+              statusFilter === s.key ? "border-primary" : "border-border/80 hover:border-border"
+            )}>
+            <p className="text-[10px] mb-1 font-bold text-muted-foreground">{s.label}</p>
+            <p className={cn("text-xl font-extrabold", s.color)}>{stats[s.key]}</p>
           </div>
         ))}
       </div>
@@ -448,10 +436,12 @@ export default function SupportDashboard() {
       <div className="flex gap-2">
         {([["tickets",Ticket,"Ticket Management"],["faq",BookOpen,"FAQ & คู่มือ"]] as const).map(([key,Icon,label]) => (
           <button key={key} onClick={() => setTab(key as Tab)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition"
-            style={tab===key
-              ? { background:"rgba(88,50,210,0.28)", color:"#a5b4fc", border:"1px solid rgba(129,140,248,0.4)" }
-              : { ...cardStyle, color:"#64748b" }}>
+            className={cn(
+              "flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition",
+              tab === key
+                ? "bg-primary/10 text-primary border-primary/30"
+                : "bg-card text-muted-foreground border-border/80 hover:text-foreground"
+            )}>
             <Icon size={14}/>{label}
           </button>
         ))}
@@ -460,70 +450,71 @@ export default function SupportDashboard() {
       {tab === "tickets" && (
         <div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
           <div className="xl:col-span-2 space-y-3">
-            <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
-              style={{ background:"rgba(255,255,255,0.04)", border:"1px solid #1c2540" }}>
-              <Search size={13} style={{ color:"#64748b" }} />
+            <div className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-card border border-border/80 shadow-sm">
+              <Search size={14} className="text-muted-foreground" />
               <input value={searchInput} onChange={e => handleSearch(e.target.value)}
                 placeholder="ค้นหา ticket, email, order id..."
-                className="flex-1 bg-transparent outline-none text-sm text-white placeholder-[#3a4a6a]" />
-              {searchInput && <button onClick={() => { setSearchInput(""); setSearch(""); }}><X size={12} style={{ color:"#64748b" }}/></button>}
+                className="flex-1 bg-transparent outline-none text-xs text-foreground placeholder:text-muted-foreground/50" />
+              {searchInput && <button onClick={() => { setSearchInput(""); setSearch(""); }} className="text-muted-foreground hover:text-foreground"><X size={14} /></button>}
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[10px] mb-1 block" style={{ color:"#64748b" }}>ตั้งแต่วันที่</label>
+                <label className="text-[10px] mb-1 block text-muted-foreground font-bold">ตั้งแต่วันที่</label>
                 <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)}
-                  className="w-full rounded-xl px-3 py-1.5 text-xs text-white outline-none"
-                  style={{ background:"rgba(255,255,255,0.04)", border:"1px solid #1c2540" }} />
+                  className="w-full rounded-xl px-3.5 py-1.5 text-xs bg-card text-foreground border border-border/80 outline-none" />
               </div>
               <div>
-                <label className="text-[10px] mb-1 block" style={{ color:"#64748b" }}>ถึงวันที่</label>
+                <label className="text-[10px] mb-1 block text-muted-foreground font-bold">ถึงวันที่</label>
                 <input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)}
-                  className="w-full rounded-xl px-3 py-1.5 text-xs text-white outline-none"
-                  style={{ background:"rgba(255,255,255,0.04)", border:"1px solid #1c2540" }} />
+                  className="w-full rounded-xl px-3.5 py-1.5 text-xs bg-card text-foreground border border-border/80 outline-none" />
               </div>
             </div>
-            <div className="flex gap-1.5 overflow-x-auto pb-1">
+            <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
               {(["all","new","inprogress","resolved","closed"] as const).map(s => (
                 <button key={s} onClick={() => setStatusFilter(s)}
-                  className="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap flex-shrink-0 transition"
-                  style={statusFilter===s
-                    ? s==="all"
-                      ? { background:"rgba(99,102,241,0.25)", color:"#a5b4fc", border:"1px solid rgba(129,140,248,0.4)" }
-                      : { background:STATUS_CFG[s].bg, color:STATUS_CFG[s].color, border:`1px solid ${STATUS_CFG[s].border}` }
-                    : { color:"#64748b", border:"1px solid #1c2540" }}>
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-full text-xs font-bold whitespace-nowrap flex-shrink-0 transition border",
+                    statusFilter === s
+                      ? s === "all"
+                        ? "bg-primary/10 text-primary border-primary/30"
+                        : "border-primary bg-primary/5 text-primary"
+                      : "bg-card text-muted-foreground border-border/80 hover:text-foreground hover:border-border"
+                  )}>
                   {s==="all" ? "ทั้งหมด" : STATUS_CFG[s].label}
                 </button>
               ))}
             </div>
             {loading ? Array.from({length:5}).map((_,i) => (
-              <div key={i} className="rounded-2xl p-4 animate-pulse" style={cardStyle}>
-                <div className="h-3 w-20 rounded mb-2" style={{ background:"#1c2540" }} />
-                <div className="h-4 w-48 rounded mb-1" style={{ background:"#1c2540" }} />
+              <div key={i} className="rounded-2xl p-4 animate-pulse bg-card border border-border/60">
+                <div className="h-3.5 w-20 rounded bg-muted/60 mb-2.5" />
+                <div className="h-4.5 w-48 rounded bg-muted/60 mb-1.5" />
               </div>
             )) : tickets.length === 0 ? (
-              <div className="text-center py-12 text-sm" style={{ color:"#64748b" }}>ไม่พบ ticket</div>
+              <div className="text-center py-12 text-sm text-muted-foreground bg-card border border-border/85 rounded-2xl shadow-sm">
+                ไม่มีการแจ้งปัญหา
+              </div>
             ) : tickets.map(t => (
               <button key={t.id} onClick={() => fetchDetail(t.id)}
-                className="w-full text-left rounded-2xl p-4 transition-all"
-                style={selected?.id===t.id
-                  ? { background:"rgba(88,50,210,0.18)", border:"1px solid rgba(129,140,248,0.4)" }
-                  : cardStyle}>
+                className={cn(
+                  "w-full text-left rounded-2xl p-4 transition border shadow-sm block bg-card text-card-foreground",
+                  selected?.id === t.id
+                    ? "border-primary bg-primary/5"
+                    : "border-border/80 hover:border-border"
+                )}>
                 <div className="flex items-start justify-between gap-2 mb-1.5">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono" style={{ color:"#67e8f9" }}>{t.ticketNo}</span>
-                    {t.priority === "urgent" && <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold"
-                      style={{ background:"rgba(248,113,113,0.15)", color:"#f87171" }}>เร่งด่วน</span>}
+                    <span className="text-xs font-mono text-cyan-600 dark:text-cyan-400 font-bold">{t.ticketNo}</span>
+                    {t.priority === "urgent" && <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-red-500/10 text-red-500">เร่งด่วน</span>}
                   </div>
                   <StatusBadge status={t.status} />
                 </div>
-                <p className="text-sm font-semibold text-white leading-snug mb-1">{t.subject}</p>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs truncate max-w-[120px]" style={{ color:"#94a3b8" }}>{t.name}</span>
-                    {t.orderId && <span className="text-[9px] px-1.5 py-0.5 rounded font-mono"
-                      style={{ background:"rgba(129,140,248,0.12)", color:"#818cf8" }}>#{t.orderId.slice(-6)}</span>}
+                <p className="text-sm font-extrabold text-foreground leading-snug mb-1">{t.subject}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-xs text-muted-foreground truncate max-w-[120px]">{t.name}</span>
+                    {t.orderId && <span className="text-[9px] px-1.5 py-0.5 rounded font-mono bg-primary/10 text-primary shrink-0">#{t.orderId.slice(-6)}</span>}
                   </div>
-                  <span className="text-[10px] flex-shrink-0" style={{ color:"#64748b" }}>{fmtDate(t.createdAt)}</span>
+                  <span className="text-[10px] text-muted-foreground flex-shrink-0">{fmtDate(t.createdAt)}</span>
                 </div>
               </button>
             ))}
@@ -531,48 +522,46 @@ export default function SupportDashboard() {
 
           <div className="xl:col-span-3 space-y-4">
             {!selected ? (
-              <div className="rounded-2xl flex items-center justify-center" style={{ ...cardStyle, height:400 }}>
-                <div className="text-center space-y-2">
-                  <MessageSquare size={32} className="mx-auto" style={{ color:"#1c2540" }} />
-                  <p className="text-sm" style={{ color:"#64748b" }}>เลือก ticket เพื่อดูรายละเอียด</p>
-                </div>
+              <div className="rounded-2xl flex flex-col items-center justify-center py-20 bg-card border border-border/80 shadow-sm text-card-foreground">
+                <MessageSquare size={36} className="text-muted-foreground/60 mb-2" />
+                <p className="text-sm text-muted-foreground font-medium">เลือกรายการปัญหาเพื่อดูรายละเอียด</p>
               </div>
             ) : loadingDetail ? (
-              <div className="rounded-2xl flex items-center justify-center" style={{ ...cardStyle, height:400 }}>
-                <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
+              <div className="rounded-2xl flex items-center justify-center py-20 bg-card border border-border/80 shadow-sm">
+                <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
               </div>
             ) : (
               <>
-                <div className="rounded-2xl p-4" style={cardStyle}>
-                  <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
+                <div className="rounded-2xl p-5 bg-card border border-border/85 shadow-sm text-card-foreground space-y-4">
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-sm font-mono" style={{ color:"#67e8f9" }}>{selected.ticketNo}</span>
+                      <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                        <span className="text-sm font-mono text-cyan-600 dark:text-cyan-400 font-bold">{selected.ticketNo}</span>
                         <StatusBadge status={selected.status} />
                         {selected.priority !== "normal" && (
-                          <span className="text-xs px-2 py-0.5 rounded-full font-semibold"
-                            style={{ background:"rgba(245,158,11,0.12)", color:PRIORITY_CFG[selected.priority]?.color??"#94a3b8" }}>
+                          <span className="text-xs px-2 py-0.5 rounded-full font-bold bg-amber-500/10"
+                            style={{ color: PRIORITY_CFG[selected.priority]?.color ?? "#f59e0b" }}>
                             {PRIORITY_CFG[selected.priority]?.label}
                           </span>
                         )}
                       </div>
-                      <p className="text-sm font-bold text-white">{selected.subject}</p>
-                      <div className="flex items-center gap-3 mt-1 flex-wrap">
-                        <span className="text-xs" style={{ color:"#64748b" }}>
-                          <User size={10} className="inline mr-1"/>{selected.name} · {selected.email}
+                      <p className="text-base font-extrabold text-foreground">{selected.subject}</p>
+                      <div className="flex items-center gap-3.5 mt-1.5 flex-wrap text-muted-foreground">
+                        <span className="text-xs flex items-center gap-1 font-medium">
+                          <User size={12} className="shrink-0" /> {selected.name} · {selected.email}
                         </span>
-                        {selected.orderCount > 0 && <span className="text-xs" style={{ color:"#64748b" }}>
-                          <ShoppingCart size={10} className="inline mr-1"/>{selected.orderCount} คำสั่งซื้อ
+                        {selected.orderCount > 0 && <span className="text-xs flex items-center gap-1 font-medium">
+                          <ShoppingCart size={12} className="shrink-0" /> {selected.orderCount} คำสั่งซื้อ
                         </span>}
-                        {selected.assignee && <span className="text-xs" style={{ color:"#818cf8" }}>ผู้รับผิดชอบ: {selected.assignee.name}</span>}
+                        {selected.assignee && <span className="text-xs text-primary font-bold">ผู้รับผิดชอบ: {selected.assignee.name}</span>}
                       </div>
                     </div>
                   </div>
-                  <div className="flex gap-1.5 flex-wrap">
+                  <div className="flex gap-1.5 flex-wrap border-t border-border/40 pt-3">
                     {(ALLOWED[selected.status]??[]).map(s => (
                       <button key={s} onClick={() => updateStatus(selected.id, s)}
-                        className="px-3 py-1.5 rounded-lg text-xs font-semibold transition hover:opacity-90"
-                        style={{ background:STATUS_CFG[s].bg, color:STATUS_CFG[s].color, border:`1px solid ${STATUS_CFG[s].border}` }}>
+                        className="px-3.5 py-1.5 rounded-lg text-xs font-bold transition hover:opacity-90 border"
+                        style={{ backgroundColor: STATUS_CFG[s].bg, color: STATUS_CFG[s].color, borderColor: STATUS_CFG[s].border }}>
                         → {STATUS_CFG[s].label}
                       </button>
                     ))}
@@ -580,70 +569,68 @@ export default function SupportDashboard() {
                 </div>
 
                 <div className="flex gap-1.5">
-                  {([["chat",MessageSquare,"การสนทนา"],["order",ShoppingCart,"ข้อมูลออเดอร์"],["history",History,"ประวัติ"]] as const).map(([key,Icon,label]) => (
+                  {([["chat",MessageSquare,"รายละเอียดข้อความทั้งหมด"],["order",ShoppingCart,"ข้อมูลออเดอร์"],["history",History,"ประวัติ"]] as const).map(([key,Icon,label]) => (
                     <button key={key} onClick={() => setDetailTab(key as DetailTab)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition"
-                      style={detailTab===key
-                        ? { background:"rgba(56,189,248,0.15)", color:"#38bdf8", border:"1px solid rgba(56,189,248,0.3)" }
-                        : { ...cardStyle, color:"#64748b" }}>
+                      className={cn(
+                        "flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition border",
+                        detailTab === key
+                          ? "bg-primary/10 text-primary border-primary/30"
+                          : "bg-card text-muted-foreground border-border/80 hover:text-foreground"
+                      )}>
                       <Icon size={12}/>{label}
                     </button>
                   ))}
                 </div>
 
                 {detailTab === "chat" && (
-                  <div className="rounded-2xl overflow-hidden" style={cardStyle}>
-                    <div className="px-4 py-3 flex items-center gap-2" style={{ borderBottom:"1px solid #1c2540" }}>
-                      <MessageSquare size={13} style={{ color:"#818cf8" }} />
-                      <span className="text-sm font-semibold text-white">การสนทนา</span>
-                      <span className="text-xs ml-auto" style={{ color:"#64748b" }}>{selected.messages.length} ข้อความ</span>
+                  <div className="rounded-2xl overflow-hidden border border-border bg-card shadow-sm text-card-foreground">
+                    <div className="px-4 py-3 flex items-center gap-2 border-b border-border/60 bg-muted/20">
+                      <MessageSquare size={13} className="text-primary" />
+                      <span className="text-xs font-bold text-foreground">รายละเอียดข้อความทั้งหมด</span>
+                      <span className="text-[10px] ml-auto text-muted-foreground font-bold">{selected.messages.length} ข้อความ</span>
                     </div>
-                    <div className="p-4 space-y-3 overflow-y-auto" style={{ maxHeight:320 }}>
+                    <div className="p-4 space-y-3.5 overflow-y-auto max-h-[350px] bg-background/10">
                       {selected.messages.length === 0 ? (
-                        <p className="text-center text-sm py-8" style={{ color:"#64748b" }}>ยังไม่มีข้อความ</p>
+                        <p className="text-center text-xs py-10 text-muted-foreground">ยังไม่มีข้อความ</p>
                       ) : selected.messages.map((m, i) => (
-                        <div key={i} className={`flex ${m.senderType==="admin"?"justify-end":"justify-start"}`}>
-                          <div style={{ maxWidth:"75%" }}>
-                            <p className="text-[10px] mb-1 px-1" style={{ color:"#64748b" }}>
+                        <div key={i} className={cn("flex", m.senderType === "admin" ? "justify-end" : "justify-start")}>
+                          <div className="max-w-[80%]">
+                            <p className="text-[10px] mb-1 px-1 text-muted-foreground/80 font-bold">
                               {m.user?.name??selected.name} · {fmtDate(m.createdAt)}
                             </p>
-                            <div className="rounded-2xl px-4 py-2.5 text-sm"
-                              style={m.senderType==="admin"
-                                ? { background:"rgba(99,102,241,0.25)", color:"#e0e7ff", borderBottomRightRadius:4 }
-                                : { background:"rgba(255,255,255,0.06)", color:"#cbd5e1", borderBottomLeftRadius:4 }}>
-                              {m.imageUrl ? <div className="flex items-center gap-2 text-xs" style={{ color:"#94a3b8" }}><FileImage size={13}/>ไฟล์แนบ</div> : m.message}
+                            <div className={cn(
+                              "rounded-2xl px-4 py-2.5 text-xs shadow-sm border",
+                              m.senderType === "admin"
+                                ? "bg-primary/15 text-primary border-primary/10 rounded-br-none"
+                                : "bg-card text-foreground border-border/60 rounded-bl-none"
+                            )}>
+                              {m.imageUrl ? (
+                                <div className="flex items-center gap-2 text-xs font-bold">
+                                  <FileImage size={13}/> ไฟล์แนบ: <a href={m.imageUrl} target="_blank" rel="noreferrer" className="underline hover:text-primary">เปิดไฟล์</a>
+                                </div>
+                              ) : m.message}
                             </div>
                           </div>
                         </div>
                       ))}
                       <div ref={chatEndRef} />
                     </div>
-                    <div className="p-3" style={{ borderTop:"1px solid #1c2540" }}>
-                      <div className="flex gap-2">
-                        <input value={msgInput} onChange={e => setMsgInput(e.target.value)}
-                          onKeyDown={e => e.key==="Enter" && !e.shiftKey && sendReply()}
-                          placeholder="พิมพ์ข้อความตอบกลับ... (Enter ส่ง)"
-                          className="flex-1 rounded-xl px-4 py-2.5 text-sm text-white outline-none"
-                          style={{ background:"rgba(255,255,255,0.04)", border:"1px solid #1c2540" }} />
-                        <button onClick={sendReply} disabled={sending || !msgInput.trim()}
-                          className="px-4 py-2.5 rounded-xl font-semibold disabled:opacity-50"
-                          style={{ background:"linear-gradient(135deg,#38bdf8,#818cf8)", color:"white" }}>
-                          {sending ? <RefreshCw size={15} className="animate-spin"/> : <Send size={15}/>}
-                        </button>
-                      </div>
+                    <div className="p-3 border-t border-border/60 bg-muted/10 flex justify-center">
+                      <a href={`mailto:${selected.email}?subject=Re: [${selected.ticketNo}] ${selected.subject}&body=สวัสดีครับ คุณ ${selected.name},%0D%0A%0D%0A`}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-bold bg-primary text-primary-foreground hover:opacity-90 shadow transition text-center text-xs"
+                      >
+                        <Send size={13} /> ตอบกลับลูกค้าผ่านอีเมล ({selected.email})
+                      </a>
                     </div>
                   </div>
                 )}
 
-                {/* ✅ Order tab — ใช้ OrderRefCard แทน */}
                 {detailTab === "order" && (
                   <div>
                     {!selected.orderRef ? (
-                      <div className="rounded-2xl flex items-center justify-center py-16" style={cardStyle}>
-                        <div className="text-center space-y-2">
-                          <ShoppingCart size={28} className="mx-auto" style={{ color:"#1c2540" }} />
-                          <p className="text-sm" style={{ color:"#64748b" }}>ไม่มีออเดอร์ที่เกี่ยวข้องกับ ticket นี้</p>
-                        </div>
+                      <div className="rounded-2xl flex flex-col items-center justify-center py-16 bg-card border border-border/80 shadow-sm">
+                        <ShoppingCart size={32} className="text-muted-foreground/60 mb-2" />
+                        <p className="text-sm text-muted-foreground font-semibold">ไม่มีออเดอร์ที่เกี่ยวข้องกับ ticket นี้</p>
                       </div>
                     ) : (
                       <OrderRefCard order={selected.orderRef} />
@@ -652,29 +639,29 @@ export default function SupportDashboard() {
                 )}
 
                 {detailTab === "history" && (
-                  <div className="rounded-2xl p-4" style={cardStyle}>
-                    <div className="flex items-center gap-2 pb-3 mb-4" style={{ borderBottom:"1px solid #1c2540" }}>
-                      <History size={14} style={{ color:"#f472b6" }} />
-                      <p className="text-sm font-bold text-white">ประวัติการดำเนินการ</p>
+                  <div className="rounded-2xl p-5 bg-card border border-border/80 text-card-foreground shadow-sm space-y-4">
+                    <div className="flex items-center gap-2 pb-3 border-b border-border/60 bg-muted/20 -mx-5 -mt-5 px-5 py-3">
+                      <History size={14} className="text-purple-500" />
+                      <p className="text-xs font-bold text-foreground">ประวัติการดำเนินการ</p>
                     </div>
                     {selected.histories.length === 0 ? (
-                      <p className="text-center py-8 text-sm" style={{ color:"#64748b" }}>ยังไม่มีประวัติ</p>
+                      <p className="text-center py-8 text-xs text-muted-foreground">ยังไม่มีประวัติ</p>
                     ) : (
-                      <div className="space-y-3">
+                      <div className="space-y-4">
                         {selected.histories.map(h => (
-                          <div key={h.id} className="flex items-start gap-3">
-                            <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0" style={{ background:"#818cf8" }} />
+                          <div key={h.id} className="flex items-start gap-3 text-xs">
+                            <div className="w-1.5 h-1.5 rounded-full mt-2 flex-shrink-0 bg-primary" />
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs font-semibold text-white">
+                              <div className="flex items-center gap-2 flex-wrap font-bold">
+                                <span className="text-foreground">
                                   {h.action==="status_changed" ? `เปลี่ยนสถานะ ${h.fromValue} → ${h.toValue}`
                                     : h.action==="assigned" ? "มอบหมายให้ Admin"
                                     : h.action==="replied" ? "ตอบกลับ" : h.action}
                                 </span>
-                                {h.admin && <span className="text-[10px]" style={{ color:"#64748b" }}>โดย {h.admin.name}</span>}
+                                {h.admin && <span className="text-[10px] text-muted-foreground">โดย {h.admin.name}</span>}
                               </div>
-                              {h.note && <p className="text-xs mt-0.5 truncate" style={{ color:"#64748b" }}>{h.note}</p>}
-                              <p className="text-[10px] mt-0.5" style={{ color:"#3a4a6a" }}>{fmtDate(h.createdAt)}</p>
+                              {h.note && <p className="text-xs mt-0.5 text-muted-foreground truncate">{h.note}</p>}
+                              <p className="text-[10px] text-muted-foreground/60 mt-0.5">{fmtDate(h.createdAt)}</p>
                             </div>
                           </div>
                         ))}
@@ -692,22 +679,23 @@ export default function SupportDashboard() {
         <div className="space-y-4 max-w-4xl">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div className="flex items-center gap-2">
-              <div className="flex gap-1.5 overflow-x-auto">
+              <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
                 {FAQ_CATEGORIES.map(c => (
                   <button key={c.value} onClick={() => setFaqCatFilter(c.value)}
-                    className="px-3 py-1 rounded-full text-xs font-semibold whitespace-nowrap flex-shrink-0 transition"
-                    style={faqCatFilter===c.value
-                      ? { background:"rgba(129,140,248,0.25)", color:"#a5b4fc", border:"1px solid rgba(129,140,248,0.5)" }
-                      : { color:"#64748b", border:"1px solid #1c2540" }}>
+                    className={cn(
+                      "px-3.5 py-1.5 rounded-full text-xs font-bold border transition whitespace-nowrap",
+                      faqCatFilter === c.value
+                        ? "bg-primary/10 text-primary border-primary/30"
+                        : "bg-card text-muted-foreground border-border/80 hover:text-foreground"
+                    )}>
                     {c.label}
                   </button>
                 ))}
               </div>
-              <span className="text-xs" style={{ color:"#3a4a6a" }}>{filteredFaqs.length} รายการ</span>
+              <span className="text-xs font-bold text-muted-foreground ml-2 shrink-0">{filteredFaqs.length} รายการ</span>
             </div>
             <button onClick={() => { setShowNewFaq(true); setEditFaqId(null); }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold"
-              style={{ background:"rgba(56,189,248,0.12)", border:"1px solid rgba(56,189,248,0.28)", color:"#38bdf8" }}>
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold bg-primary text-primary-foreground hover:opacity-90 shadow transition">
               <Plus size={14}/> เพิ่มคำถาม
             </button>
           </div>
@@ -715,16 +703,18 @@ export default function SupportDashboard() {
           {showNewFaq && <FaqForm initial={EMPTY_DRAFT} onSave={createFaq} onCancel={() => setShowNewFaq(false)} saving={faqSaving} />}
 
           {faqLoading ? (
-            <div className="space-y-3">{Array.from({length:3}).map((_,i) => (
-              <div key={i} className="rounded-2xl p-5 animate-pulse" style={cardStyle}>
-                <div className="h-4 w-64 rounded mb-3" style={{ background:"#1c2540" }} />
-                <div className="h-3 w-full rounded mb-2" style={{ background:"#1c2540" }} />
-              </div>
-            ))}</div>
+            <div className="space-y-3">
+              {Array.from({length:3}).map((_,i) => (
+                <div key={i} className="rounded-2xl p-5 animate-pulse bg-card border border-border/60">
+                  <div className="h-4 w-64 rounded bg-muted/60 mb-3" />
+                  <div className="h-3 w-full rounded bg-muted/60" />
+                </div>
+              ))}
+            </div>
           ) : filteredFaqs.length === 0 ? (
-            <div className="text-center py-16" style={{ color:"#64748b" }}>
-              <BookOpen size={32} className="mx-auto mb-2 opacity-30" />
-              <p className="text-sm">ยังไม่มี FAQ ในหมวดนี้</p>
+            <div className="text-center py-16 bg-card border border-border/80 rounded-2xl shadow-sm">
+              <BookOpen size={32} className="mx-auto mb-2 text-muted-foreground/55" />
+              <p className="text-sm text-muted-foreground">ยังไม่มี FAQ ในหมวดนี้</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -733,8 +723,10 @@ export default function SupportDashboard() {
                 const isEditing = editFaqId === faq.id;
                 const catLabel = FAQ_CATEGORIES.find(c => c.value===faq.category)?.label ?? faq.category;
                 return (
-                  <div key={faq.id} className="rounded-2xl overflow-hidden transition"
-                    style={{ ...cardStyle, opacity: faq.isActive ? 1 : 0.5 }}>
+                  <div key={faq.id} className={cn(
+                    "rounded-2xl overflow-hidden transition border bg-card text-card-foreground shadow-sm",
+                    faq.isActive ? "opacity-100" : "opacity-60"
+                  )}>
                     {isEditing ? (
                       <div className="p-4">
                         <FaqForm
@@ -748,51 +740,47 @@ export default function SupportDashboard() {
                       <div className="p-5">
                         <div className="flex items-start justify-between gap-4 mb-3">
                           <div className="flex items-start gap-3 flex-1 min-w-0">
-                            <span className="text-xs font-mono mt-0.5 shrink-0 w-8 text-center py-0.5 rounded-lg"
-                              style={{ background:"rgba(129,140,248,0.12)", color:"#818cf8" }}>Q{idx+1}</span>
+                            <span className="text-xs font-bold font-mono mt-0.5 shrink-0 w-8 text-center py-0.5 rounded-lg bg-primary/10 text-primary">Q{idx+1}</span>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap mb-1.5">
-                                <p className="text-sm font-semibold text-white">{faq.question}</p>
-                                <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full"
-                                  style={{ background:"rgba(129,140,248,0.1)", color:"#818cf8", border:"1px solid rgba(129,140,248,0.2)" }}>
+                                <p className="text-sm font-extrabold text-foreground">{faq.question}</p>
+                                <span className="flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-bold">
                                   <Tag size={9}/>{catLabel}
                                 </span>
-                                <span className="flex items-center gap-1 text-[10px]" style={{ color:"#64748b" }}>
+                                <span className="flex items-center gap-1 text-[10px] text-muted-foreground/80 font-semibold">
                                   <Eye size={9}/>{faq.viewCount} views
                                 </span>
                               </div>
-                              <p className="text-sm leading-relaxed" style={{ color:"#94a3b8" }}>{faq.answer}</p>
+                              <p className="text-sm leading-relaxed text-foreground/80 font-medium">{faq.answer}</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <button onClick={() => toggleFaqActive(faq)}
-                              style={{
-                                position:"relative", width:44, height:24, borderRadius:12,
-                                background: faq.isActive ? "#34d399" : "#334155",
-                                border:"none", cursor:"pointer", flexShrink:0, transition:"background 0.2s",
-                              }}>
-                              <span style={{
-                                position:"absolute", top:2, left: faq.isActive ? 22 : 2,
-                                width:20, height:20, borderRadius:"50%", background:"white",
-                                boxShadow:"0 1px 3px rgba(0,0,0,0.3)", transition:"left 0.2s", display:"block",
-                              }} />
+                              className={cn(
+                                "relative w-11 h-6 rounded-full transition-colors shrink-0",
+                                faq.isActive ? "bg-green-500" : "bg-muted-foreground/30"
+                              )}>
+                              <span className={cn(
+                                "absolute top-1 left-1 w-4 h-4 rounded-full bg-white shadow-md transition-transform",
+                                faq.isActive ? "translate-x-5" : "translate-x-0"
+                              )} />
                             </button>
                             <button onClick={() => { setEditFaqId(faq.id); setShowNewFaq(false); }}
-                              className="p-2 rounded-lg hover:bg-white/10" style={{ color:"#94a3b8" }}>
+                              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/40 transition">
                               <Edit3 size={13}/>
                             </button>
                             <button onClick={() => deleteFaq(faq.id)}
-                              className="p-2 rounded-lg hover:bg-red-500/10" style={{ color:"#f87171" }}>
+                              className="p-2 rounded-lg text-red-500 hover:bg-red-500/10 transition">
                               <Trash2 size={13}/>
                             </button>
                           </div>
                         </div>
                         {faq.videoUrl && embedUrl && (
-                          <div className="mt-3 rounded-xl overflow-hidden" style={{ border:"1px solid #1c2540" }}>
-                            <div className="flex items-center gap-2 px-3 py-2" style={{ background:"rgba(248,113,113,0.08)", borderBottom:"1px solid #1c2540" }}>
-                              <Youtube size={12} style={{ color:"#f87171" }} />
-                              <span className="text-[10px] font-semibold" style={{ color:"#f87171" }}>VIDEO GUIDE</span>
-                              <a href={faq.videoUrl} target="_blank" rel="noreferrer" className="ml-auto text-[10px] flex items-center gap-1" style={{ color:"#64748b" }}>
+                          <div className="mt-3 rounded-xl overflow-hidden border border-border">
+                            <div className="flex items-center gap-2 px-3 py-2 bg-red-500/10 border-b border-border">
+                              <Youtube size={12} className="text-red-500 shrink-0" />
+                              <span className="text-[10px] font-extrabold text-red-500">VIDEO GUIDE</span>
+                              <a href={faq.videoUrl} target="_blank" rel="noreferrer" className="ml-auto text-[10px] flex items-center gap-1 text-muted-foreground hover:text-foreground font-bold">
                                 <Link2 size={9}/> เปิดใน YouTube
                               </a>
                             </div>
@@ -803,7 +791,7 @@ export default function SupportDashboard() {
                         )}
                         {faq.videoUrl && !embedUrl && (
                           <a href={faq.videoUrl} target="_blank" rel="noreferrer"
-                            className="inline-flex items-center gap-1.5 mt-2 text-xs" style={{ color:"#38bdf8" }}>
+                            className="inline-flex items-center gap-1.5 mt-2 text-xs font-bold text-primary hover:underline">
                             <Link2 size={11}/> ดูวิดีโอ
                           </a>
                         )}

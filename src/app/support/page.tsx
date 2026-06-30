@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import axios from "axios";
 import {
     MessageCircle,
     Phone,
@@ -41,15 +42,55 @@ const contactChannels = [
     },
 ];
 
+function getYoutubeEmbedUrl(url: string): string | null {
+    if (!url) return null;
+    const patterns = [/youtube\.com\/watch\?v=([^&]+)/, /youtu\.be\/([^?]+)/, /youtube\.com\/embed\/([^?]+)/];
+    for (const p of patterns) { const m = url.match(p); if (m) return `https://www.youtube.com/embed/${m[1]}`; }
+    return null;
+}
+
 export default function SupportPage() {
     const router = useRouter();
     const [activeCategoryId, setActiveCategoryId] = useState<string>("all");
     const { lang, t } = useLanguage();
+    const [dbFaqs, setDbFaqs] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchFaqs = async () => {
+            try {
+                const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/faq`);
+                if (res.data && Array.isArray(res.data)) {
+                    const mapped = res.data.map(item => {
+                        let categoryId = item.category;
+                        if (categoryId === 'refund') categoryId = 'problem';
+                        if (categoryId === 'account') categoryId = 'general';
+                        return {
+                            categoryId,
+                            question: item.question,
+                            answer: item.answer,
+                            videoUrl: item.videoUrl,
+                        };
+                    });
+                    setDbFaqs(mapped);
+                }
+            } catch (err) {
+                console.error("Failed to load backend FAQs, using static fallback:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchFaqs();
+    }, []);
+
+    const activeFaqList = dbFaqs.length > 0 ? dbFaqs : faqItems;
 
     const filteredFaqs =
         activeCategoryId === "all"
-            ? faqItems
-            : faqItems.filter((f) => f.categoryId === activeCategoryId);
+            ? activeFaqList
+            : activeFaqList.filter((f) => f.categoryId === activeCategoryId);
+
+    const videoTutorials = activeFaqList.filter(f => f.videoUrl && getYoutubeEmbedUrl(f.videoUrl));
 
     return (
         <div className="min-h-screen pt-20 pb-24">
@@ -148,6 +189,18 @@ export default function SupportPage() {
                                                 <AccordionContent className="text-muted-foreground text-sm whitespace-pre-line">
                                                     <div className="space-y-4">
                                                         <p>{answer}</p>
+                                                        {faq.videoUrl && getYoutubeEmbedUrl(faq.videoUrl) && (
+                                                            <div className="my-3 rounded-xl overflow-hidden border border-border max-w-lg mx-auto">
+                                                                <iframe 
+                                                                    src={getYoutubeEmbedUrl(faq.videoUrl)!} 
+                                                                    width="100%" 
+                                                                    height="260"
+                                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                                    allowFullScreen 
+                                                                    className="block" 
+                                                                />
+                                                            </div>
+                                                        )}
                                                         <div className="pt-2 border-t border-border/50 text-center">
                                                             <p className="text-sm text-foreground mb-3">
                                                                 {t.stillHaveQuestion}
@@ -178,7 +231,7 @@ export default function SupportPage() {
                     </div>
                 </motion.section>
 
-                {/* Video Tutorials Placeholder */}
+                {/* Video Tutorials */}
                 <motion.section
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -189,14 +242,38 @@ export default function SupportPage() {
                         <PlayCircle className="w-5 h-5 text-secondary" />
                         {t.videoTitle}
                     </h2>
-                    <div className="glass-card rounded-xl p-8 flex flex-col items-center justify-center text-center">
-                        <div className="w-16 h-16 rounded-full bg-muted/60 flex items-center justify-center mb-3">
-                            <PlayCircle className="w-8 h-8 text-muted-foreground" />
+                    {videoTutorials.length === 0 ? (
+                        <div className="glass-card rounded-xl p-8 flex flex-col items-center justify-center text-center">
+                            <div className="w-16 h-16 rounded-full bg-muted/60 flex items-center justify-center mb-3">
+                                <PlayCircle className="w-8 h-8 text-muted-foreground" />
+                            </div>
+                            <p className="text-muted-foreground text-sm">
+                                {t.videoPlaceholder}
+                            </p>
                         </div>
-                        <p className="text-muted-foreground text-sm">
-                            {t.videoPlaceholder}
-                        </p>
-                    </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {videoTutorials.map((v, idx) => {
+                                const q = typeof v.question === 'string' ? v.question : v.question[lang];
+                                const embed = getYoutubeEmbedUrl(v.videoUrl);
+                                return (
+                                    <div key={idx} className="glass-card rounded-xl overflow-hidden border border-border/40 p-4 space-y-3">
+                                        <div className="rounded-lg overflow-hidden border border-border shadow-sm">
+                                            <iframe 
+                                                src={embed!} 
+                                                width="100%" 
+                                                height="200"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen 
+                                                className="block" 
+                                            />
+                                        </div>
+                                        <p className="text-sm font-bold text-foreground line-clamp-1">{q}</p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </motion.section>
 
                 {/* Contact Channels */}
@@ -246,8 +323,6 @@ export default function SupportPage() {
                         ))}
                     </div>
                 </motion.section>
-
-
             </div>
         </div>
     );
