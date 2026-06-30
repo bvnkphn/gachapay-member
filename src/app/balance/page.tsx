@@ -667,15 +667,6 @@ function PaymentFlowModal({
                         {t.backToHome}
                     </button>
                 </div>
-                <p className="text-center text-[11px] text-muted-foreground mt-4 mb-1">
-                    {t.haveIssue}{" "}
-                    <button 
-                        onClick={() => router.push("/support/create-ticket")} 
-                        className="text-primary hover:underline font-bold"
-                    >
-                        {t.createTicket}
-                    </button>
-                </p>
                 <DevNav />
             </div>
         </div>
