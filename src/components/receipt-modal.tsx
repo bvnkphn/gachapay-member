@@ -315,7 +315,11 @@ export default function ReceiptModal({ order, user, onClose }: ReceiptModalProps
                 <div className="w-64 text-xs space-y-2 border-t border-neutral-100 pt-2">
                   <div className="flex justify-between items-center text-neutral-500">
                     <span>รวมเป็นเงิน</span>
-                    <span className="font-mono font-semibold text-neutral-800">{fmtCurrency(price)} บาท</span>
+                    <span className="font-mono font-semibold text-neutral-800">{fmtCurrency(priceBeforeVat)} บาท</span>
+                  </div>
+                  <div className="flex justify-between items-center text-neutral-500">
+                    <span>ภาษีมูลค่าเพิ่ม (VAT 7%)</span>
+                    <span className="font-mono font-semibold text-neutral-800">{fmtCurrency(vatAmount)} บาท</span>
                   </div>
                   <div className="flex justify-between items-center text-neutral-800 border-t border-sky-200 pt-2 font-bold text-sm">
                     <span className="text-sky-500">จำนวนเงินรวมทั้งสิ้น</span>
