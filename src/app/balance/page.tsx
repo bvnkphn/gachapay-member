@@ -1203,8 +1203,8 @@ export default function BalancePage() {
     const activeMethodObj = methods.find(m => m.code === selectedMethod);
     const methodFeePercent = activeMethodObj ? activeMethodObj.fee ?? 0 : (selectedMethod === "truemoney" ? 1.5 : 0);
     const fee = Math.round(topupAmount * (methodFeePercent / 100) * 100) / 100;
-    const vat = 0;
-    const total = topupAmount + fee;
+    const vat = Math.round(topupAmount * (vatRate / 100) * 100) / 100;
+    const total = topupAmount + fee + vat;
 
     const handleConfirmTopup = async () => {
         if (topupAmount < 20) return;
@@ -1502,6 +1502,19 @@ export default function BalancePage() {
                                                 : "bg-red-500/10 text-red-500 dark:bg-red-400/15 dark:text-red-400 font-bold"
                                         )}>
                                             {fee === 0 ? (lang === "th" ? "ฟรี" : "Free") : `฿${fee.toFixed(2)}`}
+                                        </span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                        <span className="text-muted-foreground">
+                                            ภาษีมูลค่าเพิ่ม (VAT {vatRate}%)
+                                        </span>
+                                        <span className={cn(
+                                            "font-medium text-xs px-2.5 py-0.5 rounded-full select-none",
+                                            vat === 0
+                                                ? "bg-emerald-500/10 text-emerald-500 dark:bg-emerald-400/15 dark:text-emerald-400 font-bold"
+                                                : "bg-amber-500/10 text-amber-600 dark:bg-amber-400/15 dark:text-amber-400 font-bold"
+                                        )}>
+                                            {vat === 0 ? (lang === "th" ? "ฟรี" : "Free") : `฿${vat.toFixed(2)}`}
                                         </span>
                                     </div>
                                     <div className="border-t border-border/40 pt-3 flex justify-between font-bold text-base">
