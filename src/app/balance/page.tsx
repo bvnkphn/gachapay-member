@@ -15,17 +15,17 @@ import { toast } from "sonner";
 const PRESET_AMOUNTS = [50, 100, 300, 500, 1000, 3000];
 
 const PAYMENT_METHODS = [
-    { id: "promptpay", name: "PromptPay QR", desc: "สแกน QR Code จ่ายเงิน", icon: "QR", color: "#1a56db", disabled: false },
-    { id: "bank_transfer", name: "Bank Transfer", desc: "โอนเงินตรงเข้าบัญชีธนาคาร", icon: "B", color: "#0d9488", disabled: false },
-    { id: "truemoney", name: "TrueMoney Wallet", desc: "ชำระผ่านเบอร์วอลเล็ท", icon: "TW", color: "#f97316", disabled: false },
+    { id: "promptpay", name: "PromptPay QR", desc: "สแกน QR Code จ่ายเงิน", icon: "QR", color: "#1a56db", disabled: false, logo: "/qr.png" },
+    { id: "bank_transfer", name: "Bank Transfer", desc: "โอนเงินตรงเข้าบัญชีธนาคาร", icon: "B", color: "#0d9488", disabled: false, logo: "/bank.png" },
+    { id: "truemoney", name: "TrueMoney Wallet", desc: "ชำระผ่านเบอร์วอลเล็ท", icon: "TW", color: "#f97316", disabled: false, logo: "/truemoney.png" },
 ];
 
 const BANKS = [
-    { code: "kbank", name: "ธนาคารกสิกรไทย", number: "123-4-56789-0", accName: "บจก. กาชาเพย์ (GachaPay Co., Ltd.)", color: "#138f2d" },
-    { code: "scb", name: "ธนาคารไทยพาณิชย์", number: "987-6-54321-0", accName: "บจก. กาชาเพย์ (GachaPay Co., Ltd.)", color: "#4e2a84" },
-    { code: "bbl", name: "ธนาคารกรุงเทพ", number: "111-2-33333-4", accName: "บจก. กาชาเพย์ (GachaPay Co., Ltd.)", color: "#1e3a8a" },
-    { code: "ktb", name: "ธนาคารกรุงไทย", number: "222-3-44444-5", accName: "บจก. กาชาเพย์ (GachaPay Co., Ltd.)", color: "#00a2e8" },
-    { code: "bay", name: "ธนาคารกรุงศรีอยุธยา", number: "555-6-77777-8", accName: "บจก. กาชาเพย์ (GachaPay Co., Ltd.)", color: "#fbb03b" }
+    { code: "kbank", name: "ธนาคารกสิกรไทย", number: "123-4-56789-0", accName: "บจก. กาชาเพย์ (GachaPay Co., Ltd.)", color: "#138f2d", logo: "/kbank.jpg" },
+    { code: "scb", name: "ธนาคารไทยพาณิชย์", number: "987-6-54321-0", accName: "บจก. กาชาเพย์ (GachaPay Co., Ltd.)", color: "#4e2a84", logo: "/SCB.png" },
+    { code: "bbl", name: "ธนาคารกรุงเทพ", number: "111-2-33333-4", accName: "บจก. กาชาเพย์ (GachaPay Co., Ltd.)", color: "#1e3a8a", logo: "/bbl.png" },
+    { code: "ktb", name: "ธนาคารกรุงไทย", number: "222-3-44444-5", accName: "บจก. กาชาเพย์ (GachaPay Co., Ltd.)", color: "#00a2e8", logo: "/ktb.png" },
+    { code: "bay", name: "ธนาคารกรุงศรีอยุธยา", number: "555-6-77777-8", accName: "บจก. กาชาเพย์ (GachaPay Co., Ltd.)", color: "#fbb03b", logo: "/bay.png" }
 ];
 
 const PAGE_SIZE = 4;
@@ -1379,9 +1379,10 @@ export default function BalancePage() {
                                                         : "border-border/40 hover:border-border cursor-pointer"
                                             )}
                                         >
-                                            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-bold text-white shrink-0 font-mono"
+                                            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden"
                                                 style={{ background: m.disabled ? '#71717a' : m.color }}>
-                                                {m.icon}
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img src={m.logo} alt={m.name} className="w-full h-full object-contain p-1" />
                                             </div>
                                             <div className="min-w-0">
                                                 <div className="flex items-center gap-1.5">
@@ -1422,9 +1423,10 @@ export default function BalancePage() {
                                                 )}
                                             >
                                                 <div className="flex items-center gap-3">
-                                                    <div className="w-12 h-10 rounded-lg text-white flex items-center justify-center text-[10px] font-black shrink-0 shadow-inner select-none font-mono"
+                                                    <div className="w-12 h-10 rounded-lg flex items-center justify-center shrink-0 overflow-hidden"
                                                         style={{ background: b.color }}>
-                                                        {b.code.toUpperCase()}
+                                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                        <img src={b.logo} alt={b.name} className="w-full h-full object-contain p-1" />
                                                     </div>
                                                     <div className="min-w-0">
                                                         <p className="text-xs font-black text-foreground truncate">{b.name}</p>
