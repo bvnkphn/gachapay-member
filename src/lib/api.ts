@@ -4,23 +4,27 @@ export async function apiRequest(
     endpoint: string,
     options: RequestInit = {}
 ) {
-    // Try admin token first (admin-auth-storage), then fallback to user token (auth-storage)
+    // Use admin token for /admin pages, and user token for public/user pages to avoid cross-pollution
     let parsedToken: string | null = null;
-    try {
-        const adminAuth = localStorage.getItem("admin-auth-storage");
-        if (adminAuth) {
-            const adminState = JSON.parse(adminAuth);
-            parsedToken = adminState?.state?.token || null;
+    if (typeof window !== "undefined") {
+        const isAdminPage = window.location.pathname.startsWith("/admin");
+        if (isAdminPage) {
+            try {
+                const adminAuth = localStorage.getItem("admin-auth-storage");
+                if (adminAuth) {
+                    const adminState = JSON.parse(adminAuth);
+                    parsedToken = adminState?.state?.token || null;
+                }
+            } catch {}
+        } else {
+            try {
+                const userAuth = localStorage.getItem("auth-storage");
+                if (userAuth) {
+                    const userState = JSON.parse(userAuth);
+                    parsedToken = userState?.state?.token || null;
+                }
+            } catch {}
         }
-    } catch {}
-    if (!parsedToken) {
-        try {
-            const userAuth = localStorage.getItem("auth-storage");
-            if (userAuth) {
-                const userState = JSON.parse(userAuth);
-                parsedToken = userState?.state?.token || null;
-            }
-        } catch {}
     }
 
     const headers: Record<string, string> = {
@@ -38,20 +42,46 @@ export async function apiRequest(
     });
 
     if (!response.ok) {
+        if (response.status === 503) {
+            try {
+                const clone = response.clone();
+                const body = await clone.json();
+                if (body && body.maintenance) {
+                    if (typeof window !== "undefined") {
+                        const isAdminPage = window.location.pathname.startsWith("/admin");
+                        if (!isAdminPage && window.location.pathname !== "/maintenance") {
+                            window.location.href = `/maintenance?msg=${encodeURIComponent(body.message || "")}`;
+                            return null;
+                        }
+                    }
+                }
+            } catch {}
+        }
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        try {
+            const error = await response.clone().json();
+            if (error && error.message) {
+                errorMessage = error.message;
+            }
+        } catch {}
+
         if (response.status === 401) {
+            // Do not intercept login attempts with session expiration redirects/messages
+            if (endpoint.includes("/auth/login")) {
+                throw new Error(errorMessage || "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+            }
             if (typeof window !== "undefined") {
                 const isAdminPage = window.location.pathname.startsWith("/admin");
-                if (!isAdminPage) {
-                    // Only clear user auth and redirect for non-admin pages
+                if (isAdminPage) {
+                    localStorage.removeItem("admin-auth-storage");
+                } else {
                     localStorage.removeItem("auth-storage");
-                    window.location.href = "/login?expired=true";
                 }
+                window.location.href = `/login?expired=true&err=${encodeURIComponent(errorMessage)}&endpoint=${encodeURIComponent(endpoint)}`;
             }
-            throw new Error("เซสชันการใช้งานหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
+            throw new Error(`เซสชันการใช้งานหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง (${endpoint} -> ${errorMessage})`);
         }
-        const error = await response.json().catch(() => ({ message: "Request failed" }));
-        const errorMessage = error.message || `HTTP ${response.status}: ${response.statusText}`;
-        console.error('API Error Response:', { status: response.status, error });
+        console.error('API Error Response:', { status: response.status, message: errorMessage });
         throw new Error(errorMessage);
     }
 
@@ -186,6 +216,10 @@ export const api = {
         apiRequest("/payments/admin/settings", { method: "POST", body: JSON.stringify({ settings }) }),
     getActivePaymentMethods: () => apiRequest("/payments/active-methods"),
     getPaymentAdminLogs: () => apiRequest("/payments/admin/logs"),
+    getPaymentVatRate: () => apiRequest("/payments/vat"),
+    getPaymentAdminVatRate: () => apiRequest("/payments/admin/vat"),
+    savePaymentAdminVatRate: (vatRate: number) =>
+        apiRequest("/payments/admin/vat", { method: "POST", body: JSON.stringify({ vatRate }) }),
     adminUpdateTopupStatus: (referenceId: string, status: 'completed' | 'failed', adminNote?: string) =>
         apiRequest(`/topup/${referenceId}/admin-status`, {
             method: 'PATCH',

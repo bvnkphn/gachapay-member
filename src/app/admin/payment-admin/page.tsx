@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import {
   CreditCard, Wallet, Zap, Eye, EyeOff,
   Save, RefreshCw, CheckCircle2, XCircle,
-  AlertCircle, ChevronDown, Shield, Activity,
+  AlertCircle, ChevronDown, Shield, Activity, Percent,
   ToggleLeft, ToggleRight, Copy, Check, Image,
   Search, FileText
 } from "lucide-react";
@@ -89,6 +89,7 @@ export default function PaymentGatewayAdmin() {
   const [methodFilter, setMethodFilter] = useState<"all" | "promptpay" | "truemoney" | "bank_transfer" | "wallet">("all");
   const [logs, setLogs] = useState<any[]>([]);
   const [selectedTopup, setSelectedTopup] = useState<any | null>(null);
+  const [vatRate, setVatRate] = useState<number>(7);
 
   const getTopupBadgeStatus = (tx: any): PaymentStatus => {
     if (!tx) return "pending";
@@ -111,9 +112,10 @@ export default function PaymentGatewayAdmin() {
   const loadSettings = async () => {
     setLoading(true);
     try {
-      const [settingsData, logsData] = await Promise.all([
+      const [settingsData, logsData, vatData] = await Promise.all([
         api.getPaymentAdminSettings(),
-        api.getPaymentAdminLogs().catch(() => []) // fallback gracefully
+        api.getPaymentAdminLogs().catch(() => []), // fallback gracefully
+        api.getPaymentAdminVatRate().catch(() => ({ vatRate: 7 }))
       ]);
       if (Array.isArray(settingsData)) {
         setMethods(settingsData);
@@ -123,6 +125,9 @@ export default function PaymentGatewayAdmin() {
       }
       if (Array.isArray(logsData)) {
         setLogs(logsData);
+      }
+      if (vatData && typeof vatData.vatRate === "number") {
+        setVatRate(vatData.vatRate);
       }
     } catch (err: any) {
       toast.error("โหลดข้อมูลล้มเหลว: " + err.message);
@@ -165,7 +170,10 @@ export default function PaymentGatewayAdmin() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await api.savePaymentAdminSettings(methods);
+      await Promise.all([
+        api.savePaymentAdminSettings(methods),
+        api.savePaymentAdminVatRate(vatRate)
+      ]);
       toast.success("บันทึกการตั้งค่าเรียบร้อยแล้ว");
     } catch (err: any) {
       toast.error("บันทึกข้อมูลล้มเหลว: " + err.message);
@@ -292,92 +300,149 @@ export default function PaymentGatewayAdmin() {
       <div className="grid md:grid-cols-2 gap-5">
 
         {/* Connectivity Settings */}
-        <div className="rounded-2xl p-6 space-y-5 bg-card border border-border/80 shadow-sm text-card-foreground">
-          <div className="flex items-center gap-2 pb-3 border-b border-border/40">
-            <Shield size={15} className="text-primary" />
-            <p className="text-sm font-bold text-foreground">Connectivity — {selected.name}</p>
-            <span className={cn(
-              "ml-auto text-[10px] px-2.5 py-0.5 rounded-full border font-bold",
-              selected.enabled
-                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
-                : "bg-muted text-muted-foreground border-border"
-            )}>
-              {selected.enabled ? "Active" : "Disabled"}
-            </span>
-          </div>
-
-          {/* Webhook URL */}
-          <div>
-            <label className="block text-xs font-bold mb-2 text-muted-foreground">
-              Webhook / Callback URL
-            </label>
-            <div className="flex gap-2 items-center rounded-xl px-3 py-2.5 bg-muted/40 border border-border">
-              <input value={selected.webhookUrl} onChange={e => updateSelectedField("webhookUrl", e.target.value)}
-                className="flex-1 bg-transparent outline-none text-xs text-cyan-600 dark:text-cyan-400 font-mono font-bold" />
-              <CopyBtn value={selected.webhookUrl} />
+        {selected.id !== "wallet" && selected.id !== "bank_transfer" ? (
+          <div className="rounded-2xl p-6 space-y-5 bg-card border border-border/80 shadow-sm text-card-foreground">
+            <div className="flex items-center gap-2 pb-3 border-b border-border/40">
+              <Shield size={15} className="text-primary" />
+              <p className="text-sm font-bold text-foreground">Connectivity — {selected.name}</p>
+              <span className={cn(
+                "ml-auto text-[10px] px-2.5 py-0.5 rounded-full border font-bold",
+                selected.enabled
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                  : "bg-muted text-muted-foreground border-border"
+              )}>
+                {selected.enabled ? "Active" : "Disabled"}
+              </span>
             </div>
-          </div>
 
-          {/* Public Key */}
-          <div>
-            <label className="block text-xs font-bold mb-2 text-muted-foreground">
-              Public Key / App ID
-            </label>
-            <div className="flex gap-2 items-center rounded-xl px-3 py-2.5 bg-muted/40 border border-border">
-              <input value={selected.publicKey} onChange={e => updateSelectedField("publicKey", e.target.value)}
-                className="flex-1 bg-transparent outline-none text-xs font-mono font-bold text-foreground" />
-              <CopyBtn value={selected.publicKey} />
+            {/* Webhook URL */}
+            <div>
+              <label className="block text-xs font-bold mb-2 text-muted-foreground">
+                Webhook / Callback URL
+              </label>
+              <div className="flex gap-2 items-center rounded-xl px-3 py-2.5 bg-muted/40 border border-border">
+                <input value={selected.webhookUrl} onChange={e => updateSelectedField("webhookUrl", e.target.value)}
+                  className="flex-1 bg-transparent outline-none text-xs text-cyan-600 dark:text-cyan-400 font-mono font-bold" />
+                <CopyBtn value={selected.webhookUrl} />
+              </div>
             </div>
-          </div>
 
-          {/* Secret Key */}
-          <div>
-            <label className="block text-xs font-bold mb-2 text-muted-foreground">
-              Secret Key
-            </label>
-            <div className="flex gap-2 items-center rounded-xl px-3 py-2.5 bg-muted/40 border border-border">
-              <input
-                type={showSecret ? "text" : "password"}
-                value={selected.secretKey}
-                onChange={e => updateSelectedField("secretKey", e.target.value)}
-                className="flex-1 bg-transparent outline-none text-xs font-mono font-bold text-foreground" />
-              <button onClick={() => setShowSecret(v => !v)} className="p-1.5 rounded-lg hover:bg-muted transition text-muted-foreground hover:text-foreground">
-                {showSecret ? <EyeOff size={14} /> : <Eye size={14} />}
-              </button>
-              <CopyBtn value={selected.secretKey} />
+            {/* Public Key */}
+            <div>
+              <label className="block text-xs font-bold mb-2 text-muted-foreground">
+                Public Key / App ID
+              </label>
+              <div className="flex gap-2 items-center rounded-xl px-3 py-2.5 bg-muted/40 border border-border">
+                <input value={selected.publicKey} onChange={e => updateSelectedField("publicKey", e.target.value)}
+                  className="flex-1 bg-transparent outline-none text-xs font-mono font-bold text-foreground" />
+                <CopyBtn value={selected.publicKey} />
+              </div>
             </div>
+
+            {/* Secret Key */}
+            <div>
+              <label className="block text-xs font-bold mb-2 text-muted-foreground">
+                Secret Key
+              </label>
+              <div className="flex gap-2 items-center rounded-xl px-3 py-2.5 bg-muted/40 border border-border">
+                <input
+                  type={showSecret ? "text" : "password"}
+                  value={selected.secretKey}
+                  onChange={e => updateSelectedField("secretKey", e.target.value)}
+                  className="flex-1 bg-transparent outline-none text-xs font-mono font-bold text-foreground" />
+                <button onClick={() => setShowSecret(v => !v)} className="p-1.5 rounded-lg hover:bg-muted transition text-muted-foreground hover:text-foreground">
+                  {showSecret ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+                <CopyBtn value={selected.secretKey} />
+              </div>
+            </div>
+
+            {/* API Endpoint Sources */}
+            <div>
+              <label className="block text-xs font-bold mb-2 text-muted-foreground">
+                API Endpoint (Sources)
+              </label>
+              <div className="flex gap-2 items-center rounded-xl px-3 py-2.5 bg-muted/40 border border-border">
+                <input value={selected.apiEndpointSources || ""} onChange={e => updateSelectedField("apiEndpointSources", e.target.value)}
+                  className="flex-1 bg-transparent outline-none text-xs font-mono font-bold text-foreground"
+                  placeholder="เช่น https://api.omise.co/sources" />
+                <CopyBtn value={selected.apiEndpointSources || ""} />
+              </div>
+            </div>
+
+            {/* API Endpoint Charges */}
+            <div>
+              <label className="block text-xs font-bold mb-2 text-muted-foreground">
+                API Endpoint (Charges)
+              </label>
+              <div className="flex gap-2 items-center rounded-xl px-3 py-2.5 bg-muted/40 border border-border">
+                <input value={selected.apiEndpointCharges || ""} onChange={e => updateSelectedField("apiEndpointCharges", e.target.value)}
+                  className="flex-1 bg-transparent outline-none text-xs font-mono font-bold text-foreground"
+                  placeholder="เช่น https://api.omise.co/charges" />
+                <CopyBtn value={selected.apiEndpointCharges || ""} />
+              </div>
+            </div>
+
+            <button onClick={handleSave} disabled={saving}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-extrabold bg-foreground text-background hover:bg-foreground/90 transition shadow-md disabled:opacity-50 cursor-pointer">
+              {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+              บันทึกการตั้งค่า
+            </button>
           </div>
+        ) : (
+          <div className="rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-3 bg-muted/20 border border-border/80 text-card-foreground min-h-[300px]">
+            <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xl">
+              ⚙️
+            </div>
+            <h4 className="text-sm font-bold text-foreground">ระบบประมวลผลภายใน</h4>
+            <p className="text-xs text-muted-foreground max-w-xs leading-relaxed">
+              ช่องทาง {selected.name} ทำงานผ่านกลไกจำลองภายในระบบ ไม่จำเป็นต้องใช้หรือกำหนดค่าการเชื่อมต่อ Payment Gateway ภายนอก
+            </p>
+          </div>
+        )}
 
-          <button onClick={handleSave} disabled={saving}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-extrabold bg-foreground text-background hover:bg-foreground/90 transition shadow-md disabled:opacity-50">
-            {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-            บันทึกการตั้งค่า
-          </button>
-        </div>
-
-        {/* Fee + Toggle */}
+         {/* Fee & VAT Management */}
         <div className="space-y-4">
-          {/* Fee Management */}
-          <div className="rounded-2xl p-6 bg-card border border-border/80 shadow-sm text-card-foreground">
-            <div className="flex items-center gap-2 pb-3 mb-4 border-b border-border/40">
-              <Activity size={15} className="text-primary" />
-              <p className="text-sm font-bold text-foreground">Fee Management</p>
-            </div>
-            <div className="space-y-3">
-              {methods.map(m => (
-                <div key={m.id} className="flex items-center gap-3">
-                  <span className="text-lg w-7">{m.icon}</span>
-                  <span className="text-xs text-foreground font-bold flex-1">{m.name}</span>
-                  <div className="flex items-center gap-1 rounded-xl px-3 py-1 bg-muted/40 border border-border w-28">
-                    <input
-                      type="number" min={0} max={10} step={0.1}
-                      value={m.fee}
-                      onChange={e => setMethods(prev => prev.map(x => x.id === m.id ? { ...x, fee: parseFloat(e.target.value) || 0 } : x))}
-                      className="w-full bg-transparent outline-none text-xs font-mono font-bold text-foreground text-right" />
-                    <span className="text-[10px] text-muted-foreground font-bold">%</span>
+          <div className="rounded-2xl p-6 bg-card border border-border/80 shadow-sm text-card-foreground space-y-5">
+            <div>
+              <div className="flex items-center gap-2 pb-3 mb-4 border-b border-border/40">
+                <Activity size={15} className="text-primary" />
+                <p className="text-sm font-bold text-foreground">Fee Management</p>
+              </div>
+              <div className="space-y-3">
+                {methods.map(m => (
+                  <div key={m.id} className="flex items-center gap-3">
+                    <span className="text-lg w-7">{m.icon}</span>
+                    <span className="text-xs text-foreground font-bold flex-1">{m.name}</span>
+                    <div className="flex items-center gap-1 rounded-xl px-3 py-1 bg-muted/40 border border-border w-28">
+                      <input
+                        type="number" min={0} max={10} step={0.1}
+                        value={m.fee}
+                        onChange={e => setMethods(prev => prev.map(x => x.id === m.id ? { ...x, fee: parseFloat(e.target.value) || 0 } : x))}
+                        className="w-full bg-transparent outline-none text-xs font-mono font-bold text-foreground text-right" />
+                      <span className="text-[10px] text-muted-foreground font-bold">%</span>
+                    </div>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center gap-2 pb-3 mb-4 border-b border-border/40">
+                <Percent size={15} className="text-primary" />
+                <p className="text-sm font-bold text-foreground">VAT Management</p>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-xs text-foreground font-bold flex-1">ภาษีมูลค่าเพิ่ม (VAT)</span>
+                <div className="flex items-center gap-1 rounded-xl px-3 py-1 bg-muted/40 border border-border w-28">
+                  <input
+                    type="number" min={0} max={20} step={1}
+                    value={vatRate}
+                    onChange={e => setVatRate(parseFloat(e.target.value) || 0)}
+                    className="w-full bg-transparent outline-none text-xs font-mono font-bold text-foreground text-right" />
+                  <span className="text-[10px] text-muted-foreground font-bold">%</span>
                 </div>
-              ))}
+              </div>
             </div>
           </div>
         </div>
@@ -385,17 +450,17 @@ export default function PaymentGatewayAdmin() {
 
       {/* ── Payment Log Table ── */}
       <div className="rounded-2xl overflow-hidden bg-card border border-border/80 shadow-sm text-card-foreground">
-        <div className="flex items-center justify-between flex-wrap gap-3 px-6 py-4 border-b border-border/40 bg-muted/20">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between flex-wrap gap-4 px-6 py-4 border-b border-border/40 bg-muted/20">
+          <div className="flex items-center gap-2 shrink-0">
             <Activity size={15} className="text-primary" />
             <p className="text-sm font-bold text-foreground">Gateway Log</p>
             <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20 font-bold">
               {logs.length} รายการ
             </span>
           </div>
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between w-full">
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="flex flex-col gap-1 ml-auto">
+          <div className="flex items-center gap-3 ml-auto">
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col gap-1">
                 <label className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Status</label>
                 <select
                   value={logFilter}

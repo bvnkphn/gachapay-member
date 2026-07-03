@@ -22,6 +22,19 @@ const Footer = () => {
             <p className="text-[11px] text-muted-foreground text-center md:text-left max-w-xs leading-relaxed">
               แพลตฟอร์มให้บริการเติมเกมออนไลน์อัตโนมัติ สะดวก รวดเร็ว ตลอด 24 ชั่วโมง เติมง่ายผ่านระบบ UID ปลอดภัย 100%
             </p>
+            {/* Line OA Contact Section */}
+            <div className="mt-3">
+              <a
+                href="https://line.me/ti/p/@gachapay"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block hover:opacity-90 active:scale-95 transition-all cursor-pointer"
+                aria-label="Line OA Contact"
+                title="ติดต่อทาง Line OA"
+              >
+                <img src="/line.png" alt="Line OA" className="w-8 h-8 rounded-lg shadow-sm" />
+              </a>
+            </div>
           </div>
 
           {/* Column 2: Quick Links */}
@@ -43,6 +56,7 @@ const Footer = () => {
             </h4>
             <div className="flex flex-col items-center md:items-start gap-1.5 text-xs text-muted-foreground">
               <Link href="/support" className="hover:text-primary transition-colors">ติดต่อฝ่ายสนับสนุน (Support)</Link>
+
               <Link href="/terms-privacy/terms" className="hover:text-primary transition-colors">ข้อตกลงการใช้บริการ (Terms)</Link>
               <Link href="/terms-privacy/privacy" className="hover:text-primary transition-colors">นโยบายความเป็นส่วนตัว (Privacy)</Link>
             </div>

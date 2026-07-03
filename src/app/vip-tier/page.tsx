@@ -236,6 +236,7 @@ export default function VipTierPage() {
                     </div>
 
                     {/* Expand/Collapse Toggle Button */}
+                    {false && (
                     <button 
                         onClick={() => setShowDetails(!showDetails)}
                         className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-border hover:bg-muted text-xs font-bold text-foreground transition-all shadow-sm cursor-pointer hover:shadow"
@@ -244,11 +245,12 @@ export default function VipTierPage() {
                         {showDetails ? "ซ่อนสิทธิพิเศษและเงื่อนไข" : "แสดงสิทธิพิเศษและเงื่อนไข"}
                         <ChevronDown className={cn("w-4 h-4 transition-transform duration-300", showDetails && "rotate-180")} />
                     </button>
+                    )}
                 </div>
 
                 {/* Collapsible Details: Requirements & Benefits */}
                 {showDetails && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className="w-full max-w-lg mx-auto pt-2 animate-in fade-in slide-in-from-top-4 duration-300">
                         
                         {/* Requirement Condition summary */}
                         <div className="glass-card rounded-3xl p-6 border border-border/50 shadow-md space-y-4">
@@ -283,6 +285,7 @@ export default function VipTierPage() {
                         </div>
 
                         {/* Benefits list */}
+                        {false && (
                         <div className="glass-card rounded-3xl p-6 border border-border/50 shadow-md">
                             <h3 className="text-xs font-extrabold tracking-widest uppercase text-muted-foreground flex items-center gap-2 border-b border-border/30 pb-3 mb-4">
                                 <Trophy className="w-4 h-4" style={{ color: selectedTier.color }} />
@@ -303,6 +306,7 @@ export default function VipTierPage() {
                                 ))}
                             </ul>
                         </div>
+                        )}
 
                     </div>
                 )}

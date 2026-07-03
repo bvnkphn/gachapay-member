@@ -423,9 +423,9 @@ export default function AccountPage() {
 
                     {/* VIP Status Card */}
                     <div className="space-y-6">
-                        <button
+                        <div
                             onClick={() => router.push("/vip-tier")}
-                            className="w-full text-left bg-card rounded-3xl border border-border/50 hover:border-primary/45 transition-all group overflow-hidden relative shadow-md hover:shadow-lg hover:-translate-y-0.5 duration-300 pb-8"
+                            className="w-full text-left bg-card rounded-3xl border border-border/50 hover:border-primary/45 transition-all group overflow-hidden relative shadow-md hover:shadow-lg hover:-translate-y-0.5 duration-300 pb-8 cursor-pointer"
                         >
                             {/* Card Cover Header Background */}
                             <div className="w-full h-32 bg-gradient-to-r from-cyan-500/20 via-[#0ea5e9]/20 to-fuchsia-500/20 relative" />
@@ -510,7 +510,7 @@ export default function AccountPage() {
                                     </div>
                                 </div>
                             </div>
-                        </button>
+                        </div>
                     </div>
 
                     {/* Profile and Billing Settings Form */}

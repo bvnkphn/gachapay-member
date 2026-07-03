@@ -35,9 +35,12 @@ export default function LoginPage() {
         if (typeof window !== "undefined") {
             const params = new URLSearchParams(window.location.search);
             if (params.get("expired") === "true") {
+                const err = params.get("err");
+                const endpoint = params.get("endpoint");
+                const detailMsg = err && endpoint ? ` (${endpoint} -> ${err})` : "";
                 // Wait briefly for component mount toast support
                 setTimeout(() => {
-                    toast.error("เซสชันการใช้งานหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
+                    toast.error(`เซสชันการใช้งานหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง${detailMsg}`);
                 }, 100);
                 router.replace("/login");
             }

@@ -142,8 +142,18 @@ function PackageFormModal({ gameId, token, pkg, onClose, onSuccess }: {
 
           <Field label="ชื่อแพ็กเกจ">
             {isEdit
-              ? <input value={form.name} onChange={set('name')} required placeholder="ชื่อแพ็กเกจ"
-                  className="w-full px-3 py-2.5 text-sm rounded-xl bg-muted/30 border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
+              ? <div className="space-y-1.5">
+                  <input value={form.name} onChange={set('name')} required placeholder="ชื่อแพ็กเกจ"
+                    className="w-full px-3 py-2.5 text-sm rounded-xl bg-muted/30 border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
+                  {pkg?.name && (
+                    <p className="text-[10px] text-muted-foreground flex items-center gap-1 select-none px-1">
+                      <span>ค่าเริ่มต้น (Default):</span>
+                      <button type="button" onClick={() => setForm(f => ({ ...f, name: pkg.name }))} className="text-primary hover:underline font-semibold cursor-pointer">
+                        {pkg.name}
+                      </button>
+                    </p>
+                  )}
+                </div>
               : <div className="grid grid-cols-2 gap-3">
                   <input value={form.sku} onChange={set('sku')} required placeholder="SKU (เช่น diamond-10)"
                     className="w-full px-3 py-2.5 text-sm rounded-xl bg-muted/30 border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition" />
@@ -155,7 +165,19 @@ function PackageFormModal({ gameId, token, pkg, onClose, onSuccess }: {
 
           <div className="grid grid-cols-2 gap-3">
             <Field label="ราคา (PRICE)" prefix="฿">
-              <TextInput noBg type="number" min="0" step="0.01" value={form.price} onChange={set('price')} required />
+              <div className="flex flex-col w-full">
+                <TextInput noBg type="number" min="0" step="0.01" value={form.price} onChange={set('price')} required />
+                {isEdit && pkg?.originalPrice !== undefined && (
+                  <div className="px-3 pb-1.5 -mt-1 select-none">
+                    <p className="text-[9px] text-muted-foreground">
+                      ค่าเริ่มต้น:{" "}
+                      <button type="button" onClick={() => setForm(f => ({ ...f, price: pkg.originalPrice }))} className="text-primary hover:underline font-bold cursor-pointer">
+                        ฿{pkg.originalPrice}
+                      </button>
+                    </p>
+                  </div>
+                )}
+              </div>
             </Field>
             <Field label="ต้นทุน (COST)" prefix="฿">
               <TextInput noBg type="number" min="0" step="0.01" value={form.cost} onChange={set('cost')} required />
