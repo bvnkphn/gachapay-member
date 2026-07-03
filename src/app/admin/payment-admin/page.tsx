@@ -382,12 +382,6 @@ export default function PaymentGatewayAdmin() {
                 <CopyBtn value={selected.apiEndpointCharges || ""} />
               </div>
             </div>
-
-            <button onClick={handleSave} disabled={saving}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-extrabold bg-foreground text-background hover:bg-foreground/90 transition shadow-md disabled:opacity-50 cursor-pointer">
-              {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-              บันทึกการตั้งค่า
-            </button>
           </div>
         ) : (
           <div className="rounded-2xl p-6 flex flex-col items-center justify-center text-center space-y-3 bg-muted/20 border border-border/80 text-card-foreground min-h-[300px]">
@@ -446,6 +440,15 @@ export default function PaymentGatewayAdmin() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Global Save Button */}
+      <div className="flex justify-end">
+        <button onClick={handleSave} disabled={saving}
+          className="w-full sm:w-auto px-8 py-3 flex items-center justify-center gap-2 rounded-xl text-xs font-extrabold bg-foreground text-background hover:bg-foreground/90 transition shadow-md disabled:opacity-50 cursor-pointer">
+          {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+          บันทึกการตั้งค่าทั้งหมด
+        </button>
       </div>
 
       {/* ── Payment Log Table ── */}
