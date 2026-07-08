@@ -1504,19 +1504,7 @@ export default function BalancePage() {
                                             {fee === 0 ? (lang === "th" ? "ฟรี" : "Free") : `฿${fee.toFixed(2)}`}
                                         </span>
                                     </div>
-                                    <div className="flex justify-between items-center">
-                                        <span className="text-muted-foreground">
-                                            {lang === "th" ? "ภาษีมูลค่าเพิ่ม (ยกเว้นภาษี)" : "VAT (Tax Exempt)"}
-                                        </span>
-                                        <span className={cn(
-                                            "font-medium text-xs px-2.5 py-0.5 rounded-full select-none",
-                                            vat === 0
-                                                ? "bg-emerald-500/10 text-emerald-500 dark:bg-emerald-400/15 dark:text-emerald-400 font-bold"
-                                                : "bg-amber-500/10 text-amber-600 dark:bg-amber-400/15 dark:text-amber-400 font-bold"
-                                        )}>
-                                            {vat === 0 ? (lang === "th" ? "ฟรี" : "Free") : `฿${vat.toFixed(2)}`}
-                                        </span>
-                                    </div>
+
                                     <div className="border-t border-border/40 pt-3 flex justify-between font-bold text-base">
                                         <span>{t.totalLabel}</span>
                                         <span className="text-primary">฿{total.toFixed(2)}</span>
