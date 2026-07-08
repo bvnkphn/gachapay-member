@@ -1203,7 +1203,7 @@ export default function BalancePage() {
     const activeMethodObj = methods.find(m => m.code === selectedMethod);
     const methodFeePercent = activeMethodObj ? activeMethodObj.fee ?? 0 : (selectedMethod === "truemoney" ? 1.5 : 0);
     const fee = Math.round(topupAmount * (methodFeePercent / 100) * 100) / 100;
-    const vat = Math.round(topupAmount * (vatRate / 100) * 100) / 100;
+    const vat = 0; // Top-up is VAT-exempt
     const total = topupAmount + fee + vat;
 
     const handleConfirmTopup = async () => {
@@ -1506,7 +1506,7 @@ export default function BalancePage() {
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-muted-foreground">
-                                            ภาษีมูลค่าเพิ่ม (VAT {vatRate}%)
+                                            {lang === "th" ? "ภาษีมูลค่าเพิ่ม (ยกเว้นภาษี)" : "VAT (Tax Exempt)"}
                                         </span>
                                         <span className={cn(
                                             "font-medium text-xs px-2.5 py-0.5 rounded-full select-none",
