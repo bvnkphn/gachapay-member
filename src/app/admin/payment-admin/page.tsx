@@ -361,8 +361,18 @@ export default function PaymentGatewayAdmin() {
                 Public Key / App ID
               </label>
               <div className="flex gap-2 items-center rounded-xl px-3 py-2.5 bg-muted/40 border border-border">
-                <input value={selected.publicKey} onChange={e => updateSelectedField("publicKey", e.target.value)}
-                  className="flex-1 bg-transparent outline-none text-xs font-mono font-bold text-foreground" />
+                <input 
+                  value={selected.publicKey} 
+                  onChange={e => updateSelectedField("publicKey", e.target.value)}
+                  className="flex-1 bg-transparent outline-none text-xs font-mono font-bold text-foreground"
+                  placeholder={
+                    selected.provider === 'beam' 
+                      ? "กรอก Merchant ID เช่น BEAM_MER_12345" 
+                      : (selected.id === "bank_transfer" 
+                          ? "กรอกเลขบัญชีธนาคาร เช่น 123-4-56789-0" 
+                          : "กรอก Partner ID / Public Key เช่น CP_PUB_12345")
+                  } 
+                />
                 <CopyBtn value={selected.publicKey} />
               </div>
             </div>
@@ -377,7 +387,15 @@ export default function PaymentGatewayAdmin() {
                   type={showSecret ? "text" : "password"}
                   value={selected.secretKey}
                   onChange={e => updateSelectedField("secretKey", e.target.value)}
-                  className="flex-1 bg-transparent outline-none text-xs font-mono font-bold text-foreground" />
+                  className="flex-1 bg-transparent outline-none text-xs font-mono font-bold text-foreground"
+                  placeholder={
+                    selected.provider === 'beam' 
+                      ? "กรอก API Secret Key เช่น BEAM_SEC_12345" 
+                      : (selected.id === "bank_transfer" 
+                          ? "กรอกชื่อบัญชีและธนาคาร เช่น นายสมชาย (กสิกรไทย)" 
+                          : "กรอก Secret Key เช่น CP_SEC_12345")
+                  } 
+                />
                 <button onClick={() => setShowSecret(v => !v)} className="p-1.5 rounded-lg hover:bg-muted transition text-muted-foreground hover:text-foreground">
                   {showSecret ? <EyeOff size={14} /> : <Eye size={14} />}
                 </button>
