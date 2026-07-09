@@ -10,7 +10,6 @@ stages:
   - build
   - sast
   - container-scan
-  - deploy
   # - dast
 
 # ─── Unit Test + Coverage ────────────────────────
