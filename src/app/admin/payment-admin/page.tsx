@@ -324,7 +324,7 @@ export default function PaymentGatewayAdmin() {
                 Gateway Provider (ผู้ให้บริการ)
               </label>
               <select 
-                value={selected.provider || "omise"} 
+                value={selected.provider || "cyberpay"} 
                 onChange={e => {
                   const val = e.target.value;
                   updateSelectedField("provider", val);
@@ -334,20 +334,12 @@ export default function PaymentGatewayAdmin() {
                   } else if (val === "beam") {
                     updateSelectedField("apiEndpointSources", "https://api.beamcheckout.com/api/v1/charges");
                     updateSelectedField("apiEndpointCharges", "");
-                  } else if (val === "omise") {
-                    updateSelectedField("apiEndpointSources", "https://api.omise.co/sources");
-                    updateSelectedField("apiEndpointCharges", "https://api.omise.co/charges");
-                  } else if (val === "stripe") {
-                    updateSelectedField("apiEndpointSources", "https://api.stripe.com/v1/payment_intents");
-                    updateSelectedField("apiEndpointCharges", "");
                   }
                 }}
                 className="w-full bg-muted/40 border border-border rounded-xl px-3 py-2.5 text-xs text-foreground outline-none font-bold"
               >
                 <option value="cyberpay" className="bg-card">CyberPay</option>
                 <option value="beam" className="bg-card">Beam Checkout</option>
-                <option value="omise" className="bg-card">Omise</option>
-                <option value="stripe" className="bg-card">Stripe</option>
               </select>
             </div>
 
