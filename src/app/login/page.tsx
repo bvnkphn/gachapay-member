@@ -137,7 +137,7 @@ export default function LoginPage() {
                     <CardHeader className="pt-5 pb-2 px-6 space-y-1">
                         <CardTitle className="text-2xl font-bold text-center">{t.login}</CardTitle>
                         <CardDescription className="text-center text-xs">
-                            {t.desc}
+                            {t.logoDesc}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">

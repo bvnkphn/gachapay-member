@@ -45,7 +45,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
                                 opacity: 1,
                             },
                         },
-                    }}
+                    } as any}
                 />
             </ThemeProvider>
         </QueryClientProvider>
