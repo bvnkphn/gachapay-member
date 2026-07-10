@@ -20,7 +20,7 @@ export default function LoginPage() {
     const router = useRouter();
     const { setAuth } = useAuth();
     const { setAuth: setAdminAuth } = useAdminAuth();
-    const { lang, t, translateError } = useLanguage();
+    const { t, translateError } = useLanguage();
     const { setTheme, resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
     const [email, setEmail] = useState("");

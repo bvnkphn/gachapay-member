@@ -54,7 +54,7 @@ export default function SupportPage() {
     const [activeCategoryId, setActiveCategoryId] = useState<string>("all");
     const { lang, t } = useLanguage();
     const [dbFaqs, setDbFaqs] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchFaqs = async () => {

@@ -135,12 +135,13 @@ export default function AccountInvitePage() {
                         {/* Referral Link & Actions */}
                         <div className="mt-8 space-y-4">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                <label htmlFor="referral-link" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                                     ลิงก์เชิญเพื่อนของคุณ
                                 </label>
                                 <div className="flex flex-col sm:flex-row gap-3">
                                     <div className="relative flex items-center bg-muted/40 border border-border/50 rounded-2xl p-1.5 focus-within:border-cyan-500/60 focus-within:ring-2 focus-within:ring-cyan-500/20 transition-all duration-300 flex-1">
                                         <Input
+                                            id="referral-link"
                                             readOnly
                                             value={referralLink}
                                             className="bg-transparent border-0 text-xs sm:text-sm h-10 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 px-3"

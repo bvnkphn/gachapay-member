@@ -21,7 +21,7 @@ export default function OrderDetailPage() {
     const params = useParams();
     const { user } = useAuth();
     const { t } = useLanguage();
-    const { open } = useSidebar();
+    
 
     const [order, setOrder] = useState<any>(null);
     const [loading, setLoading] = useState(true);
@@ -192,14 +192,14 @@ export default function OrderDetailPage() {
                     <div className="glass-card rounded-2xl p-5">
                         <div className="flex justify-between text-sm text-muted-foreground mb-2">
                             <span>{t.orderProductPrice}</span>
-                            <span>฿{parseFloat(order.product.total_price).toFixed(2)}</span>
+                            <span>฿{Number.parseFloat(order.product.total_price).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between font-bold text-base border-t border-border/30 pt-3">
                             <span className={isCompleted ? "text-green-400" : isFailed ? "text-red-400" : "text-yellow-400"}>
                                 {isCompleted ? t.orderNetTotalSuccess : t.orderNetTotal}
                             </span>
                             <span className={isCompleted ? "text-green-400" : "text-foreground"}>
-                                ฿{parseFloat(order.product.total_price).toFixed(2)}
+                                ฿{Number.parseFloat(order.product.total_price).toFixed(2)}
                             </span>
                         </div>
                     </div>

@@ -177,7 +177,7 @@ export default function TicketDetailPage() {
     const router = useRouter();
     const params = useParams();
     const { lang } = useLanguage();
-    const { open } = useSidebar();
+    
 
     const ticketId = params?.id as string;
     const [ticket, setTicket] = useState<SupportTicket | null>(

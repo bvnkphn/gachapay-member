@@ -248,7 +248,7 @@ function TopupCard({ game }: { game: Game }) {
 }
 
 export default function Home() {
-    const { t } = useLanguage();
+    const { } = useLanguage();
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const reviewsContainerRef = useRef<HTMLDivElement>(null);

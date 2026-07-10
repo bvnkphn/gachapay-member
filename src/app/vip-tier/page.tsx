@@ -72,7 +72,7 @@ export default function VipTierPage() {
     const router = useRouter();
     const { user } = useAuth();
     const { t } = useLanguage();
-    const { open } = useSidebar();
+
 
     const [loyalty, setLoyalty] = useState<{ tier: string; current_points: number; next_tier_threshold: number | null } | null>(null);
     const [loading, setLoading] = useState(true);
@@ -94,7 +94,7 @@ export default function VipTierPage() {
 
     const selectedTier = TIERS.find(tier => tier.level === selectedLevel)!;
     const isHighest = selectedTier.nextGoal === null;
-    const isLowerTier = selectedLevel < userVipLevel;
+
     
     // Calculate progress towards selected tier requirement
     const progress = selectedLevel < userVipLevel
@@ -103,8 +103,7 @@ export default function VipTierPage() {
             ? (selectedLevel === 4 ? 100 : Math.min((userPoints / selectedTier.nextGoal!) * 100, 100))
             : Math.min((userPoints / selectedTier.minExp) * 100, 100);
 
-    const expNeeded = !isHighest && selectedLevel >= userVipLevel
-        ? Math.max((selectedTier.nextGoal ?? 0) - userPoints, 0) : 0;
+
 
     const benefitsMap: Record<number, string[]> = {
         1: ["สะสมยอดเติมเงินครบ 100,000 บาท เพื่อเลื่อนเป็นระดับ Bronze", "เข้าถึงบริการเติมเงินรวดเร็วตลอด 24 ชั่วโมง"],
@@ -211,7 +210,6 @@ export default function VipTierPage() {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                             {TIERS.map(tier => {
                                 const isSelected = selectedLevel === tier.level;
-                                const isMyTier = userVipLevel === tier.level;
                                 return (
                                     <button
                                         key={tier.level}

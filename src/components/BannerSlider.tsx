@@ -194,17 +194,37 @@ export default function BannerSlider() {
             onPointerUp={onPointerUp}
           >
             {banners.map((banner, i) => {
-              const position =
-                i === index
-                  ? "center"
-                  : i === (index - 1 + banners.length) % banners.length
-                    ? "left"
-                    : i === (index + 1) % banners.length
-                      ? "right"
-                      : "hidden"
+              let position = "hidden";
+              if (i === index) {
+                position = "center";
+              } else if (i === (index - 1 + banners.length) % banners.length) {
+                position = "left";
+              } else if (i === (index + 1) % banners.length) {
+                position = "right";
+              }
 
               const isFirstBanner = i === 0
               const isLastBanner = i === banners.length - 1
+
+              const transformMap: Record<string, string> = {
+                center: "scale(1) translateX(0)",
+                left: "scale(0.85) translateX(-35%)",
+                right: "scale(0.85) translateX(35%)",
+              };
+              const transformStyle = transformMap[position] ?? "scale(0.75)";
+
+              const opacityMap: Record<string, number> = {
+                center: 1,
+                hidden: 0,
+              };
+              const opacityStyle = opacityMap[position] ?? 0.5;
+
+              const zIndexMap: Record<string, number> = {
+                center: 10,
+                left: 8,
+                right: 8,
+              };
+              const zIndexStyle = zIndexMap[position] ?? 5;
 
               return (
                 <div
@@ -223,16 +243,9 @@ export default function BannerSlider() {
                   style={{
                     width: "85%",
                     height: "100%",
-                    transform:
-                      position === "center"
-                        ? "scale(1) translateX(0)"
-                        : position === "left"
-                          ? "scale(0.85) translateX(-35%)"
-                          : position === "right"
-                            ? "scale(0.85) translateX(35%)"
-                            : "scale(0.75)",
-                    opacity: position === "center" ? 1 : position === "hidden" ? 0 : 0.5,
-                    zIndex: position === "center" ? 10 : position === "left" ? 8 : position === "right" ? 8 : 5,
+                    transform: transformStyle,
+                    opacity: opacityStyle,
+                    zIndex: zIndexStyle,
                     transition: "all 0.7s cubic-bezier(0.16, 1, 0.3, 1)",
                   }}
                 >

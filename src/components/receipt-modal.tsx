@@ -63,7 +63,7 @@ function numberToThaiText(n: number): string {
     let result = "";
     const len = s.length;
     for (let i = 0; i < len; i++) {
-      const d = parseInt(s[i]);
+      const d = Number.parseInt(s[i]);
       const pos = len - i - 1;
       if (d === 0) continue;
       if (pos === 0 && d === 1 && len > 1) {
@@ -123,7 +123,7 @@ const PRINT_STYLE = `
 
 export default function ReceiptModal({ order, user, onClose }: ReceiptModalProps) {
   const paperRef = useRef<HTMLDivElement>(null);
-  const price = typeof order.total_price === "string" ? parseFloat(order.total_price) : order.total_price;
+  const price = typeof order.total_price === "string" ? Number.parseFloat(order.total_price) : order.total_price;
   const docNumber = `QT${new Date(order.created_at).getFullYear()}${String(new Date(order.created_at).getMonth() + 1).padStart(2, "0")}${order.order_id.padStart(5, "0")}`;
 
   // Interactive customer input details (pre-filled from database addresses)

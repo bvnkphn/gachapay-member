@@ -21,13 +21,20 @@ import { useLanguage } from "@/components/language-context";
 import { useSidebar } from "@/components/sidebar-context";
 import { useState, useRef, useEffect } from "react";
 
+/** Cryptographically-secure replacement for Math.random() – returns [0, 1) */
+function secureRandom(): number {
+    const buf = new Uint32Array(1);
+    crypto.getRandomValues(buf);
+    return buf[0] / (0xFFFFFFFF + 1);
+}
+
 export function Header() {
     const pathname = usePathname();
     const router = useRouter();
     const { user, logout, updateUser } = useAuth();
-    const { lang, t } = useLanguage();
-    const { open, toggle } = useSidebar();
-    const { theme, setTheme, resolvedTheme } = useTheme();
+    const { t } = useLanguage();
+    const { open } = useSidebar();
+    const { setTheme, resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -114,7 +121,7 @@ export function Header() {
     }, []);
 
     // Check if current page is a game page
-    const isGamePage = pathname?.startsWith('/game/');
+    // const isGamePage = pathname?.startsWith('/game/');
 
     useEffect(() => {
         const fetchGames = async () => {
@@ -151,7 +158,7 @@ export function Header() {
     const [rotation, setRotation] = useState(0);
     const [winningSegmentIndex, setWinningSegmentIndex] = useState(0);
     const [showPrizeClaimed, setShowPrizeClaimed] = useState(false);
-    const [claimedPrizeText, setClaimedPrizeText] = useState("");
+    const [, setClaimedPrizeText] = useState("");
     const [showSpinHistory, setShowSpinHistory] = useState(false);
     const [spinHistoryData, setSpinHistoryData] = useState<{ items: any[]; total: number }>({ items: [], total: 0 });
 
@@ -162,7 +169,7 @@ export function Header() {
                 .catch(() => setTxHistory([]));
 
             const stored = localStorage.getItem(`gachapay_used_spins_${user.id}`);
-            setUsedSpins(stored ? parseInt(stored, 10) : 0);
+            setUsedSpins(stored ? Number.parseInt(stored, 10) : 0);
         }
     };
 
@@ -197,7 +204,7 @@ export function Header() {
         if (user) {
             api.getWalletBalance()
                 .then((resData) => {
-                    const newBalance = parseFloat(resData?.amount ?? "0");
+                    const newBalance = Number.parseFloat(resData?.amount ?? "0");
                     setBalance(newBalance);
                     updateUser({ balance: newBalance });
                 })
@@ -277,21 +284,21 @@ export function Header() {
 
     const totalTopup = txHistory
         .filter((tx) => tx.status === "completed")
-        .reduce((sum, tx) => sum + (parseFloat(tx.amount) || 0), 0);
+        .reduce((sum, tx) => sum + (Number.parseFloat(tx.amount) || 0), 0);
     const totalSpins = Math.floor(totalTopup / 1000);
     const availableSpins = Math.max(0, totalSpins - usedSpins);
     const progressToNextSpin = totalTopup % 1000;
 
     const spinGacha = () => {
-        const rand = Math.random() * 100;
+        const rand = secureRandom() * 100;
         if (rand < 30) {
             // Salt (Segments 1, 4, 7)
             const salts = [1, 4, 7];
-            return salts[Math.floor(Math.random() * salts.length)];
+            return salts[Math.floor(secureRandom() * salts.length)];
         } else if (rand < 65) {
             // 5 Coins (Segments 0, 6)
             const fives = [0, 6];
-            return fives[Math.floor(Math.random() * fives.length)];
+            return fives[Math.floor(secureRandom() * fives.length)];
         } else if (rand < 85) {
             // 10 Coins (Segment 2)
             return 2;
@@ -316,7 +323,7 @@ export function Header() {
             setWinningSegmentIndex(winningIndex);
 
             const extraSpins = 6;
-            const jitter = (Math.random() - 0.5) * 20; // -10 to +10 degrees
+            const jitter = (secureRandom() - 0.5) * 20; // -10 to +10 degrees
             const targetRotation = (extraSpins * 360) + (360 - (winningIndex * 45) - 22.5) + jitter;
             setRotation(targetRotation);
         }, 50);
@@ -352,7 +359,7 @@ export function Header() {
                 if (result && result.success) {
                     // Update gacha bonus coins in localStorage
                     if (user) {
-                        const currentBonus = parseFloat(localStorage.getItem(`gachapay_bonus_coins_${user.id}`) || "0");
+                        const currentBonus = Number.parseFloat(localStorage.getItem(`gachapay_bonus_coins_${user.id}`) || "0");
                         localStorage.setItem(`gachapay_bonus_coins_${user.id}`, String(currentBonus + prize.value));
                     }
                     // Dispatch change event to trigger reload across components
@@ -676,7 +683,12 @@ export function Header() {
                                                     <div className="flex items-center gap-1.5 mt-1">
                                                         <span className="w-2.5 h-2.5 rounded-full inline-block shrink-0 shadow-sm"
                                                             style={{
-                                                                backgroundColor: vipTier === "General Member" ? "#94a3b8" : vipTier === "Bronze" ? "#b45309" : vipTier === "Platinum" ? "#38bdf8" : vipTier === "Emerald" ? "#10b981" : "#94a3b8"
+                                                                backgroundColor: {
+                                                                    "General Member": "#94a3b8",
+                                                                    "Bronze": "#b45309",
+                                                                    "Platinum": "#38bdf8",
+                                                                    "Emerald": "#10b981"
+                                                                }[vipTier] ?? "#94a3b8"
                                                             }}
                                                         />
                                                         <span className="text-[11px] font-semibold text-muted-foreground">
@@ -1136,7 +1148,7 @@ export function Header() {
                             <div className="bg-amber-500/10 rounded-xl p-3 text-center border border-amber-500/20">
                                 <p className="text-[10px] text-amber-600 dark:text-amber-400 uppercase tracking-wider">รวม Coin</p>
                                 <p className="text-lg font-bold text-amber-600 dark:text-amber-400">
-                                    {spinHistoryData.items.reduce((sum, s) => sum + (s.won ? parseFloat(s.prizeAmount) : 0), 0).toFixed(0)}
+                                    {spinHistoryData.items.reduce((sum, s) => sum + (s.won ? Number.parseFloat(s.prizeAmount) : 0), 0).toFixed(0)}
                                 </p>
                             </div>
                         </div>
@@ -1175,7 +1187,7 @@ export function Header() {
                                                 </div>
                                                 <div>
                                                     <p className="text-sm font-semibold text-foreground">
-                                                        {spin.won ? `+${parseFloat(spin.prizeAmount).toFixed(0)} COINS` : "เกลือ"}
+                                                        {spin.won ? `+${Number.parseFloat(spin.prizeAmount).toFixed(0)} COINS` : "เกลือ"}
                                                     </p>
                                                     <p className="text-[10px] text-muted-foreground">
                                                         {new Date(spin.createdAt).toLocaleDateString('th-TH', {

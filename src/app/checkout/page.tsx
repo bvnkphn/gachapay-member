@@ -38,7 +38,7 @@ export default function CheckoutPage() {
     const [currentStep, setCurrentStep] = useState<CheckoutStep>('validate');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [appliedCoupon, setAppliedCoupon] = useState<CouponValidationResponse | null>(null);
+    const [, setAppliedCoupon] = useState<CouponValidationResponse | null>(null);
     const [createdOrderId, setCreatedOrderId] = useState<number | null>(null);
 
     const [formData, setFormData] = useState<TopupFormData>({
@@ -171,10 +171,11 @@ export default function CheckoutPage() {
                         <div className="space-y-6">
                             {/* Email Field */}
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                <label htmlFor="checkout-email" className="block text-sm font-medium text-gray-700 mb-2">
                                     อีเมล | Email
                                 </label>
                                 <input
+                                    id="checkout-email"
                                     type="email"
                                     name="email"
                                     value={formData.email}
@@ -193,10 +194,11 @@ export default function CheckoutPage() {
                                 <div className="space-y-4">
                                     {formData.playerFields.map((field) => (
                                         <div key={field.key}>
-                                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            <label htmlFor={`player-field-${field.key}`} className="block text-sm font-medium text-gray-700 mb-2">
                                                 {field.key.split('_').join(' ').toUpperCase()}
                                             </label>
                                             <input
+                                                id={`player-field-${field.key}`}
                                                 type="text"
                                                 name={`playerField_${field.key}`}
                                                 value={field.value}
