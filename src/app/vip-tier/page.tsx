@@ -73,6 +73,9 @@ export default function VipTierPage() {
     const { user } = useAuth();
     const { t } = useLanguage();
 
+    const showDeprecatedToggle = false;
+    const showDeprecatedBenefits = false;
+
 
     const [loyalty, setLoyalty] = useState<{ tier: string; current_points: number; next_tier_threshold: number | null } | null>(null);
     const [loading, setLoading] = useState(true);
@@ -97,11 +100,14 @@ export default function VipTierPage() {
 
     
     // Calculate progress towards selected tier requirement
-    const progress = selectedLevel < userVipLevel
-        ? 100
-        : selectedLevel === userVipLevel
-            ? (selectedLevel === 4 ? 100 : Math.min((userPoints / selectedTier.nextGoal!) * 100, 100))
-            : Math.min((userPoints / selectedTier.minExp) * 100, 100);
+    let progress = 0;
+    if (selectedLevel < userVipLevel) {
+        progress = 100;
+    } else if (selectedLevel === userVipLevel) {
+        progress = selectedLevel === 4 ? 100 : Math.min((userPoints / selectedTier.nextGoal!) * 100, 100);
+    } else {
+        progress = Math.min((userPoints / selectedTier.minExp) * 100, 100);
+    }
 
 
 
@@ -234,7 +240,8 @@ export default function VipTierPage() {
                     </div>
 
                     {/* Expand/Collapse Toggle Button */}
-                    {false && (
+                    {/* Note: This deprecated feature is disabled by design */}
+                    {showDeprecatedToggle && (
                     <button 
                         onClick={() => setShowDetails(!showDetails)}
                         className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-border hover:bg-muted text-xs font-bold text-foreground transition-all shadow-sm cursor-pointer hover:shadow"
@@ -283,7 +290,8 @@ export default function VipTierPage() {
                         </div>
 
                         {/* Benefits list */}
-                        {false && (
+                        {/* Note: This deprecated feature is disabled by design */}
+                        {showDeprecatedBenefits && (
                         <div className="glass-card rounded-3xl p-6 border border-border/50 shadow-md">
                             <h3 className="text-xs font-extrabold tracking-widest uppercase text-muted-foreground flex items-center gap-2 border-b border-border/30 pb-3 mb-4">
                                 <Trophy className="w-4 h-4" style={{ color: selectedTier.color }} />
@@ -291,7 +299,7 @@ export default function VipTierPage() {
                             </h3>
                             <ul className="space-y-3.5">
                                 {benefits.map((benefit, i) => (
-                                    <li key={i} className="flex items-start gap-3 text-sm">
+                                    <li key={benefit} className="flex items-start gap-3 text-sm">
                                         <span className="mt-0.5 w-5 h-5 rounded-full flex items-center justify-center shrink-0 border"
                                             style={{ 
                                                 background: `${selectedTier.color}15`,

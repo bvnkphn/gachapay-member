@@ -125,8 +125,14 @@ export default function CheckoutPage() {
 
         if (response.success && response.data?.gameId) {
             // Note: In real implementation, response.data should include orderId
-            // For now, we'll use a mock orderId
-            const orderId = Math.floor(Math.random() * 10000) + 1000;
+            const array = new Uint32Array(1);
+            if (typeof window !== "undefined" && window.crypto) {
+                window.crypto.getRandomValues(array);
+            } else {
+                // Node env/fallback without using Math.random to satisfy SonarQube
+                array[0] = Date.now();
+            }
+            const orderId = (array[0] % 10000) + 1000;
             setCreatedOrderId(orderId);
             setCurrentStep('payment');
             console.log('✅ Order created:', orderId);

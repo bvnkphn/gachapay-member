@@ -48,7 +48,7 @@ export default function LoginPage() {
     }, [router]);
 
     const validateEmail = (email: string) => {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        return /^\S+@\S+\.\S+$/.test(email);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {

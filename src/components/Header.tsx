@@ -32,8 +32,8 @@ export function Header() {
     const pathname = usePathname();
     const router = useRouter();
     const { user, logout, updateUser } = useAuth();
-    const { t } = useLanguage();
-    const { open } = useSidebar();
+    useLanguage();
+    useSidebar();
     const { setTheme, resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
@@ -419,12 +419,6 @@ export function Header() {
     const isAuthPage = ["/login", "/register", "/forgot-password", "/verify-otp", "/reset-password"].includes(pathname);
     if (pathname.startsWith("/admin") || isAuthPage) return null;
 
-    // pages that have the account sidebar
-    const hasSidebar = pathname.startsWith("/account") ||
-        pathname === "/balance" ||
-        pathname === "/invite" ||
-        pathname === "/vip-tier" ||
-        pathname.startsWith("/history");
 
     const getUserInitials = () => {
         if (!user?.email) return "U";
@@ -1007,7 +1001,7 @@ export function Header() {
                                                 const angle = i * 45 + 22.5;
                                                 return (
                                                     <div
-                                                        key={i}
+                                                        key={`segment-${i}-${seg.value}`}
                                                         className="absolute top-0 left-0 right-0 bottom-0 flex flex-col items-center justify-start origin-center pt-8 text-[11px] font-black text-white select-none pointer-events-none drop-shadow-md"
                                                         style={{ transform: `rotate(${angle}deg)` }}
                                                     >

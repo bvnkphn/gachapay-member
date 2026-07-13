@@ -13,13 +13,13 @@ export default function SlipUpload({ referenceId, bankCode, onDone }: Props) {
   const [loading, setLoading] = useState(false);
 
   const MAX_SIZE = 10 * 1024 * 1024; // 10MB
-  const ALLOWED = ['image/jpeg', 'image/jpg', 'image/png'];
+  const ALLOWED = new Set(['image/jpeg', 'image/jpg', 'image/png']);
 
   function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     setStatus(null);
     const f = e.target.files?.[0] ?? null;
     if (!f) return setFile(null);
-    if (!ALLOWED.includes(f.type)) return setStatus('ไฟล์ต้องเป็น .jpg/.jpeg/.png เท่านั้น');
+    if (!ALLOWED.has(f.type)) return setStatus('ไฟล์ต้องเป็น .jpg/.jpeg/.png เท่านั้น');
     if (f.size > MAX_SIZE) return setStatus('ขนาดไฟล์ต้องไม่เกิน 10MB');
     setFile(f);
   }

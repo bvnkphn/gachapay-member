@@ -248,7 +248,7 @@ function TopupCard({ game }: { game: Game }) {
 }
 
 export default function Home() {
-    const { } = useLanguage();
+    useLanguage();
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const reviewsContainerRef = useRef<HTMLDivElement>(null);
@@ -522,7 +522,7 @@ export default function Home() {
                 {loadingGames ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                         {[...Array(8)].map((_, i) => (
-                            <div key={i} className="glass-card rounded-xl h-44 shimmer" />
+                            <div key={`shimmer-${i}`} className="glass-card rounded-xl h-44 shimmer" />
                         ))}
                     </div>
                 ) : filteredGames.length > 0 ? (
@@ -588,7 +588,7 @@ export default function Home() {
                             <div className="flex gap-0.5 mb-3">
                                 {[...Array(5)].map((_, i) => (
                                     <Star
-                                        key={i}
+                                        key={`star-${r.uniqueId}-${i}`}
                                         className={`w-4 h-4 ${i < r.stars ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground"}`}
                                     />
                                 ))}

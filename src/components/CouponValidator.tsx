@@ -148,8 +148,8 @@ export const CouponValidator: React.FC<CouponValidatorProps> = ({
 
                     {!validation.success && validation.errors && (
                         <ul className="mt-2 text-sm text-red-700 list-disc pl-5">
-                            {validation.errors.map((error, idx) => (
-                                <li key={idx}>{error}</li>
+                            {validation.errors.map((error) => (
+                                <li key={error}>{error}</li>
                             ))}
                         </ul>
                     )}

@@ -310,7 +310,7 @@ export default function BannerSlider() {
           <div className="flex justify-center gap-2 mt-5">
             {banners.map((_, i) => (
               <button
-                key={i}
+                key={`dot-${banners[i]?.uuid || i}`}
                 onClick={() => setIndex(i)}
                 className={cn(
                   "w-2 h-2 rounded-full transition-all duration-300",

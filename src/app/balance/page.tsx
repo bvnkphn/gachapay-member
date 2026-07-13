@@ -1083,20 +1083,6 @@ export default function BalancePage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [, setVatRate] = useState<number>(7);
 
-    const infoText = useMemo(() => {
-        switch (selectedMethod) {
-            case "promptpay":
-                return "ชำระเงินผ่านคิวอาร์โค้ดพร้อมเพย์ ระบบจะประมวลผลและเติม Coin เข้าบัญชีทันทีภายใน 1-5 นาทีหลังทำรายการสำเร็จ";
-            case "bank_transfer": {
-                const targetBank = BANKS.find(b => b.code === selectedBankCode) ?? BANKS[0];
-                return `โอนผ่านบัญชี ${targetBank.name} เลขบัญชี ${targetBank.number} (ชื่อบัญชี: ${targetBank.accName}) กรุณาโอนยอดเงินให้ตรงตามจำนวน และเก็บสลิปอัปโหลดเพื่อยืนยัน`;
-            }
-            case "truemoney":
-                return "ชำระผ่าน TrueMoney Wallet ระบบหักเงินอัตโนมัติและเติม Coin ทันทีหลังยืนยัน OTP";
-            default:
-                return "ระบบจะประมวลผลและทำการเติม Coin เข้าบัญชีของคุณโดยอัตโนมัติหลังจากการชำระเงินเสร็จสิ้น";
-        }
-    }, [selectedMethod, selectedBankCode]);
 
     const refreshData = useCallback(() => {
         if (!user) return;
