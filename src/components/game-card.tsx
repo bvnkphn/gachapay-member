@@ -16,6 +16,7 @@ interface Game {
     description?: string;
     items?: any[];
     inputs?: any[];
+    startingPrice?: number;
 }
 
 interface GameCardProps {
@@ -24,6 +25,7 @@ interface GameCardProps {
     slug: string;
     category?: string;
     label?: 'NONE' | 'HOT' | 'NEW' | 'SALE';
+    startingPrice?: number;
 }
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
@@ -41,7 +43,7 @@ const labelTranslations: Record<string, Record<string, string>> = {
     th: { HOT: 'ยอดนิยม', NEW: 'ใหม่', SALE: 'ลดราคา' },
 };
 
-export function GameCard({ name, image, slug, category, label = 'NONE' }: GameCardProps) {
+export function GameCard({ name, image, slug, category, label = 'NONE', startingPrice }: GameCardProps) {
     const { t, lang } = useLanguage();
     const labelColor = labelColors[label] || labelColors.NONE;
     const labelText = labelTranslations[lang || 'en'][label] || label;
@@ -98,7 +100,7 @@ export function GameCard({ name, image, slug, category, label = 'NONE' }: GameCa
                         <p className="text-xs text-muted-foreground">
                             {t.startFrom}{" "}
                             <span className="text-primary font-semibold">
-                                ฿27.50
+                                ฿{(startingPrice !== undefined ? startingPrice : 27.50).toFixed(2)}
                             </span>
                         </p>
                     </div>
@@ -258,6 +260,7 @@ export function GamesSection({ initialGames }: GamesSectionProps) {
                                         slug={game.slug}
                                         category={game.category}
                                         label={game.label}
+                                        startingPrice={game.startingPrice}
                                     />
                                 ))}
                         </div>
@@ -306,6 +309,7 @@ export function GamesSection({ initialGames }: GamesSectionProps) {
                                         slug={game.slug}
                                         category={game.category}
                                         label={game.label}
+                                        startingPrice={game.startingPrice}
                                     />
                                 ))}
                             </div>

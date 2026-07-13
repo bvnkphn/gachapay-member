@@ -128,6 +128,8 @@ export const api = {
 
     getReferrals: () => apiRequest("/users/me/referrals"),
 
+    getGachaSettings: () => apiRequest("/system/gacha-settings"),
+
     setReferrer: (referrerCode: string) =>
         apiRequest("/users/me/referred-by", {
             method: "POST",

@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useContext, useState, useMemo } from "react";
+import { createContext, useContext, useState, useMemo, useEffect } from "react";
 
 export type Lang = "th" | "en";
 
@@ -362,6 +362,64 @@ const translations = {
         "ไม่มีค่าธรรมเนียมการโอนเงินคืน",
       ],
     },
+    // Landing Page
+    landingFlashSaleEndsIn: "จบใน",
+    landingGamesCount: (count: number) => `${count} เกม`,
+    landingShowMore: (count: number) => `แสดงเพิ่มเติม (${count} เกม)`,
+    landingNoGamesInCategory: "ไม่มีเกมในหมวดหมู่นี้",
+    landingReviewsTitle: "รีวิวจากผู้ใช้บริการ",
+    landingSuccessCount: (count: string) => `เติมสำเร็จแล้วกว่า ${count} รายการ`,
+    landingLastItems: (count: number) => `🔥 เหลือ ${count} ชิ้นสุดท้าย`,
+    // Footer
+    footerDesc: "แพลตฟอร์มให้บริการเติมเกมออนไลน์อัตโนมัติ สะดวก รวดเร็ว ตลอด 24 ชั่วโมง เติมง่ายผ่านระบบ UID ปลอดภัย 100%",
+    footerQuickLinks: "เมนูแนะนำ",
+    footerHome: "หน้าหลัก",
+    footerAllGames: "บริการเติมเกมทั้งหมด",
+    footerTopup: "เติมเงินเข้ากระเป๋า",
+    footerHelpPrivacy: "ช่วยเหลือ & ความเป็นส่วนตัว",
+    footerSupportLink: "ติดต่อฝ่ายสนับสนุน (Support)",
+    footerTermsLink: "ข้อตกลงการใช้บริการ (Terms)",
+    footerPrivacyLink: "นโยบายความเป็นส่วนตัว (Privacy)",
+    footerMadeWith: "Made with",
+    footerBy: "by Ethereum Team",
+    // Invite Page
+    inviteTitle: "เชิญเพื่อนเพื่อรับโบนัส",
+    inviteReferAndEarn: "แนะนำและรับโบนัส",
+    inviteDesc: (minSpend: string, reward: number) => `แนะนำเพื่อนมาใช้งาน เมื่อเพื่อนสะสมยอดเติมเงินสำเร็จครบกำหนด ฿${minSpend} บาท รับทันที ${reward} COIN ต่อคน (สูงสุด 10 คน)`,
+    inviteLinkLabel: "ลิงก์เชิญเพื่อนของคุณ",
+    inviteCopy: "คัดลอกลิงก์",
+    inviteCopied: "คัดลอกแล้ว!",
+    inviteShare: "แชร์ให้เพื่อน",
+    inviteBonusProgress: "สิทธิ์รับโบนัสจากการเชิญเพื่อน",
+    inviteBonusNote: (minSpend: string) => `* ได้รับเหรียญโบนัสจากเพื่อนที่สะสมยอดเติมเงินครบ ฿${minSpend} สำเร็จสูงสุดไม่เกิน 10 คนแรก`,
+    inviteReferrerTitle: "ระบุผู้แนะนำเพื่อน",
+    inviteReferrerDesc: "หากเพื่อนของคุณแนะนำมา สามารถกรอกรหัสหรือลิงก์ผู้แนะนำย้อนหลังที่นี่ได้ (กรอกได้ก่อนการทำรายการซื้อสินค้า/เติมเงินครั้งแรกเท่านั้น)",
+    inviteReferrerPlaceholder: "วางลิงก์เชิญเพื่อน หรือกรอกรหัสแนะนำเพื่อน",
+    inviteConfirm: "ยืนยัน",
+    inviteSaving: "กำลังบันทึก...",
+    inviteReferrerNote: "* สามารถป้อนรหัส เช่น \"Xy7Zk9Pq2Wv1\" หรือวางลิงก์เชิญเต็มรูปแบบก็ได้",
+    inviteAlreadyReferred: "คุณได้รับการแนะนำโดยเพื่อนเรียบร้อยแล้ว",
+    inviteSaved: "บันทึกแล้ว",
+    inviteLockedMsg: "⚠️ ไม่สามารถระบุผู้แนะนำย้อนหลังได้แล้ว เนื่องจากคุณได้ทำรายการซื้อสินค้าหรือเติมเงินครั้งแรกสำเร็จแล้ว",
+    inviteStatsTotal: "เชิญทั้งหมด",
+    inviteStatsSuccess: "สำเร็จ",
+    inviteStatsPending: "รอดำเนินการ",
+    inviteStatsBonus: "โบนัสที่ได้รับ",
+    inviteTableTitle: "สถานะการช้อปของเพื่อน",
+    inviteColEmail: "อีเมลเพื่อน",
+    inviteColDate: "วันที่เข้าร่วม",
+    inviteColSpent: "ยอดสะสมเติมเงิน",
+    inviteColStatus: "สถานะ",
+    inviteColBonus: "โบนัสที่จะได้รับ",
+    inviteLoading: "กำลังโหลดข้อมูล...",
+    inviteNoReferrals: "ยังไม่มีการเชิญเพื่อนในขณะนี้",
+    inviteStatusCompleted: "สำเร็จ",
+    inviteStatusPending: "รอดำเนินการ",
+    invitePerson: "คน",
+    // Header
+    headerPinnedGames: "เกมที่ปักหมุดไว้",
+    headerLoginRequired: "กรุณาเข้าสู่ระบบก่อน\nเพื่อใช้งานฟีเจอร์ปักหมุด",
+    headerNoPinned: "ยังไม่มีเกมที่ปักหมุดไว้\nปักหมุดที่หน้ารายละเอียดเกม",
   },
   en: {
     //game card
@@ -714,6 +772,64 @@ const translations = {
         "No refund processing fee",
       ],
     },
+    // Landing Page
+    landingFlashSaleEndsIn: "Ends in",
+    landingGamesCount: (count: number) => `${count} games`,
+    landingShowMore: (count: number) => `Show more (${count} games)`,
+    landingNoGamesInCategory: "No games in this category",
+    landingReviewsTitle: "User Reviews",
+    landingSuccessCount: (count: string) => `Over ${count} successful top-ups`,
+    landingLastItems: (count: number) => `🔥 Only ${count} left`,
+    // Footer
+    footerDesc: "Automated online game top-up platform. Convenient, fast, 24/7 service. Easy top-up via UID system. 100% safe.",
+    footerQuickLinks: "Quick Links",
+    footerHome: "Home",
+    footerAllGames: "All Game Top-ups",
+    footerTopup: "Top Up Balance",
+    footerHelpPrivacy: "Help & Privacy",
+    footerSupportLink: "Contact Support",
+    footerTermsLink: "Terms of Service",
+    footerPrivacyLink: "Privacy Policy",
+    footerMadeWith: "Made with",
+    footerBy: "by Ethereum Team",
+    // Invite Page
+    inviteTitle: "Invite Friends & Earn Bonus",
+    inviteReferAndEarn: "Refer & Earn",
+    inviteDesc: (minSpend: string, reward: number) => `Invite friends to join. When they accumulate ฿${minSpend} in top-ups, you earn ${reward} COIN per person (max 10 people).`,
+    inviteLinkLabel: "Your Referral Link",
+    inviteCopy: "Copy Link",
+    inviteCopied: "Copied!",
+    inviteShare: "Share",
+    inviteBonusProgress: "Referral Bonus Progress",
+    inviteBonusNote: (minSpend: string) => `* Earn bonus coins from friends who accumulate ฿${minSpend} in top-ups (max 10 friends).`,
+    inviteReferrerTitle: "Enter Referrer",
+    inviteReferrerDesc: "If a friend referred you, enter their referral code or link here. (Only available before your first purchase/top-up.)",
+    inviteReferrerPlaceholder: "Paste referral link or enter referral code",
+    inviteConfirm: "Confirm",
+    inviteSaving: "Saving...",
+    inviteReferrerNote: "* You can enter a code like \"Xy7Zk9Pq2Wv1\" or paste the full referral link.",
+    inviteAlreadyReferred: "You have already been referred by a friend.",
+    inviteSaved: "Saved",
+    inviteLockedMsg: "⚠️ Cannot set referrer retroactively. You have already completed your first purchase/top-up.",
+    inviteStatsTotal: "Total Invited",
+    inviteStatsSuccess: "Completed",
+    inviteStatsPending: "Pending",
+    inviteStatsBonus: "Bonus Earned",
+    inviteTableTitle: "Friends' Shopping Status",
+    inviteColEmail: "Friend's Email",
+    inviteColDate: "Joined Date",
+    inviteColSpent: "Cumulative Top-up",
+    inviteColStatus: "Status",
+    inviteColBonus: "Bonus",
+    inviteLoading: "Loading...",
+    inviteNoReferrals: "No referrals yet.",
+    inviteStatusCompleted: "Completed",
+    inviteStatusPending: "Pending",
+    invitePerson: "",
+    // Header
+    headerPinnedGames: "Pinned Games",
+    headerLoginRequired: "Please login first\nto use the bookmark feature",
+    headerNoPinned: "No pinned games yet\nPin games from the detail page",
   }
 };
 
@@ -724,7 +840,26 @@ const LanguageContext = createContext({
 });
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [lang, setLang] = useState<Lang>("th");
+  const [lang, setLangState] = useState<Lang>("th");
+
+  // Load saved language from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("gachapay_lang") as Lang | null;
+      if (saved === "th" || saved === "en") {
+        setLangState(saved);
+      }
+    }
+  }, []);
+
+  // Wrap setLang to also persist to localStorage
+  const setLang = (l: Lang) => {
+    setLangState(l);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("gachapay_lang", l);
+    }
+  };
+
   const t = translations[lang];
   const value = useMemo(() => ({ lang, setLang, t }), [lang, t]);
   return (

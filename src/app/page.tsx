@@ -18,6 +18,7 @@ interface Game {
     category: string;
     label: "NONE" | "HOT" | "NEW" | "SALE";
     packages?: any[];
+    startingPrice?: number;
 }
 
 // ---- Flash Sale Countdown ----
@@ -88,6 +89,7 @@ function getFlashSaleStock(name: string) {
 
 // ---- Flash Sale Card ----
 function FlashCard({ game }: { game: Game }) {
+    const { t } = useLanguage();
     const activeFlashPkg = game.packages?.find((p: any) => p.flashSale && p.flashSale.isActive);
     const sale = activeFlashPkg ? activeFlashPkg.effectivePrice : 0;
     const original = activeFlashPkg ? activeFlashPkg.price : 0;
@@ -122,7 +124,7 @@ function FlashCard({ game }: { game: Game }) {
 
                     {/* Remaining Stock Indicator */}
                     <span className="absolute bottom-2 right-2 text-[9px] font-bold bg-black/70 text-orange-400 backdrop-blur-md px-2 py-0.5 rounded border border-orange-500/30">
-                        🔥 เหลือ {remaining} ชิ้นสุดท้าย
+                        {t.landingLastItems(remaining)}
                     </span>
                 </div>
 
@@ -239,7 +241,7 @@ function TopupCard({ game }: { game: Game }) {
                     </p>
                     <div className="flex items-center justify-between mt-2">
                         <span className="text-[10px] text-muted-foreground">เริ่มต้น</span>
-                        <span className="text-primary font-bold text-sm">฿35</span>
+                        <span className="text-primary font-bold text-sm">฿{game.startingPrice !== undefined ? game.startingPrice.toFixed(2) : "35.00"}</span>
                     </div>
                 </div>
             </div>
@@ -248,7 +250,7 @@ function TopupCard({ game }: { game: Game }) {
 }
 
 export default function Home() {
-    useLanguage();
+    const { t } = useLanguage();
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
     const reviewsContainerRef = useRef<HTMLDivElement>(null);
@@ -448,7 +450,7 @@ export default function Home() {
                             </div>
                             {/* Countdown */}
                             <div className="flex items-center gap-1.5 sm:gap-2 text-muted-foreground ml-1.5 sm:ml-4">
-                                <span className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wider mr-1">จบใน</span>
+                                <span className="text-xs sm:text-sm font-semibold text-muted-foreground uppercase tracking-wider mr-1">{t.landingFlashSaleEndsIn}</span>
                                 <Digit n={countdown.h} />
                                 <span className="text-sm font-black text-red-500 animate-pulse">:</span>
                                 <Digit n={countdown.m} />
@@ -498,7 +500,7 @@ export default function Home() {
                 <div className="flex items-center justify-between mb-1">
                     <div>
                         <h2 className="text-lg font-bold text-foreground">Game TOP-UP by UID</h2>
-                        <p className="text-xs text-muted-foreground mt-0.5">{games.length} เกม</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{t.landingGamesCount(games.length)}</p>
                     </div>
                 </div>
 
@@ -536,13 +538,13 @@ export default function Home() {
                                     onClick={() => setVisibleGamesCount(prev => prev + 16)}
                                     className="px-8 py-3 text-xs font-bold rounded-full bg-transparent border border-primary text-primary hover:bg-primary hover:text-primary-foreground hover:glow-primary hover:scale-105 active:scale-95 transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-primary/20"
                                 >
-                                    แสดงเพิ่มเติม ({filteredGames.length - visibleGamesCount} เกม)
+                                    {t.landingShowMore(filteredGames.length - visibleGamesCount)}
                                 </button>
                             </div>
                         )}
                     </div>
                 ) : (
-                    <div className="text-center text-muted-foreground py-10 text-sm">ไม่มีเกมในหมวดหมู่นี้</div>
+                    <div className="text-center text-muted-foreground py-10 text-sm">{t.landingNoGamesInCategory}</div>
                 )}
             </section>
 
@@ -550,11 +552,11 @@ export default function Home() {
             <section className="container mx-auto px-4 mb-16">
                 <div className="flex items-center justify-between mb-5">
                     <div>
-                        <h2 className="text-lg font-bold text-foreground">รีวิวจากผู้ใช้บริการ</h2>
+                        <h2 className="text-lg font-bold text-foreground">{t.landingReviewsTitle}</h2>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-3 mt-1.5">
                             <span className="w-fit inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-success/15 text-success border border-success/30 uppercase tracking-wider shadow-[0_0_8px_rgba(34,197,94,0.15)]">
                                 <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
-                                เติมสำเร็จแล้วกว่า {totalSuccess.toLocaleString()} รายการ
+                                {t.landingSuccessCount(totalSuccess.toLocaleString())}
                             </span>
                         </div>
                     </div>

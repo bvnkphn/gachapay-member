@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Search, User, LogOut, LogIn, Headphones, Star, Moon, Sun, Coins, Gamepad2, Wallet, ShoppingCart, Ticket, Crown, Users, History, Sparkles, X, Clock, Bookmark } from "lucide-react";
+import { Search, User, LogOut, LogIn, Headphones, Star, Moon, Sun, Coins, Gamepad2, Wallet, ShoppingCart, Ticket, Crown, Users, History, Sparkles, X, Clock, Bookmark, Globe } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
@@ -32,7 +32,7 @@ export function Header() {
     const pathname = usePathname();
     const router = useRouter();
     const { user, logout, updateUser } = useAuth();
-    useLanguage();
+    const { lang, setLang, t } = useLanguage();
     useSidebar();
     const { setTheme, resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
@@ -43,6 +43,27 @@ export function Header() {
     const [allGames, setAllGames] = useState<any[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [searchHistory, setSearchHistory] = useState<string[]>([]);
+    const [gachaSegments, setGachaSegments] = useState<any[]>([
+        { value: 5, label: "5 COINS", probability: 17.5 },
+        { value: 0, label: "เกลือ (ไม่ได้)", probability: 10 },
+        { value: 10, label: "10 COINS", probability: 20 },
+        { value: 50, label: "50 COINS", probability: 5 },
+        { value: 0, label: "เกลือ (ไม่ได้)", probability: 10 },
+        { value: 20, label: "20 COINS", probability: 10 },
+        { value: 5, label: "5 COINS", probability: 17.5 },
+        { value: 0, label: "เกลือ (ไม่ได้)", probability: 10 }
+    ]);
+
+    // Load dynamic gacha settings
+    useEffect(() => {
+        api.getGachaSettings()
+            .then((data: any) => {
+                if (data && data.segments && data.segments.length === 8) {
+                    setGachaSegments(data.segments);
+                }
+            })
+            .catch((err) => console.error("Failed to load gacha settings:", err));
+    }, []);
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -271,16 +292,7 @@ export function Header() {
     }, [showPrizeClaimed, winningSegmentIndex]);
 
     // Gacha setup
-    const SEGMENTS = [
-        { value: 5, label: "5 COINS" },
-        { value: 0, label: "เกลือ (ไม่ได้)" },
-        { value: 10, label: "10 COINS" },
-        { value: 50, label: "50 COINS" },
-        { value: 0, label: "เกลือ (ไม่ได้)" },
-        { value: 20, label: "20 COINS" },
-        { value: 5, label: "5 COINS" },
-        { value: 0, label: "เกลือ (ไม่ได้)" },
-    ];
+    const SEGMENTS = gachaSegments;
 
     const totalTopup = txHistory
         .filter((tx) => tx.status === "completed")
@@ -291,24 +303,14 @@ export function Header() {
 
     const spinGacha = () => {
         const rand = secureRandom() * 100;
-        if (rand < 30) {
-            // Salt (Segments 1, 4, 7)
-            const salts = [1, 4, 7];
-            return salts[Math.floor(secureRandom() * salts.length)];
-        } else if (rand < 65) {
-            // 5 Coins (Segments 0, 6)
-            const fives = [0, 6];
-            return fives[Math.floor(secureRandom() * fives.length)];
-        } else if (rand < 85) {
-            // 10 Coins (Segment 2)
-            return 2;
-        } else if (rand < 95) {
-            // 20 Coins (Segment 5)
-            return 5;
-        } else {
-            // 50 Coins (Segment 3)
-            return 3;
+        let cumulative = 0;
+        for (let i = 0; i < SEGMENTS.length; i++) {
+            cumulative += Number(SEGMENTS[i].probability || 0);
+            if (rand <= cumulative) {
+                return i;
+            }
         }
+        return SEGMENTS.length - 1;
     };
 
     const startSpin = () => {
@@ -615,12 +617,12 @@ export function Header() {
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align="end" className="w-56 glass-card border-border/50 py-2">
                                     <div className="px-3 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                                        เกมที่ปักหมุดไว้
+                                        {t.headerPinnedGames}
                                     </div>
                                     <DropdownMenuSeparator className="my-1" />
                                     {!user ? (
-                                        <div className="px-3 py-4 text-center text-xs text-muted-foreground">
-                                            กรุณาเข้าสู่ระบบก่อน<br/>เพื่อใช้งานฟีเจอร์ปักหมุด
+                                        <div className="px-3 py-4 text-center text-xs text-muted-foreground whitespace-pre-line">
+                                            {t.headerLoginRequired}
                                         </div>
                                     ) : bookmarks.length > 0 ? (
                                         bookmarks.map((game) => (
@@ -638,8 +640,8 @@ export function Header() {
                                             </DropdownMenuItem>
                                         ))
                                     ) : (
-                                        <div className="px-3 py-4 text-center text-xs text-muted-foreground">
-                                            ยังไม่มีเกมที่ปักหมุดไว้<br/>ปักหมุดที่หน้ารายละเอียดเกม
+                                        <div className="px-3 py-4 text-center text-xs text-muted-foreground whitespace-pre-line">
+                                            {t.headerNoPinned}
                                         </div>
                                     )}
                                 </DropdownMenuContent>
@@ -777,6 +779,35 @@ export function Header() {
                                             </div>
                                         </DropdownMenuItem>
 
+                                        {/* ภาษา (Language Toggle) */}
+                                        <DropdownMenuItem asChild>
+                                            <div className="flex items-center justify-between w-[calc(100%-8px)] px-3 py-2.5 rounded-lg mx-1 select-none">
+                                                <span className="text-sm flex-1 text-foreground">ภาษา / Language</span>
+
+                                                {/* Capsule Language Switcher */}
+                                                <div
+                                                    className="relative flex items-center w-[72px] h-8 bg-[#eef2f6] dark:bg-[#090a0f] border border-transparent dark:border-zinc-800/80 rounded-full p-1 cursor-pointer select-none transition-colors duration-300"
+                                                    onClick={() => setLang(lang === "th" ? "en" : "th")}
+                                                >
+                                                    {/* Sliding active pill indicator */}
+                                                    <div
+                                                        className={cn(
+                                                            "absolute top-1 left-2 w-6 h-6 rounded-full bg-white dark:bg-[#2a303f] shadow-sm transition-transform duration-300 ease-out",
+                                                            lang === "en" ? "translate-x-8" : "translate-x-0"
+                                                        )}
+                                                    />
+                                                    {/* TH (Left) */}
+                                                    <div className="relative z-10 flex-1 flex items-center justify-center h-full">
+                                                        <span className={cn("text-[10px] font-black transition-colors duration-300", lang === "th" ? "text-zinc-950 dark:text-white" : "text-zinc-400")}>TH</span>
+                                                    </div>
+                                                    {/* EN (Right) */}
+                                                    <div className="relative z-10 flex-1 flex items-center justify-center h-full">
+                                                        <span className={cn("text-[10px] font-black transition-colors duration-300", lang === "en" ? "text-zinc-950 dark:text-white" : "text-zinc-400")}>EN</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </DropdownMenuItem>
+
                                         {/* ติดต่อหรือขอความช่วยเหลือ (Support) */}
                                         <DropdownMenuItem asChild>
                                             <Link href="/support" className="flex items-center gap-3 px-3 py-2.5 cursor-pointer hover:bg-muted/50 rounded-lg mx-1">
@@ -804,15 +835,77 @@ export function Header() {
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             ) : (
-                                <Link href="/login">
-                                    <Button
-                                        size="sm"
-                                        className="bg-foreground text-background border-0 hover:bg-foreground/90 hover:text-background text-xs h-8 px-4 font-semibold shadow-sm transition-all"
-                                    >
-                                        <LogIn className="w-3.5 h-3.5 mr-1.5" />
-                                        เข้าสู่ระบบ
-                                    </Button>
-                                </Link>
+                                <div className="flex items-center gap-2">
+                                    {/* Settings Dropdown for Guest */}
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="hover:bg-muted w-8 h-8 cursor-pointer rounded-full shrink-0 flex items-center justify-center">
+                                                <Globe className="w-4 h-4 text-muted-foreground" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-56 glass-card border-border/50 py-2">
+                                            {/* ภาษา (Language Toggle) */}
+                                            <DropdownMenuItem asChild>
+                                                <div className="flex items-center justify-between w-[calc(100%-8px)] px-3 py-2 rounded-lg mx-1 select-none">
+                                                    <span className="text-xs text-foreground font-semibold">ภาษา/Language</span>
+                                                    <div
+                                                        className="relative flex items-center w-[72px] h-8 bg-[#eef2f6] dark:bg-[#090a0f] border border-transparent dark:border-zinc-800/80 rounded-full p-1 cursor-pointer select-none transition-colors duration-300"
+                                                        onClick={() => setLang(lang === "th" ? "en" : "th")}
+                                                    >
+                                                        <div
+                                                            className={cn(
+                                                                "absolute top-1 left-2 w-6 h-6 rounded-full bg-white dark:bg-[#2a303f] shadow-sm transition-transform duration-300 ease-out",
+                                                                lang === "en" ? "translate-x-8" : "translate-x-0"
+                                                            )}
+                                                        />
+                                                        <div className="relative z-10 flex-1 flex items-center justify-center h-full">
+                                                            <span className={cn("text-[9px] font-black transition-colors duration-300", lang === "th" ? "text-zinc-950 dark:text-white" : "text-zinc-400")}>TH</span>
+                                                        </div>
+                                                        <div className="relative z-10 flex-1 flex items-center justify-center h-full">
+                                                            <span className={cn("text-[9px] font-black transition-colors duration-300", lang === "en" ? "text-zinc-950 dark:text-white" : "text-zinc-400")}>EN</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </DropdownMenuItem>
+
+                                            <DropdownMenuSeparator className="my-1" />
+
+                                            {/* ธีม (Theme Toggle) */}
+                                            <DropdownMenuItem asChild>
+                                                <div className="flex items-center justify-between w-[calc(100%-8px)] px-3 py-2 rounded-lg mx-1 select-none">
+                                                    <span className="text-xs text-foreground font-semibold">ธีม</span>
+                                                    <div
+                                                        className="relative flex items-center w-[72px] h-8 bg-[#eef2f6] dark:bg-[#090a0f] border border-transparent dark:border-zinc-800/80 rounded-full p-1 cursor-pointer select-none transition-colors duration-300"
+                                                        onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
+                                                    >
+                                                        <div
+                                                            className={cn(
+                                                                "absolute top-1 left-2 w-6 h-6 rounded-full bg-white dark:bg-[#2a303f] shadow-sm transition-transform duration-300 ease-out",
+                                                                currentTheme === "dark" ? "translate-x-8" : "translate-x-0"
+                                                            )}
+                                                        />
+                                                        <div className="relative z-10 flex-1 flex items-center justify-center h-full">
+                                                            <Sun className={cn("w-3.5 h-3.5 transition-colors duration-300", currentTheme === "light" ? "text-zinc-950" : "text-zinc-500")} />
+                                                        </div>
+                                                        <div className="relative z-10 flex-1 flex items-center justify-center h-full">
+                                                            <Moon className={cn("w-3 h-3 transition-colors duration-300", currentTheme === "dark" ? "text-white" : "text-zinc-400")} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+
+                                    <Link href="/login">
+                                        <Button
+                                            size="sm"
+                                            className="bg-foreground text-background border-0 hover:bg-foreground/90 hover:text-background text-xs h-8 px-4 font-semibold shadow-sm transition-all"
+                                        >
+                                            <LogIn className="w-3.5 h-3.5 mr-1.5" />
+                                            เข้าสู่ระบบ
+                                        </Button>
+                                    </Link>
+                                </div>
                             )}
                         </div>
                     </div>
@@ -1005,8 +1098,8 @@ export function Header() {
                                                         className="absolute top-0 left-0 right-0 bottom-0 flex flex-col items-center justify-start origin-center pt-8 text-[11px] font-black text-white select-none pointer-events-none drop-shadow-md"
                                                         style={{ transform: `rotate(${angle}deg)` }}
                                                     >
-                                                        <div className="text-[12px] uppercase font-black tracking-wider">{seg.value > 0 ? `${seg.value}` : "เกลือ"}</div>
-                                                        <div className="text-[7px] opacity-80 uppercase tracking-widest">{seg.value > 0 ? "Coins" : "เสียใจด้วย"}</div>
+                                                        <div className="text-[12px] uppercase font-black tracking-wider">{seg.value > 0 ? `${seg.value}` : "0"}</div>
+                                                        <div className="text-[7px] opacity-80 uppercase tracking-widest max-w-[50px] text-center truncate">{seg.label || (seg.value > 0 ? "Coins" : "เกลือ")}</div>
                                                     </div>
                                                 );
                                             })}
