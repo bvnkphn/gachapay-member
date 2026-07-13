@@ -20,7 +20,7 @@ export default function LoginPage() {
     const router = useRouter();
     const { setAuth } = useAuth();
     const { setAuth: setAdminAuth } = useAdminAuth();
-    const { lang, t, translateError } = useLanguage();
+    const { t, translateError } = useLanguage();
     const { setTheme, resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
     const [email, setEmail] = useState("");
@@ -48,7 +48,7 @@ export default function LoginPage() {
     }, [router]);
 
     const validateEmail = (email: string) => {
-        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        return /^\S+@\S+\.\S+$/.test(email);
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -137,7 +137,7 @@ export default function LoginPage() {
                     <CardHeader className="pt-5 pb-2 px-6 space-y-1">
                         <CardTitle className="text-2xl font-bold text-center">{t.login}</CardTitle>
                         <CardDescription className="text-center text-xs">
-                            {t.desc}
+                            {t.logoDesc}
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">

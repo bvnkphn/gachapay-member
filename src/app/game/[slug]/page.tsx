@@ -50,6 +50,16 @@ interface Game {
     fields: InputField[];
 }
 
+const GATEWAY_TO_METHOD: Record<string, string> = {
+    wallet: "coin",
+    promptpay: "qr",
+};
+
+const METHOD_TO_GATEWAY: Record<string, string> = {
+    coin: "wallet",
+    qr: "promptpay",
+};
+
 export default function GameTopupPage() {
     const params = useParams();
     const router = useRouter();
@@ -148,7 +158,7 @@ export default function GameTopupPage() {
         } else if (paymentMethod === "free") {
             const first = activeMethods.find(m => m.enabled);
             if (first) {
-                const mCode = first.id === "wallet" ? "coin" : first.id === "promptpay" ? "qr" : first.id;
+                const mCode = GATEWAY_TO_METHOD[first.id] ?? first.id;
                 setPaymentMethod(mCode);
             }
         }
@@ -158,15 +168,13 @@ export default function GameTopupPage() {
     useEffect(() => {
         if (activeMethods.length === 0 || paymentMethod === "free") return;
         
-        const currentGatewayId = paymentMethod === "coin" ? "wallet" 
-            : paymentMethod === "qr" ? "promptpay" 
-            : paymentMethod;
+        const currentGatewayId = METHOD_TO_GATEWAY[paymentMethod] ?? paymentMethod;
             
         const currentMethod = activeMethods.find(m => m.id === currentGatewayId);
         if (currentMethod && !currentMethod.enabled) {
             const firstEnabled = activeMethods.find(m => m.enabled);
             if (firstEnabled) {
-                const defaultMethod = firstEnabled.id === "wallet" ? "coin" : firstEnabled.id === "promptpay" ? "qr" : firstEnabled.id;
+                const defaultMethod = GATEWAY_TO_METHOD[firstEnabled.id] ?? firstEnabled.id;
                 setPaymentMethod(defaultMethod);
             }
         }
@@ -185,7 +193,7 @@ export default function GameTopupPage() {
         if (user) {
             api.getWalletBalance()
                 .then((resData) => {
-                    const newBalance = parseFloat(resData?.amount ?? "0");
+                    const newBalance = Number.parseFloat(resData?.amount ?? "0");
                     setWalletBalance(newBalance);
                     updateUser({ balance: newBalance });
                 })
@@ -327,7 +335,7 @@ export default function GameTopupPage() {
         }
 
         // Basic email validation
-        if (!isLoggedIn && !formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+        if (!isLoggedIn && !formData.email.match(/^\S+@\S+\.\S+$/)) {
             setWarningText("กรุณากรอกอีเมลให้ถูกต้องตามรูปแบบ");
             setShowWarningModal(true);
             return;
@@ -815,7 +823,7 @@ export default function GameTopupPage() {
                                     ) : (
                                         <>
                                             {activeMethods.filter(m => m.enabled).map(m => {
-                                                const mCode = m.id === "wallet" ? "coin" : m.id === "promptpay" ? "qr" : m.id;
+                                                const mCode = GATEWAY_TO_METHOD[m.id] ?? m.id;
                                                 const isSel = paymentMethod === mCode;
                                                 let iconEl = <Coins className="w-5 h-5 mb-1 text-amber-500 fill-current" />;
                                                 if (m.id === "promptpay") {

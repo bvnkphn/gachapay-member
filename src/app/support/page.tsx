@@ -54,7 +54,7 @@ export default function SupportPage() {
     const [activeCategoryId, setActiveCategoryId] = useState<string>("all");
     const { lang, t } = useLanguage();
     const [dbFaqs, setDbFaqs] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const [, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchFaqs = async () => {
@@ -182,7 +182,7 @@ export default function SupportPage() {
                                         const question = typeof faq.question === 'string' ? faq.question : faq.question[lang];
                                         const answer = typeof faq.answer === 'string' ? faq.answer : faq.answer[lang];
                                         return (
-                                            <AccordionItem key={index} value={`faq-${index}`}>
+                                            <AccordionItem key={faq.id || `faq-${index}`} value={`faq-${index}`}>
                                                 <AccordionTrigger className="text-left hover:text-primary text-sm">
                                                     {question}
                                                 </AccordionTrigger>
@@ -257,7 +257,7 @@ export default function SupportPage() {
                                 const q = typeof v.question === 'string' ? v.question : v.question[lang];
                                 const embed = getYoutubeEmbedUrl(v.videoUrl);
                                 return (
-                                    <div key={idx} className="glass-card rounded-xl overflow-hidden border border-border/40 p-4 space-y-3">
+                                    <div key={v.id || `video-${idx}`} className="glass-card rounded-xl overflow-hidden border border-border/40 p-4 space-y-3">
                                         <div className="rounded-lg overflow-hidden border border-border shadow-sm">
                                             <iframe 
                                                 src={embed!} 

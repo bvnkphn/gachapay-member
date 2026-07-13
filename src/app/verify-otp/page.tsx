@@ -109,6 +109,7 @@ function VerifyOtpContent() {
     const handleResendOtp = async () => {
         if (!canResend || !email) return;
 
+        setIsLoading(true);
         try {
             await api.sendOtp({ email });
             toast.success("ส่งรหัส OTP ใหม่แล้ว");
@@ -118,6 +119,8 @@ function VerifyOtpContent() {
             inputRefs.current[0]?.focus();
         } catch (error: any) {
             toast.error(translateError(error.message));
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -175,7 +178,7 @@ function VerifyOtpContent() {
                                 <div className="flex gap-2 justify-center">
                                     {otp.map((digit, index) => (
                                         <Input
-                                            key={index}
+                                            key={`otp-box-${index}`}
                                             ref={(el) => {
                                                 inputRefs.current[index] = el;
                                             }}

@@ -105,6 +105,20 @@ export async function apiRequest(
 }
 
 export const api = {
+    // Axios-like compatibility helpers
+    get: async (endpoint: string, options?: RequestInit) => {
+        const res = await apiRequest(endpoint, { method: "GET", ...options });
+        return { data: res };
+    },
+    post: async (endpoint: string, body?: any, options?: RequestInit) => {
+        const res = await apiRequest(endpoint, {
+            method: "POST",
+            body: body ? JSON.stringify(body) : undefined,
+            ...options
+        });
+        return { data: res };
+    },
+
     // Auth
     register: (data: { email: string; password: string; name?: string; referredBy?: string }) =>
         apiRequest("/auth/register", {

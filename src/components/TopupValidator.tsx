@@ -169,8 +169,8 @@ export default function TopupValidator({
 
                             {result.errors && result.errors.length > 0 && (
                                 <ul className="list-disc list-inside space-y-1 text-sm text-red-600">
-                                    {result.errors.map((error, idx) => (
-                                        <li key={idx}>{error}</li>
+                                    {result.errors.map((error) => (
+                                        <li key={error}>{error}</li>
                                     ))}
                                 </ul>
                             )}
@@ -181,8 +181,8 @@ export default function TopupValidator({
                                         ⚠️ คำเตือน | Warnings
                                     </p>
                                     <ul className="list-disc list-inside space-y-1 text-sm text-yellow-600">
-                                        {result.warnings.map((warning, idx) => (
-                                            <li key={idx}>{warning}</li>
+                                        {result.warnings.map((warning) => (
+                                            <li key={warning}>{warning}</li>
                                         ))}
                                     </ul>
                                 </div>

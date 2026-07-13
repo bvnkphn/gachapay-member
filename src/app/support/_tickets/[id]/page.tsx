@@ -88,7 +88,7 @@ const STATUS_CONFIG: Record<TicketStatus, { label: string; labelEn: string; colo
 };
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ALLOWED_TYPES = ["image/jpeg", "image/jpg", "image/png", "application/pdf"];
+const ALLOWED_TYPES = new Set(["image/jpeg", "image/jpg", "image/png", "application/pdf"]);
 
 // ---- Lightbox ----
 function Lightbox({ src, onClose }: { src: string; onClose: () => void }) {
@@ -177,7 +177,7 @@ export default function TicketDetailPage() {
     const router = useRouter();
     const params = useParams();
     const { lang } = useLanguage();
-    const { open } = useSidebar();
+    
 
     const ticketId = params?.id as string;
     const [ticket, setTicket] = useState<SupportTicket | null>(
@@ -213,7 +213,7 @@ export default function TicketDetailPage() {
         setFileError(null);
         const file = e.target.files?.[0];
         if (!file) return;
-        if (!ALLOWED_TYPES.includes(file.type)) {
+        if (!ALLOWED_TYPES.has(file.type)) {
             setFileError(lang === "th" ? "รองรับเฉพาะไฟล์ .jpg, .png, .pdf เท่านั้น" : "Only .jpg, .png, .pdf files are supported");
             return;
         }
@@ -518,7 +518,7 @@ export default function TicketDetailPage() {
                                         <div className="grid grid-cols-2 gap-2">
                                             {imageAttachments.map((src, i) => (
                                                 <button
-                                                    key={i}
+                                                    key={src}
                                                     onClick={() => setLightboxSrc(src)}
                                                     className="aspect-square rounded-lg overflow-hidden hover:opacity-80 transition-opacity"
                                                 >

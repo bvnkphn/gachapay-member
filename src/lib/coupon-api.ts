@@ -52,7 +52,7 @@ export const validateCoupon = async (
         return {
             success: false,
             message: 'Failed to validate coupon',
-            errors: [error.message],
+            errors: [(error as any).message],
         };
     }
 };
@@ -70,7 +70,7 @@ export const applyCoupon = async (request: ApplyCouponRequest) => {
         return {
             success: false,
             message: 'Failed to apply coupon',
-            error: error.message,
+            error: (error as any).message,
         };
     }
 };
@@ -88,7 +88,7 @@ export const getCouponDetails = async (code: string) => {
         return {
             success: false,
             message: 'Coupon not found',
-            error: error.message,
+            error: (error as any).message,
         };
     }
 };
@@ -106,7 +106,7 @@ export const getUserCouponHistory = async (userId: number) => {
         return {
             success: false,
             message: 'Failed to fetch coupon history',
-            error: error.message,
+            error: (error as any).message,
         };
     }
 };

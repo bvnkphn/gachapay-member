@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useMemo } from "react";
 
 const SidebarContext = createContext({
     open: true,
@@ -9,8 +9,9 @@ const SidebarContext = createContext({
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
     const [open, setOpen] = useState(true);
+    const value = useMemo(() => ({ open, toggle: () => setOpen(o => !o) }), [open]);
     return (
-        <SidebarContext.Provider value={{ open, toggle: () => setOpen(o => !o) }}>
+        <SidebarContext.Provider value={value}>
             {children}
         </SidebarContext.Provider>
     );

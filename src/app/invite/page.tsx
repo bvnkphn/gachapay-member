@@ -47,7 +47,10 @@ export default function AccountInvitePage() {
             const parts = code.split("/ref/");
             code = parts[parts.length - 1] || code;
         }
-        code = code.split("?")[0].split("#")[0].replace(/\/+$/, "");
+        code = code.split("?")[0].split("#")[0];
+        while (code.endsWith("/")) {
+            code = code.slice(0, -1);
+        }
 
         setSubmittingReferrer(true);
         try {
@@ -135,12 +138,13 @@ export default function AccountInvitePage() {
                         {/* Referral Link & Actions */}
                         <div className="mt-8 space-y-4">
                             <div className="space-y-2">
-                                <label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                                <label htmlFor="referral-link" className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                                     ลิงก์เชิญเพื่อนของคุณ
                                 </label>
                                 <div className="flex flex-col sm:flex-row gap-3">
                                     <div className="relative flex items-center bg-muted/40 border border-border/50 rounded-2xl p-1.5 focus-within:border-cyan-500/60 focus-within:ring-2 focus-within:ring-cyan-500/20 transition-all duration-300 flex-1">
                                         <Input
+                                            id="referral-link"
                                             readOnly
                                             value={referralLink}
                                             className="bg-transparent border-0 text-xs sm:text-sm h-10 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 px-3"
@@ -196,53 +200,61 @@ export default function AccountInvitePage() {
                             </div>
                         </div>
 
-                        {referredBy ? (
-                            /* Case 3: Already filled/referred */
-                            <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 dark:border-emerald-500/30 rounded-2xl p-5 flex items-center gap-4 transition-all hover:shadow-[0_4px_20px_rgba(16,185,129,0.08)]">
-                                <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
-                                    <CheckCircle2 className="w-5 h-5" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-xs text-muted-foreground font-medium">คุณได้รับการแนะนำโดยเพื่อนเรียบร้อยแล้ว</p>
-                                    <p className="text-sm font-bold text-emerald-500 dark:text-emerald-400 mt-0.5 truncate">
-                                        {referredBy.name ? `${referredBy.name} (${referredBy.email})` : referredBy.email}
+                        {(() => {
+                            if (referredBy) {
+                                return (
+                                    /* Case 3: Already filled/referred */
+                                    <div className="bg-emerald-500/5 dark:bg-emerald-500/10 border border-emerald-500/20 dark:border-emerald-500/30 rounded-2xl p-5 flex items-center gap-4 transition-all hover:shadow-[0_4px_20px_rgba(16,185,129,0.08)]">
+                                        <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
+                                            <CheckCircle2 className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-xs text-muted-foreground font-medium">คุณได้รับการแนะนำโดยเพื่อนเรียบร้อยแล้ว</p>
+                                            <p className="text-sm font-bold text-emerald-500 dark:text-emerald-400 mt-0.5 truncate">
+                                                {referredBy.name ? `${referredBy.name} (${referredBy.email})` : referredBy.email}
+                                            </p>
+                                        </div>
+                                        <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 whitespace-nowrap">
+                                            บันทึกแล้ว
+                                        </span>
+                                    </div>
+                                );
+                            }
+                            if (hasPurchased) {
+                                return (
+                                    /* Case 2: No referrer, but already purchased -> Locked */
+                                    <div className="bg-muted/40 border border-border/40 rounded-2xl p-4">
+                                        <p className="text-xs text-muted-foreground/80 leading-relaxed">
+                                            ⚠️ ไม่สามารถระบุผู้แนะนำย้อนหลังได้แล้ว เนื่องจากคุณได้ทำรายการซื้อสินค้าหรือเติมเงินครั้งแรกสำเร็จแล้ว
+                                        </p>
+                                    </div>
+                                );
+                            }
+                            return (
+                                /* Case 1: No purchase yet, no referrer -> Input enabled */
+                                <div className="space-y-3">
+                                    <div className="relative flex items-center bg-muted/40 border border-border/50 rounded-2xl p-1.5 focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-300">
+                                        <Input
+                                            placeholder="วางลิงก์เชิญเพื่อน หรือกรอกรหัสแนะนำเพื่อน"
+                                            value={referrerInput}
+                                            onChange={(e) => setReferrerInput(e.target.value)}
+                                            className="bg-transparent border-0 text-xs sm:text-sm h-10 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 px-3"
+                                            disabled={submittingReferrer}
+                                        />
+                                        <Button
+                                            onClick={handleSaveReferrer}
+                                            disabled={submittingReferrer || !referrerInput.trim()}
+                                            className="h-10 px-6 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 active:scale-95 transition-all shrink-0 cursor-pointer text-xs"
+                                        >
+                                            {submittingReferrer ? "กำลังบันทึก..." : "ยืนยัน"}
+                                        </Button>
+                                    </div>
+                                    <p className="text-[10px] text-muted-foreground/75">
+                                        * สามารถป้อนรหัส เช่น "Xy7Zk9Pq2Wv1" หรือวางลิงก์เชิญเต็มรูปแบบก็ได้
                                     </p>
                                 </div>
-                                <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 whitespace-nowrap">
-                                    บันทึกแล้ว
-                                </span>
-                            </div>
-                        ) : hasPurchased ? (
-                            /* Case 2: No referrer, but already purchased -> Locked */
-                            <div className="bg-muted/40 border border-border/40 rounded-2xl p-4">
-                                <p className="text-xs text-muted-foreground/80 leading-relaxed">
-                                    ⚠️ ไม่สามารถระบุผู้แนะนำย้อนหลังได้แล้ว เนื่องจากคุณได้ทำรายการซื้อสินค้าหรือเติมเงินครั้งแรกสำเร็จแล้ว
-                                </p>
-                            </div>
-                        ) : (
-                            /* Case 1: No purchase yet, no referrer -> Input enabled */
-                            <div className="space-y-3">
-                                <div className="relative flex items-center bg-muted/40 border border-border/50 rounded-2xl p-1.5 focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/20 transition-all duration-300">
-                                    <Input
-                                        placeholder="วางลิงก์เชิญเพื่อน หรือกรอกรหัสแนะนำเพื่อน"
-                                        value={referrerInput}
-                                        onChange={(e) => setReferrerInput(e.target.value)}
-                                        className="bg-transparent border-0 text-xs sm:text-sm h-10 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0 flex-1 px-3"
-                                        disabled={submittingReferrer}
-                                    />
-                                    <Button
-                                        onClick={handleSaveReferrer}
-                                        disabled={submittingReferrer || !referrerInput.trim()}
-                                        className="h-10 px-6 rounded-xl bg-primary text-primary-foreground font-bold hover:opacity-90 active:scale-95 transition-all shrink-0 cursor-pointer text-xs"
-                                    >
-                                        {submittingReferrer ? "กำลังบันทึก..." : "ยืนยัน"}
-                                    </Button>
-                                </div>
-                                <p className="text-[10px] text-muted-foreground/75">
-                                    * สามารถป้อนรหัส เช่น "Xy7Zk9Pq2Wv1" หรือวางลิงก์เชิญเต็มรูปแบบก็ได้
-                                </p>
-                            </div>
-                        )}
+                            );
+                        })()}
                     </div>
 
                     {/* Stats Dashboard */}
@@ -303,20 +315,26 @@ export default function AccountInvitePage() {
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-border/30">
-                                    {loading ? (
-                                        <tr>
-                                            <td colSpan={4} className="py-8 text-center text-muted-foreground">
-                                                กำลังโหลดข้อมูล...
-                                            </td>
-                                        </tr>
-                                    ) : referrals.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={4} className="py-8 text-center text-muted-foreground">
-                                                ยังไม่มีการเชิญเพื่อนในขณะนี้
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        referrals.map((ref) => (
+                                    {(() => {
+                                        if (loading) {
+                                            return (
+                                                <tr>
+                                                    <td colSpan={4} className="py-8 text-center text-muted-foreground">
+                                                        กำลังโหลดข้อมูล...
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }
+                                        if (referrals.length === 0) {
+                                            return (
+                                                <tr>
+                                                    <td colSpan={4} className="py-8 text-center text-muted-foreground">
+                                                        ยังไม่มีการเชิญเพื่อนในขณะนี้
+                                                    </td>
+                                                </tr>
+                                            );
+                                        }
+                                        return referrals.map((ref) => (
                                             <tr key={ref.id} className="hover:bg-muted/10 transition-colors">
                                                 <td className="py-3.5 font-medium text-foreground whitespace-nowrap">{ref.email}</td>
                                                 <td className="py-3.5 text-muted-foreground whitespace-nowrap">
@@ -347,8 +365,8 @@ export default function AccountInvitePage() {
                                                     )}
                                                 </td>
                                             </tr>
-                                        ))
-                                    )}
+                                        ));
+                                    })()}
                                 </tbody>
                             </table>
                         </div>

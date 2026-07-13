@@ -21,7 +21,7 @@ export default function HistoryPage() {
     const router = useRouter();
     const { user } = useAuth();
     const { t } = useLanguage();
-    const { open } = useSidebar();
+    
 
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -94,17 +94,17 @@ export default function HistoryPage() {
         const matchesDate = dateFilter === "all" || (() => {
             const orderDate = new Date(o.created_at);
             const today = new Date();
-            const days = parseInt(dateFilter);
+            const days = Number.parseInt(dateFilter);
             if (days) {
                 const daysAgo = new Date(today.getTime() - days * 24 * 60 * 60 * 1000);
                 return orderDate >= daysAgo;
             }
             return true;
         })();
-        const orderAmount = parseFloat(o.total_price);
+        const orderAmount = Number.parseFloat(o.total_price);
         const matchesAmount = 
-            (minAmount === "" || orderAmount >= parseFloat(minAmount)) &&
-            (maxAmount === "" || orderAmount <= parseFloat(maxAmount));
+            (minAmount === "" || orderAmount >= Number.parseFloat(minAmount)) &&
+            (maxAmount === "" || orderAmount <= Number.parseFloat(maxAmount));
         return matchesSearch && matchesStatus && matchesPayment && matchesDate && matchesAmount;
     });
 
@@ -197,8 +197,9 @@ export default function HistoryPage() {
                             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pb-2">
                                 {/* Date Filter */}
                                 <div className="flex flex-col gap-1.5">
-                                    <label className="text-xs font-semibold text-muted-foreground">วันที่ทำรายการ</label>
+                                    <label htmlFor="history-date-filter" className="text-xs font-semibold text-muted-foreground">วันที่ทำรายการ</label>
                                     <select
+                                        id="history-date-filter"
                                         value={dateFilter}
                                         onChange={e => setDateFilter(e.target.value)}
                                         className="w-full bg-muted/40 border border-border/50 rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer h-[34px]"
@@ -212,8 +213,9 @@ export default function HistoryPage() {
 
                                 {/* Status Filter */}
                                 <div className="flex flex-col gap-1.5">
-                                    <label className="text-xs font-semibold text-muted-foreground">สถานะ</label>
+                                    <label htmlFor="history-status-filter" className="text-xs font-semibold text-muted-foreground">สถานะ</label>
                                     <select
+                                        id="history-status-filter"
                                         value={statusFilter}
                                         onChange={e => setStatusFilter(e.target.value)}
                                         className="w-full bg-muted/40 border border-border/50 rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer h-[34px]"
@@ -228,8 +230,9 @@ export default function HistoryPage() {
 
                                 {/* Payment Method Filter */}
                                 <div className="flex flex-col gap-1.5">
-                                    <label className="text-xs font-semibold text-muted-foreground">วิธีชำระเงิน</label>
+                                    <label htmlFor="history-payment-filter" className="text-xs font-semibold text-muted-foreground">วิธีชำระเงิน</label>
                                     <select
+                                        id="history-payment-filter"
                                         value={paymentFilter}
                                         onChange={e => setPaymentFilter(e.target.value)}
                                         className="w-full bg-muted/40 border border-border/50 rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer h-[34px]"
@@ -245,9 +248,10 @@ export default function HistoryPage() {
 
                                 {/* Amount Range Filter */}
                                 <div className="flex flex-col gap-1.5">
-                                    <label className="text-xs font-semibold text-muted-foreground">ช่วงยอดชำระ (บาท)</label>
+                                    <label htmlFor="history-min-amount" className="text-xs font-semibold text-muted-foreground">ช่วงยอดชำระ (บาท)</label>
                                     <div className="flex items-center gap-2">
                                         <input
+                                            id="history-min-amount"
                                             type="number"
                                             value={minAmount}
                                             onChange={e => setMinAmount(e.target.value)}
@@ -256,6 +260,7 @@ export default function HistoryPage() {
                                         />
                                         <span className="text-muted-foreground text-xs font-medium shrink-0">ถึง</span>
                                         <input
+                                            id="history-max-amount"
                                             type="number"
                                             value={maxAmount}
                                             onChange={e => setMaxAmount(e.target.value)}
@@ -322,7 +327,7 @@ export default function HistoryPage() {
                                                 {fmtMethod(order.payment_method)}
                                             </td>
                                             <td className="py-4 text-right font-semibold text-foreground whitespace-nowrap">
-                                                ฿{parseFloat(order.total_price).toFixed(2)}
+                                                ฿{Number.parseFloat(order.total_price).toFixed(2)}
                                             </td>
                                             <td className="py-4 text-right whitespace-nowrap">
                                                 <div className="flex items-center justify-end gap-3">

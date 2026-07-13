@@ -130,22 +130,7 @@ function PaymentFlowModal({
         }
     };
 
-    const handleForceComplete = async () => {
-        setUploading(true);
-        try {
-            const result: any = await api.simulateTopupComplete(txId);
-            if (result?.status === 'completed') {
-                setStep("success");
-                toast.success("ทำรายการสำเร็จแล้ว");
-            } else {
-                toast.error("ไม่สามารถทำรายการให้เสร็จสมบูรณ์ได้");
-            }
-        } catch (err: any) {
-            toast.error(err.message || "ไม่สามารถทำรายการให้เสร็จสมบูรณ์ได้");
-        } finally {
-            setUploading(false);
-        }
-    };
+    // handleForceComplete removed — was unused
 
     useEffect(() => {
         return () => {
@@ -785,35 +770,60 @@ function ReceiptModal({ tx, onClose }: { tx: any; onClose: () => void }) {
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const statusColor = tx.status === "completed" ? "text-emerald-600 dark:text-emerald-400" :
-        tx.status === "pending" ? "text-amber-600 dark:text-amber-400" :
-            tx.status === "expired" ? "text-slate-500 dark:text-slate-400" : "text-rose-600 dark:text-rose-400";
-    const statusLabel = tx.status === "completed" ? "สำเร็จ" :
-        tx.status === "pending" ? "รอดำเนินการ" :
-            tx.status === "expired" ? "หมดอายุ" : "ยกเลิก";
+    const statusColorMap: Record<string, string> = {
+        completed: "text-emerald-600 dark:text-emerald-400",
+        pending: "text-amber-600 dark:text-amber-400",
+        expired: "text-slate-500 dark:text-slate-400",
+    };
+    const statusColor = statusColorMap[tx.status as string] ?? "text-rose-600 dark:text-rose-400";
+
+    const statusLabelMap: Record<string, string> = {
+        completed: "สำเร็จ",
+        pending: "รอดำเนินการ",
+        expired: "หมดอายุ",
+    };
+    const statusLabel = statusLabelMap[tx.status as string] ?? "ยกเลิก";
+
+    const statusBarColorMap: Record<string, string> = {
+        completed: "bg-emerald-500",
+        pending: "bg-amber-500",
+    };
+    const statusBarClass = statusBarColorMap[tx.status as string] ?? "bg-rose-500";
+
+    const statusBgClassMap: Record<string, string> = {
+        completed: "bg-emerald-500/10 dark:bg-emerald-500/20",
+        pending: "bg-amber-500/10 dark:bg-amber-500/20",
+    };
+    const statusBgClass = statusBgClassMap[tx.status as string] ?? "bg-rose-500/10 dark:bg-rose-500/20";
+
+    let statusIcon = <X className="w-7 h-7 text-rose-600 dark:text-rose-400" />;
+    if (tx.status === "completed") {
+        statusIcon = <Check className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />;
+    } else if (tx.status === "pending") {
+        statusIcon = <AlertTriangle className="w-7 h-7 text-amber-600 dark:text-amber-400" />;
+    }
+
+    let statusText = "รายการไม่สำเร็จ";
+    if (tx.status === "completed") {
+        statusText = "ชำระเงินสำเร็จ";
+    } else if (tx.status === "pending") {
+        statusText = "รอดำเนินการ";
+    }
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
             <div className="bg-background rounded-2xl w-full max-w-sm shadow-2xl border border-border/40 overflow-hidden">
                 {/* Status bar */}
-                <div className={`h-1 w-full ${tx.status === "completed" ? "bg-emerald-500" : tx.status === "pending" ? "bg-amber-500" : "bg-rose-500"}`} />
+                <div className={`h-1 w-full ${statusBarClass}`} />
 
                 <div className="p-6">
                     {/* Icon + title */}
                     <div className="flex flex-col items-center text-center mb-6">
-                        <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 ${tx.status === "completed" ? "bg-emerald-500/10 dark:bg-emerald-500/20" :
-                            tx.status === "pending" ? "bg-amber-500/10 dark:bg-amber-500/20" : "bg-rose-500/10 dark:bg-rose-500/20"
-                            }`}>
-                            {tx.status === "completed"
-                                ? <Check className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />
-                                : tx.status === "pending"
-                                    ? <AlertTriangle className="w-7 h-7 text-amber-600 dark:text-amber-400" />
-                                    : <X className="w-7 h-7 text-rose-600 dark:text-rose-400" />
-                            }
+                        <div className={`w-14 h-14 rounded-full flex items-center justify-center mb-3 ${statusBgClass}`}>
+                            {statusIcon}
                         </div>
                         <p className={`font-bold text-base ${statusColor}`}>
-                            {tx.status === "completed" ? "ชำระเงินสำเร็จ" :
-                                tx.status === "pending" ? "รอดำเนินการ" : "รายการไม่สำเร็จ"}
+                            {statusText}
                         </p>
                     </div>
 
@@ -822,7 +832,7 @@ function ReceiptModal({ tx, onClose }: { tx: any; onClose: () => void }) {
                         {[
                             ["เลขที่อ้างอิง", tx.reference_id],
                             ["ช่องทาง", tx.method?.name ?? "-"],
-                            ["จำนวนเงิน", `฿${parseFloat(tx.amount).toFixed(2)}`],
+                            ["จำนวนเงิน", `฿${Number.parseFloat(tx.amount).toFixed(2)}`],
                             ["วันที่", new Date(tx.created_at).toLocaleDateString("th-TH")],
                             ["เวลา", `${new Date(tx.created_at).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" })} น.`],
                             ["สถานะ", statusLabel],
@@ -958,7 +968,7 @@ function HistoryModal({ onClose, t }: { onClose: () => void; t: ReturnType<typeo
                             ) : filtered.length === 0 ? (
                                 <tr><td colSpan={6} className="py-8 text-center text-xs text-muted-foreground">ไม่พบรายการ</td></tr>
                             ) : filtered.map((tx, i) => (
-                                <tr key={i}>
+                                <tr key={tx.id || tx.reference_id || i}>
                                     <td className="py-3">
                                         <p className="font-medium text-xs">{new Date(tx.created_at).toLocaleDateString('th-TH')}</p>
                                         <p className="text-[11px] text-muted-foreground">{new Date(tx.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</p>
@@ -973,7 +983,7 @@ function HistoryModal({ onClose, t }: { onClose: () => void; t: ReturnType<typeo
                                             {tx.method?.name ?? '-'}
                                         </span>
                                     </td>
-                                    <td className="py-3 text-right font-semibold text-xs">฿{parseFloat(tx.amount).toFixed(2)}</td>
+                                    <td className="py-3 text-right font-semibold text-xs">฿{Number.parseFloat(tx.amount).toFixed(2)}</td>
                                     <td className="py-3 text-right">
                                         <span className={cn(
                                             "px-2 py-0.5 rounded-full text-[11px] font-semibold",
@@ -1044,7 +1054,7 @@ export default function BalancePage() {
     const router = useRouter();
     const { user, updateUser } = useAuth();
     const { t, lang } = useLanguage();
-    const { open } = useSidebar();
+
 
     const [walletBalance, setWalletBalance] = useState<number>(0);
     const [methods, setMethods] = useState<any[]>([]);
@@ -1071,30 +1081,16 @@ export default function BalancePage() {
     const [minAmount, setMinAmount] = useState("");
     const [maxAmount, setMaxAmount] = useState("");
     const [searchQuery, setSearchQuery] = useState("");
-    const [vatRate, setVatRate] = useState<number>(7);
+    const [, setVatRate] = useState<number>(7);
 
-    const infoText = useMemo(() => {
-        switch (selectedMethod) {
-            case "promptpay":
-                return "ชำระเงินผ่านคิวอาร์โค้ดพร้อมเพย์ ระบบจะประมวลผลและเติม Coin เข้าบัญชีทันทีภายใน 1-5 นาทีหลังทำรายการสำเร็จ";
-            case "bank_transfer": {
-                const targetBank = BANKS.find(b => b.code === selectedBankCode) ?? BANKS[0];
-                return `โอนผ่านบัญชี ${targetBank.name} เลขบัญชี ${targetBank.number} (ชื่อบัญชี: ${targetBank.accName}) กรุณาโอนยอดเงินให้ตรงตามจำนวน และเก็บสลิปอัปโหลดเพื่อยืนยัน`;
-            }
-            case "truemoney":
-                return "ชำระผ่าน TrueMoney Wallet ระบบหักเงินอัตโนมัติและเติม Coin ทันทีหลังยืนยัน OTP";
-            default:
-                return "ระบบจะประมวลผลและทำการเติม Coin เข้าบัญชีของคุณโดยอัตโนมัติหลังจากการชำระเงินเสร็จสิ้น";
-        }
-    }, [selectedMethod, selectedBankCode]);
 
     const refreshData = useCallback(() => {
         if (!user) return;
         api.getWalletBalance().then((d) => {
-            const newBalance = parseFloat(d?.amount ?? "0");
+            const newBalance = Number.parseFloat(d?.amount ?? "0");
             setWalletBalance(newBalance);
-            setDepositedBalance(parseFloat(d?.depositedAmount ?? d?.amount ?? "0"));
-            setBonusBalance(parseFloat(d?.bonusAmount ?? "0"));
+            setDepositedBalance(Number.parseFloat(d?.depositedAmount ?? d?.amount ?? "0"));
+            setBonusBalance(Number.parseFloat(d?.bonusAmount ?? "0"));
             updateUser({ balance: newBalance });
         });
         api.getTopupTransactions({ limit: 100 }).then((d) => setTxHistory(d?.items ?? []));
@@ -1112,10 +1108,10 @@ export default function BalancePage() {
         if (!user) return;
         Promise.all([
             api.getWalletBalance().then((d) => {
-                const newBalance = parseFloat(d?.amount ?? "0");
+                const newBalance = Number.parseFloat(d?.amount ?? "0");
                 setWalletBalance(newBalance);
-                setDepositedBalance(parseFloat(d?.depositedAmount ?? d?.amount ?? "0"));
-                setBonusBalance(parseFloat(d?.bonusAmount ?? "0"));
+                setDepositedBalance(Number.parseFloat(d?.depositedAmount ?? d?.amount ?? "0"));
+                setBonusBalance(Number.parseFloat(d?.bonusAmount ?? "0"));
                 updateUser({ balance: newBalance });
                 window.dispatchEvent(new Event("balance-changed"));
             }),
@@ -1165,7 +1161,7 @@ export default function BalancePage() {
 
             // 3. Days Filter
             if (filterDays !== "all") {
-                const daysLimit = parseInt(filterDays);
+                const daysLimit = Number.parseInt(filterDays);
                 const limitTime = Date.now() - daysLimit * 24 * 3600 * 1000;
                 if (new Date(tx.created_at).getTime() < limitTime) return false;
             }
@@ -1179,9 +1175,9 @@ export default function BalancePage() {
             }
 
             // 5. Amount Range
-            const amt = parseFloat(tx.amount) || 0;
-            if (minAmount && amt < parseFloat(minAmount)) return false;
-            if (maxAmount && amt > parseFloat(maxAmount)) return false;
+            const amt = Number.parseFloat(tx.amount) || 0;
+            if (minAmount && amt < Number.parseFloat(minAmount)) return false;
+            if (maxAmount && amt > Number.parseFloat(maxAmount)) return false;
 
             return true;
         });
@@ -1199,9 +1195,14 @@ export default function BalancePage() {
         return filteredHistory.slice(start, start + ITEMS_PER_PAGE_HISTORY);
     }, [filteredHistory, historyPage]);
 
-    const topupAmount = selectedAmount ?? (customAmount ? parseFloat(customAmount) || 0 : 0);
+    const topupAmount = selectedAmount ?? (customAmount ? Number.parseFloat(customAmount) || 0 : 0);
     const activeMethodObj = methods.find(m => m.code === selectedMethod);
-    const methodFeePercent = activeMethodObj ? activeMethodObj.fee ?? 0 : (selectedMethod === "truemoney" ? 1.5 : 0);
+    let methodFeePercent = 0;
+    if (activeMethodObj) {
+        methodFeePercent = activeMethodObj.fee ?? 0;
+    } else if (selectedMethod === "truemoney") {
+        methodFeePercent = 1.5;
+    }
     const fee = Math.round(topupAmount * (methodFeePercent / 100) * 100) / 100;
     const vat = 0; // Top-up is VAT-exempt
     const total = topupAmount + fee + vat;
@@ -1222,10 +1223,16 @@ export default function BalancePage() {
 
     const mergedMethods = PAYMENT_METHODS.map(staticMethod => {
         const dbMethod = methods.find(m => m.code === staticMethod.id);
+        let methodFee = 0;
+        if (dbMethod) {
+            methodFee = dbMethod.fee;
+        } else if (staticMethod.id === "truemoney") {
+            methodFee = 1.5;
+        }
         return {
             ...staticMethod,
             disabled: !dbMethod,
-            fee: dbMethod ? dbMethod.fee : (staticMethod.id === "truemoney" ? 1.5 : 0),
+            fee: methodFee,
         };
     });
 
@@ -1324,7 +1331,7 @@ export default function BalancePage() {
                                 <div>
                                     <p className="text-sm font-semibold text-yellow-400">มีรายการรอชำระเงินอยู่</p>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                        {pendingTx.reference_id} · ฿{parseFloat(pendingTx.amount).toFixed(2)}
+                                        {pendingTx.reference_id} · ฿{Number.parseFloat(pendingTx.amount).toFixed(2)}
                                     </p>
                                 </div>
                             </div>
@@ -1584,8 +1591,9 @@ export default function BalancePage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 pb-2">
                                     {/* Date Filter */}
                                     <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-semibold text-muted-foreground">วันที่ทำรายการ</label>
+                                        <label htmlFor="filter-days" className="text-xs font-semibold text-muted-foreground">วันที่ทำรายการ</label>
                                         <select
+                                            id="filter-days"
                                             value={filterDays}
                                             onChange={e => setFilterDays(e.target.value)}
                                             className="w-full bg-muted/40 border border-border/50 rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer h-[34px]"
@@ -1599,8 +1607,9 @@ export default function BalancePage() {
 
                                     {/* Payment Method Filter */}
                                     <div className="flex flex-col gap-1.5">
-                                        <label className="text-xs font-semibold text-muted-foreground">วิธีชำระเงิน</label>
+                                        <label htmlFor="filter-method" className="text-xs font-semibold text-muted-foreground">วิธีชำระเงิน</label>
                                         <select
+                                            id="filter-method"
                                             value={filterMethod}
                                             onChange={e => setFilterMethod(e.target.value)}
                                             className="w-full bg-muted/40 border border-border/50 rounded-lg px-3 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary cursor-pointer h-[34px]"
@@ -1614,9 +1623,10 @@ export default function BalancePage() {
 
                                     {/* Min/Max Amount Range Filters */}
                                     <div className="flex flex-col gap-1.5 sm:col-span-2">
-                                        <label className="text-xs font-semibold text-muted-foreground">ช่วงยอดเติมเงิน (บาท)</label>
+                                        <label htmlFor="filter-min-amount" className="text-xs font-semibold text-muted-foreground">ช่วงยอดเติมเงิน (บาท)</label>
                                         <div className="flex items-center gap-2">
                                             <input
+                                                id="filter-min-amount"
                                                 type="number"
                                                 value={minAmount}
                                                 onChange={e => setMinAmount(e.target.value)}
@@ -1625,6 +1635,7 @@ export default function BalancePage() {
                                             />
                                             <span className="text-muted-foreground text-xs font-medium shrink-0">ถึง</span>
                                             <input
+                                                id="filter-max-amount"
                                                 type="number"
                                                 value={maxAmount}
                                                 onChange={e => setMaxAmount(e.target.value)}
@@ -1656,7 +1667,7 @@ export default function BalancePage() {
                                             </td>
                                         </tr>
                                     ) : paginatedHistory.map((tx, i) => (
-                                        <tr key={i} className="hover:bg-muted/10 transition-colors">
+                                        <tr key={tx.id || tx.reference_id || i} className="hover:bg-muted/10 transition-colors">
                                             <td className="py-3.5 whitespace-nowrap">
                                                 <p className="text-xs text-foreground font-medium">{new Date(tx.created_at).toLocaleDateString('th-TH')}</p>
                                                 <p className="text-[10px] text-muted-foreground">{new Date(tx.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.</p>
@@ -1673,7 +1684,7 @@ export default function BalancePage() {
                                                     <span className="text-foreground">{tx.method?.name ?? '-'}</span>
                                                 </span>
                                             </td>
-                                            <td className="py-3.5 text-right font-semibold text-foreground whitespace-nowrap">฿{parseFloat(tx.amount).toFixed(2)}</td>
+                                            <td className="py-3.5 text-right font-semibold text-foreground whitespace-nowrap">฿{Number.parseFloat(tx.amount).toFixed(2)}</td>
                                             <td className="py-3.5 text-right whitespace-nowrap">
                                                 <span className={cn(
                                                     "px-2.5 py-0.5 rounded-full text-[10px] font-bold inline-block",

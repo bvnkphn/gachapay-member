@@ -41,12 +41,12 @@ export default function AccountPage() {
     const router = useRouter();
     const { user, logout } = useAuth();
     const { t } = useLanguage();
-    const { open } = useSidebar();
+
 
     const [profile, setProfile] = useState<ProfileData | null>(null);
     const [loyalty, setLoyalty] = useState<LoyaltyData | null>(null);
-    const [balance, setBalance] = useState<BalanceData | null>(null);
-    const [orders, setOrders] = useState<RecentOrder[]>([]);
+    const [, setBalance] = useState<BalanceData | null>(null);
+    const [, setOrders] = useState<RecentOrder[]>([]);
     const [loading, setLoading] = useState(true);
 
     // Profile form states
@@ -334,7 +334,7 @@ export default function AccountPage() {
     const currentPoints = loyalty?.current_points ?? 0;
     const nextThreshold = loyalty?.next_tier_threshold ?? currentPoints;
     const progress = nextThreshold > 0 ? Math.min((currentPoints / nextThreshold) * 100, 100) : 100;
-    const profileAccent = "#38bdf8";
+
     const expRemaining = Math.max(nextThreshold - currentPoints, 0);
 
     const districtOptions = province ? THAI_ADDRESSES.find(p => p.name === province)?.amphure ?? [] : [];
@@ -541,8 +541,9 @@ export default function AccountPage() {
                                         <AccordionContent>
                                             <div className="space-y-6 rounded-2xl border border-border/50 bg-muted/50 p-5">
                                                 <div className="space-y-1.5">
-                                                    <label className="text-xs font-semibold text-muted-foreground">Email</label>
+                                                    <label htmlFor="account-email" className="text-xs font-semibold text-muted-foreground">Email</label>
                                                     <Input
+                                                        id="account-email"
                                                         type="email"
                                                         value={profile?.email ?? user?.email ?? ""}
                                                         disabled
@@ -566,8 +567,9 @@ export default function AccountPage() {
                                                 {showEmailFields && (
                                                     <div className="space-y-4">
                                                         <div className="space-y-1.5">
-                                                            <label className="text-xs font-semibold text-muted-foreground">อีเมลใหม่</label>
+                                                            <label htmlFor="new-email" className="text-xs font-semibold text-muted-foreground">อีเมลใหม่</label>
                                                             <Input
+                                                                id="new-email"
                                                                 type="email"
                                                                 value={newEmail}
                                                                 onChange={(e) => setNewEmail(e.target.value)}
@@ -595,8 +597,9 @@ export default function AccountPage() {
                                                 )}
 
                                                 <div className="space-y-1.5">
-                                                    <label className="text-xs font-semibold text-muted-foreground">รหัสผ่าน</label>
+                                                    <label htmlFor="account-password" className="text-xs font-semibold text-muted-foreground">รหัสผ่าน</label>
                                                     <Input
+                                                        id="account-password"
                                                         type="password"
                                                         value="password"
                                                         disabled
@@ -623,9 +626,10 @@ export default function AccountPage() {
                                                     <div className="space-y-4 rounded-2xl border border-border/50 bg-muted/30 p-4">
                                                         <div className="space-y-4">
                                                             <div className="space-y-1.5">
-                                                                <label className="text-[11px] font-semibold text-muted-foreground">รหัสผ่านปัจจุบัน</label>
+                                                                <label htmlFor="current-password" className="text-[11px] font-semibold text-muted-foreground">รหัสผ่านปัจจุบัน</label>
                                                                 <div className="relative">
                                                                     <Input
+                                                                        id="current-password"
                                                                         type={showCurrentPassword ? "text" : "password"}
                                                                         placeholder="••••••••"
                                                                         value={currentPassword}
@@ -642,9 +646,10 @@ export default function AccountPage() {
                                                                 </div>
                                                             </div>
                                                             <div className="space-y-1.5">
-                                                                <label className="text-[11px] font-semibold text-muted-foreground">รหัสผ่านใหม่</label>
+                                                                <label htmlFor="new-password" className="text-[11px] font-semibold text-muted-foreground">รหัสผ่านใหม่</label>
                                                                 <div className="relative">
                                                                     <Input
+                                                                        id="new-password"
                                                                         type={showNewPassword ? "text" : "password"}
                                                                         placeholder="••••••••"
                                                                         value={newPassword}
@@ -661,9 +666,10 @@ export default function AccountPage() {
                                                                 </div>
                                                             </div>
                                                             <div className="space-y-1.5">
-                                                                <label className="text-[11px] font-semibold text-muted-foreground">ยืนยันรหัสผ่านใหม่</label>
+                                                                <label htmlFor="confirm-password" className="text-[11px] font-semibold text-muted-foreground">ยืนยันรหัสผ่านใหม่</label>
                                                                 <div className="relative">
                                                                     <Input
+                                                                        id="confirm-password"
                                                                         type={showConfirmPassword ? "text" : "password"}
                                                                         placeholder="••••••••"
                                                                         value={confirmPassword}
@@ -713,8 +719,9 @@ export default function AccountPage() {
                                 {/* Name Fields */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-muted-foreground">ชื่อ</label>
+                                        <label htmlFor="first-name" className="text-xs font-semibold text-muted-foreground">ชื่อ</label>
                                         <Input
+                                            id="first-name"
                                             type="text"
                                             value={firstName}
                                             onChange={(e) => setFirstName(e.target.value)}
@@ -727,8 +734,9 @@ export default function AccountPage() {
                                         />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-muted-foreground">นามสกุล</label>
+                                        <label htmlFor="last-name" className="text-xs font-semibold text-muted-foreground">นามสกุล</label>
                                         <Input
+                                            id="last-name"
                                             type="text"
                                             value={lastName}
                                             onChange={(e) => setLastName(e.target.value)}
@@ -748,8 +756,9 @@ export default function AccountPage() {
 
                                 {/* Phone Number Field */}
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-muted-foreground">เบอร์โทรศัพท์</label>
+                                    <label htmlFor="phone" className="text-xs font-semibold text-muted-foreground">เบอร์โทรศัพท์</label>
                                     <Input
+                                        id="phone"
                                         type="tel"
                                         value={phone}
                                         onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
@@ -768,8 +777,9 @@ export default function AccountPage() {
 
                                 {/* Billing Address Fields */}
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-semibold text-muted-foreground">ที่อยู่</label>
+                                    <label htmlFor="address" className="text-xs font-semibold text-muted-foreground">ที่อยู่</label>
                                     <Input
+                                        id="address"
                                         type="text"
                                         value={addressLine1}
                                         onChange={(e) => setAddressLine1(e.target.value)}
@@ -783,8 +793,9 @@ export default function AccountPage() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-semibold text-muted-foreground">จังหวัด</label>
+                                            <label htmlFor="province" className="text-xs font-semibold text-muted-foreground">จังหวัด</label>
                                             <select
+                                                id="province"
                                                 value={province}
                                                 onChange={(e) => {
                                                     setProvince(e.target.value);
@@ -807,8 +818,9 @@ export default function AccountPage() {
                                             </select>
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-semibold text-muted-foreground">อำเภอ/เขต</label>
+                                            <label htmlFor="district" className="text-xs font-semibold text-muted-foreground">อำเภอ/เขต</label>
                                             <select
+                                                id="district"
                                                 value={district}
                                                 onChange={(e) => {
                                                     setDistrict(e.target.value);
@@ -830,8 +842,9 @@ export default function AccountPage() {
                                             </select>
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-semibold text-muted-foreground">ตำบล/แขวง</label>
+                                            <label htmlFor="subdistrict" className="text-xs font-semibold text-muted-foreground">ตำบล/แขวง</label>
                                             <select
+                                                id="subdistrict"
                                                 value={subDistrict}
                                                 onChange={(e) => {
                                                     const val = e.target.value;
@@ -854,8 +867,9 @@ export default function AccountPage() {
                                             </select>
                                         </div>
                                         <div className="space-y-1.5">
-                                            <label className="text-xs font-semibold text-muted-foreground">รหัสไปรษณีย์</label>
+                                            <label htmlFor="postal-code" className="text-xs font-semibold text-muted-foreground">รหัสไปรษณีย์</label>
                                             <select
+                                                id="postal-code"
                                                 value={postalCode}
                                                 onChange={(e) => setPostalCode(e.target.value)}
                                                 disabled={!isEditingProfile || !subDistrict}
@@ -946,10 +960,11 @@ export default function AccountPage() {
 
                                 <div className="space-y-3">
                                     <div>
-                                        <label className="text-sm font-medium text-foreground mb-1.5 block">
+                                        <label htmlFor="delete-confirm-phrase" className="text-sm font-medium text-foreground mb-1.5 block">
                                             พิมพ์ <span className="font-mono font-semibold text-red-600 dark:text-red-400">ลบข้อมูล</span> เพื่อยืนยัน
                                         </label>
                                         <Input
+                                            id="delete-confirm-phrase"
                                             type="text"
                                             value={deleteConfirmPhrase}
                                             onChange={(e) => setDeleteConfirmPhrase(e.target.value)}
@@ -959,10 +974,11 @@ export default function AccountPage() {
                                     </div>
 
                                     <div>
-                                        <label className="text-sm font-medium text-foreground mb-1.5 block">
+                                        <label htmlFor="delete-password" className="text-sm font-medium text-foreground mb-1.5 block">
                                             รหัสผ่าน
                                         </label>
                                         <Input
+                                            id="delete-password"
                                             type="password"
                                             value={deletePassword}
                                             onChange={(e) => setDeletePassword(e.target.value)}

@@ -115,7 +115,7 @@ const SIDEBAR_ITEMS = [
 export default function TicketsPage() {
     const router = useRouter();
     const { lang } = useLanguage();
-    const { open } = useSidebar();
+    
     const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
     const sorted = [...MOCK_TICKETS].sort((a, b) => {
