@@ -433,8 +433,67 @@ export function Header() {
             saveSearchQuery(searchQuery.trim());
             router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
             setSearchQuery("");
-            setSearchOpen(false);
         }
+    };
+
+    // Bookmark rendering helper to avoid nested ternaries and reduce complexity
+    const renderBookmarkContent = () => {
+        if (!user) {
+            return (
+                <div className="px-3 py-4 text-center text-xs text-muted-foreground whitespace-pre-line">
+                    {t.headerLoginRequired}
+                </div>
+            );
+        }
+        if (bookmarks.length > 0) {
+            return bookmarks.map((game) => (
+                <DropdownMenuItem key={game.slug} asChild>
+                    <Link
+                        href={`/game/${game.slug}`}
+                        className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/50 rounded-lg mx-1"
+                    >
+                        <img src={game.image} alt={game.name} className="w-7 h-7 rounded-md object-cover" />
+                        <div className="flex flex-col min-w-0">
+                            <span className="text-xs font-semibold text-foreground truncate">{game.name}</span>
+                            <span className="text-[8px] text-muted-foreground uppercase">{game.category}</span>
+                        </div>
+                    </Link>
+                </DropdownMenuItem>
+            ));
+        }
+        return (
+            <div className="px-3 py-4 text-center text-xs text-muted-foreground whitespace-pre-line">
+                {t.headerNoPinned}
+            </div>
+        );
+    };
+
+    // Gacha button helpers to avoid nested ternaries
+    let spinButtonClassName = "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 border-zinc-300 dark:border-zinc-700 cursor-not-allowed";
+    if (isSpinning) {
+        spinButtonClassName = "bg-muted text-muted-foreground scale-95";
+    } else if (availableSpins > 0) {
+        spinButtonClassName = "bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-white font-black cursor-pointer scale-100 hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.5)]";
+    }
+
+    const renderSpinButtonContent = () => {
+        if (isSpinning) {
+            return <span className="text-[9px] font-black tracking-tighter">SPINNING</span>;
+        }
+        if (availableSpins > 0) {
+            return (
+                <>
+                    <span className="text-[11px] font-black tracking-wider drop-shadow-sm leading-none">SPIN</span>
+                    <span className="text-[7px] font-bold text-amber-100 mt-0.5">หมุนเลย!</span>
+                </>
+            );
+        }
+        return (
+            <>
+                <span className="text-[10px] font-bold leading-none">LOCK</span>
+                <span className="text-[6px] text-zinc-500 mt-0.5">สะสมยอด</span>
+            </>
+        );
     };
 
     return (
@@ -515,9 +574,10 @@ export function Header() {
                                                     </div>
                                                     <div className="mt-1 space-y-0.5">
                                                         {searchHistory.map((query) => (
-                                                            <div
+                                                            <button
                                                                 key={query}
-                                                                className="group w-full px-3 py-2 text-left text-xs hover:bg-muted/50 text-foreground font-medium flex items-center justify-between rounded-lg transition-colors cursor-pointer"
+                                                                type="button"
+                                                                className="group w-full px-3 py-2 text-left text-xs hover:bg-muted/50 text-foreground font-medium flex items-center justify-between rounded-lg transition-colors cursor-pointer border-none bg-transparent"
                                                                 onClick={() => {
                                                                     setSearchQuery(query);
                                                                     saveSearchQuery(query);
@@ -536,7 +596,7 @@ export function Header() {
                                                                 >
                                                                     <X className="w-3 h-3" />
                                                                 </button>
-                                                            </div>
+                                                            </button>
                                                         ))}
                                                     </div>
                                                 </div>
@@ -568,30 +628,7 @@ export function Header() {
                                         เกมที่ปักหมุดไว้
                                     </div>
                                     <DropdownMenuSeparator className="my-1" />
-                                    {!user ? (
-                                        <div className="px-3 py-4 text-center text-xs text-muted-foreground">
-                                            กรุณาเข้าสู่ระบบก่อน<br/>เพื่อใช้งานฟีเจอร์ปักหมุด
-                                        </div>
-                                    ) : bookmarks.length > 0 ? (
-                                        bookmarks.map((game) => (
-                                            <DropdownMenuItem key={game.slug} asChild>
-                                                <Link
-                                                    href={`/game/${game.slug}`}
-                                                    className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/50 rounded-lg mx-1"
-                                                >
-                                                    <img src={game.image} alt={game.name} className="w-7 h-7 rounded-md object-cover" />
-                                                    <div className="flex flex-col min-w-0">
-                                                        <span className="text-xs font-semibold text-foreground truncate">{game.name}</span>
-                                                        <span className="text-[8px] text-muted-foreground uppercase">{game.category}</span>
-                                                    </div>
-                                                </Link>
-                                            </DropdownMenuItem>
-                                        ))
-                                    ) : (
-                                        <div className="px-3 py-4 text-center text-xs text-muted-foreground">
-                                            ยังไม่มีเกมที่ปักหมุดไว้<br/>ปักหมุดที่หน้ารายละเอียดเกม
-                                        </div>
-                                    )}
+                                    {renderBookmarkContent()}
                                 </DropdownMenuContent>
                             </DropdownMenu>
                         </div>
@@ -620,30 +657,7 @@ export function Header() {
                                         {t.headerPinnedGames}
                                     </div>
                                     <DropdownMenuSeparator className="my-1" />
-                                    {!user ? (
-                                        <div className="px-3 py-4 text-center text-xs text-muted-foreground whitespace-pre-line">
-                                            {t.headerLoginRequired}
-                                        </div>
-                                    ) : bookmarks.length > 0 ? (
-                                        bookmarks.map((game) => (
-                                            <DropdownMenuItem key={game.slug} asChild>
-                                                <Link
-                                                    href={`/game/${game.slug}`}
-                                                    className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-muted/50 rounded-lg mx-1"
-                                                >
-                                                    <img src={game.image} alt={game.name} className="w-7 h-7 rounded-md object-cover" />
-                                                    <div className="flex flex-col min-w-0">
-                                                        <span className="text-xs font-semibold text-foreground truncate">{game.name}</span>
-                                                        <span className="text-[8px] text-muted-foreground uppercase">{game.category}</span>
-                                                    </div>
-                                                </Link>
-                                            </DropdownMenuItem>
-                                        ))
-                                    ) : (
-                                        <div className="px-3 py-4 text-center text-xs text-muted-foreground whitespace-pre-line">
-                                            {t.headerNoPinned}
-                                        </div>
-                                    )}
+                                    {renderBookmarkContent()}
                                 </DropdownMenuContent>
                             </DropdownMenu>
 
@@ -965,9 +979,10 @@ export function Header() {
                                                 </div>
                                                 <div className="mt-1 space-y-0.5">
                                                     {searchHistory.map((query) => (
-                                                        <div
+                                                        <button
                                                             key={query}
-                                                            className="group w-full px-3 py-2 text-left text-xs hover:bg-muted/50 text-foreground font-medium flex items-center justify-between rounded-lg transition-colors cursor-pointer"
+                                                            type="button"
+                                                            className="group w-full px-3 py-2 text-left text-xs hover:bg-muted/50 text-foreground font-medium flex items-center justify-between rounded-lg transition-colors cursor-pointer border-none bg-transparent"
                                                             onClick={() => {
                                                                 setSearchQuery(query);
                                                                 saveSearchQuery(query);
@@ -987,7 +1002,7 @@ export function Header() {
                                                             >
                                                                 <X className="w-3 h-3" />
                                                             </button>
-                                                        </div>
+                                                        </button>
                                                     ))}
                                                 </div>
                                             </div>
@@ -1068,14 +1083,15 @@ export function Header() {
                                     </div>
 
                                     {/* The Wheel */}
-                                    <div
+                                    <button
+                                        type="button"
                                         onClick={() => {
                                             if (!isSpinning && availableSpins > 0) {
                                                 startSpin();
                                             }
                                         }}
                                         className={cn(
-                                            "relative w-64 h-64 sm:w-72 sm:h-72 rounded-full border-4 border-foreground/10 shadow-2xl overflow-hidden select-none transition-all duration-300",
+                                            "relative w-64 h-64 sm:w-72 sm:h-72 rounded-full border-4 border-foreground/10 shadow-2xl overflow-hidden select-none transition-all duration-300 p-0 bg-transparent block border-none outline-none",
                                             !isSpinning && availableSpins > 0
                                                 ? "cursor-pointer hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(20,184,166,0.25)] active:scale-[0.99]"
                                                 : ""
@@ -1114,30 +1130,13 @@ export function Header() {
                                                     startSpin();
                                                 }}
                                                 className={cn(
-                                                    "w-16 h-16 rounded-full border-4 border-background shadow-xl flex flex-col items-center justify-center z-30 select-none transition-all duration-300 pointer-events-auto",
-                                                    isSpinning
-                                                        ? "bg-muted text-muted-foreground scale-95"
-                                                        : availableSpins > 0
-                                                            ? "bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-white font-black cursor-pointer scale-100 hover:scale-105 active:scale-95 shadow-[0_0_15px_rgba(245,158,11,0.5)]"
-                                                            : "bg-zinc-200 dark:bg-zinc-800 text-zinc-400 dark:text-zinc-500 border-zinc-300 dark:border-zinc-700 cursor-not-allowed"
+                                                    spinButtonClassName
                                                 )}
                                             >
-                                                {isSpinning ? (
-                                                    <span className="text-[9px] font-black tracking-tighter">SPINNING</span>
-                                                ) : availableSpins > 0 ? (
-                                                    <>
-                                                        <span className="text-[11px] font-black tracking-wider drop-shadow-sm leading-none">SPIN</span>
-                                                        <span className="text-[7px] font-bold text-amber-100 mt-0.5">หมุนเลย!</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <span className="text-[10px] font-bold leading-none">LOCK</span>
-                                                        <span className="text-[6px] text-zinc-500 mt-0.5">สะสมยอด</span>
-                                                    </>
-                                                )}
+                                                {renderSpinButtonContent()}
                                             </button>
                                         </div>
-                                    </div>
+                                    </button>
                                 </div>
 
                                 {/* Spin Stats & Progress Bar (No Big Button below!) */}
