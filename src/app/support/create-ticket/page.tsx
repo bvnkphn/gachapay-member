@@ -293,7 +293,7 @@ function CreateTicketForm({
                                     <SelectContent>
                                         {Object.entries(t.problemTypes).map(([value, label]) => (
                                             <SelectItem key={value} value={value}>
-                                                {label}
+                                                {label as React.ReactNode}
                                             </SelectItem>
                                         ))}
                                     </SelectContent>

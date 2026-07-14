@@ -375,7 +375,7 @@ interface ChatMessagesAreaProps {
     messages: ChatMessage[];
     formatTime: (date: Date) => string;
     setLightboxSrc: (src: string) => void;
-    chatEndRef: React.RefObject<HTMLDivElement | null>;
+    chatEndRef: React.RefObject<HTMLDivElement>;
 }
 
 function ChatMessagesArea({ messages, formatTime, setLightboxSrc, chatEndRef }: ChatMessagesAreaProps) {
@@ -454,7 +454,7 @@ interface ChatInputAreaProps {
     fileError: string | null;
     setAttachFile: (file: File | null) => void;
     setAttachPreview: (preview: string | null) => void;
-    fileInputRef: React.RefObject<HTMLInputElement | null>;
+    fileInputRef: React.RefObject<HTMLInputElement>;
     handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     message: string;
     setMessage: (msg: string) => void;
