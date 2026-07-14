@@ -19,7 +19,12 @@ export default function PaymentProcessing({
     const [timeElapsed, setTimeElapsed] = useState(0);
     const [status, setStatus] = useState<'checking' | 'processing' | 'timeout'>('checking');
 
-    const methodLabel = paymentMethod === 'promptpay' ? 'PromptPay' : paymentMethod === 'truemoney' ? 'TrueMoney' : paymentMethod;
+    let methodLabel = paymentMethod;
+    if (paymentMethod === 'promptpay') {
+        methodLabel = 'PromptPay';
+    } else if (paymentMethod === 'truemoney') {
+        methodLabel = 'TrueMoney';
+    }
 
     // Poll for payment status
     useEffect(() => {

@@ -305,21 +305,21 @@ export default function RegisterPage() {
                                     className="text-sm text-muted-foreground leading-relaxed select-none cursor-pointer"
                                 >
                                     ฉันยอมรับ{" "}
-                                    <span 
-                                        role="button"
+                                    <button 
+                                        type="button"
                                         onClick={() => handleOpenModal("terms")} 
-                                        className="text-primary hover:underline font-medium inline"
+                                        className="text-primary hover:underline font-medium inline bg-transparent p-0 border-none outline-none cursor-pointer"
                                     >
                                         ข้อกำหนดในการให้บริการ
-                                    </span>{" "}
+                                    </button>{" "}
                                     และ{" "}
-                                    <span 
-                                        role="button"
+                                    <button 
+                                        type="button"
                                         onClick={() => handleOpenModal("privacy")} 
-                                        className="text-primary hover:underline font-medium inline"
+                                        className="text-primary hover:underline font-medium inline bg-transparent p-0 border-none outline-none cursor-pointer"
                                     >
                                         นโยบายความเป็นส่วนตัว
-                                    </span>
+                                    </button>
                                 </label>
                             </div>
 

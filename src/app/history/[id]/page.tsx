@@ -52,6 +52,21 @@ export default function OrderDetailPage() {
     const isCompleted = order.is_completed;
     const isFailed = order.status_label === "PARTIAL_PAYMENT" || order.status_label === "CANCELLED";
 
+    const getPaymentAbbreviation = (method: string | undefined): string => {
+        if (!method) return '?';
+        const lower = method.toLowerCase();
+        if (lower === 'promptpay') return 'PP';
+        if (lower === 'truemoney') return 'TW';
+        return method.slice(0, 2).toUpperCase();
+    };
+
+    let statusColorClass = "text-yellow-400";
+    if (isCompleted) {
+        statusColorClass = "text-green-400";
+    } else if (isFailed) {
+        statusColorClass = "text-red-400";
+    }
+
     const handleCreateTicket = () => {
         router.push(`/support/create-ticket?orderId=${order.order_id}`);
     };
@@ -126,9 +141,7 @@ export default function OrderDetailPage() {
                                 </h3>
                                 <div className="flex items-center gap-3 p-3 rounded-xl border border-border/30">
                                     <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0 bg-primary">
-                                        {order.payment.method === 'promptpay' ? 'PP' :
-                                            order.payment.method === 'truemoney' ? 'TW' :
-                                                order.payment.method?.slice(0, 2).toUpperCase() ?? '?'}
+                                        {getPaymentAbbreviation(order.payment.method)}
                                     </div>
                                     <div>
                                         <p className="text-sm font-semibold capitalize">{order.payment.method ?? '-'}</p>
@@ -195,7 +208,7 @@ export default function OrderDetailPage() {
                             <span>฿{Number.parseFloat(order.product.total_price).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between font-bold text-base border-t border-border/30 pt-3">
-                            <span className={isCompleted ? "text-green-400" : isFailed ? "text-red-400" : "text-yellow-400"}>
+                            <span className={statusColorClass}>
                                 {isCompleted ? t.orderNetTotalSuccess : t.orderNetTotal}
                             </span>
                             <span className={isCompleted ? "text-green-400" : "text-foreground"}>

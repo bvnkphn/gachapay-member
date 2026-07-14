@@ -354,7 +354,7 @@ export default function GameTopupPage() {
         }
 
         // Basic email validation
-        if (!loggedIn && !formDataObj.email.match(/^\S+@\S+\.\S+$/)) {
+        if (!loggedIn && !formDataObj.email.match(/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/)) {
             return { valid: false, error: "กรุณากรอกอีเมลให้ถูกต้องตามรูปแบบ" };
         }
 

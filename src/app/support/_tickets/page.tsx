@@ -123,6 +123,10 @@ export default function TicketsPage() {
         return sortOrder === "newest" ? -diff : diff;
     });
 
+    const sortLabel = lang === "th"
+        ? (sortOrder === "newest" ? "ใหม่สุด" : "เก่าสุด")
+        : (sortOrder === "newest" ? "Newest" : "Oldest");
+
     const formatDate = (date: Date) => {
         return date.toLocaleDateString(lang === "th" ? "th-TH" : "en-GB", {
             day: "numeric",
@@ -158,9 +162,7 @@ export default function TicketsPage() {
                                     ) : (
                                         <SortAsc className="w-3.5 h-3.5" />
                                     )}
-                                    {lang === "th"
-                                        ? sortOrder === "newest" ? "ใหม่สุด" : "เก่าสุด"
-                                        : sortOrder === "newest" ? "Newest" : "Oldest"}
+                                    {sortLabel}
                                 </Button>
                                 <Button
                                     size="sm"

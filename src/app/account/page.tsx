@@ -422,97 +422,17 @@ export default function AccountPage() {
                 <div className="grid grid-cols-1 gap-6">
 
                     {/* VIP Status Card */}
-                    <div className="space-y-6">
-                        <div
-                            onClick={() => router.push("/vip-tier")}
-                            className="w-full text-left bg-card rounded-3xl border border-border/50 hover:border-primary/45 transition-all group overflow-hidden relative shadow-md hover:shadow-lg hover:-translate-y-0.5 duration-300 pb-8 cursor-pointer"
-                        >
-                            {/* Card Cover Header Background */}
-                            <div className="w-full h-32 bg-gradient-to-r from-cyan-500/20 via-[#0ea5e9]/20 to-fuchsia-500/20 relative" />
-
-                            <div className="px-6 flex flex-col items-center text-center">
-                                {/* Avatar protruding from top of content */}
-                                <div className="w-28 h-28 rounded-full bg-gradient-to-br from-cyan-500 via-[#0ea5e9] to-fuchsia-500 flex items-center justify-center shadow-lg border-4 border-card -mt-14 z-10 select-none">
-                                    <span className="text-3xl font-extrabold text-white">{firstName?.charAt(0).toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "U"}</span>
-                                </div>
-
-                                <div className="mt-3">
-                                    <div className="flex items-center justify-center gap-1.5 mb-1">
-                                        <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground">โปรไฟล์</p>
-                                    </div>
-                                    <p className="text-xl font-black text-foreground truncate">{profile?.display_name || `${firstName} ${lastName}`.trim() || user?.email}</p>
-                                    {user?.email && <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>}
-                                    {user?.id && (
-                                        <div 
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                navigator.clipboard.writeText(user.id);
-                                                toast.success("คัดลอก ID ผู้ใช้แล้ว!");
-                                            }}
-                                            className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/60 hover:text-foreground bg-muted/20 hover:bg-muted/40 transition-all px-2.5 py-0.5 rounded-full border border-border/30 cursor-pointer select-all"
-                                            title="คลิกเพื่อคัดลอก ID"
-                                        >
-                                            ID: {user.id}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="flex items-center gap-2 mt-4">
-                                    <div className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs border"
-                                        style={{
-                                            background: `${tierInfo.color}15`,
-                                            borderColor: `${tierInfo.color}30`,
-                                            color: tierInfo.color
-                                        }}>
-                                        <Crown className="w-4 h-4 animate-pulse" style={{ color: tierInfo.color }} />
-                                        <span className="font-extrabold tracking-wider">{tierInfo.name}</span>
-                                    </div>
-
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            router.push("/vip-tier");
-                                        }}
-                                        className="p-1.5 rounded-full border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-sm group/help relative"
-                                        aria-label="VIP privileges"
-                                    >
-                                        <HelpCircle className="w-4 h-4" />
-                                        <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 p-1.5 bg-[#18181b] text-white text-[9px] rounded-md border border-white/10 shadow-md opacity-0 pointer-events-none group-hover/help:opacity-100 transition-opacity z-50 text-center font-bold">
-                                            ดูสิทธิพิเศษระดับ
-                                        </span>
-                                    </button>
-                                </div>
-
-                                {/* Wide progress bar (no container box) */}
-                                <div className="w-full max-w-2xl mt-8 space-y-3 px-4">
-                                    <div className="flex items-center justify-between text-sm">
-                                        <div className="text-left">
-                                            <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">ความคืบหน้า</p>
-                                            <p className="text-xs font-bold text-foreground">VIP Progress</p>
-                                        </div>
-                                        <span className="text-sm font-extrabold text-primary">{Math.round(progress)}%</span>
-                                    </div>
-
-                                    <div className="h-3 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden p-0.5 border border-border/40">
-                                        <div
-                                            className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-fuchsia-500 transition-all duration-1000 shadow-[0_0_12px_rgba(6,182,212,0.4)]"
-                                            style={{ width: `${progress}%` }}
-                                        />
-                                    </div>
-
-                                    <div className="flex justify-between text-xs text-muted-foreground font-semibold pt-1">
-                                        <span>{currentPoints.toLocaleString()} EXP ปัจจุบัน</span>
-                                        {nextThreshold > currentPoints ? (
-                                            <span className="text-foreground">ต้องการอีก {expRemaining.toLocaleString()} EXP เพื่อเลื่อนขั้น</span>
-                                        ) : (
-                                            <span className="text-primary font-bold">ถึงขั้นสูงสุดแล้ว</span>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+                    <VipStatusCard
+                        user={user}
+                        profile={profile}
+                        firstName={firstName}
+                        lastName={lastName}
+                        tierInfo={tierInfo}
+                        currentPoints={currentPoints}
+                        progress={progress}
+                        expRemaining={expRemaining}
+                        router={router}
+                    />
                     {/* Profile and Billing Settings Form */}
                     <div>
                         <div className="glass-card rounded-2xl p-8 border border-border/50">
@@ -532,190 +452,31 @@ export default function AccountPage() {
                             </div>
 
                             <form onSubmit={handleSaveProfile} className="space-y-6">
-                                {/* Email Field (Read-only) */}
-                                <Accordion type="single" collapsible className="space-y-4">
-                                    <AccordionItem value="account-security">
-                                        <AccordionTrigger className="text-left text-sm text-foreground font-semibold">
-                                            ข้อมูลล็อกอินและความปลอดภัย
-                                        </AccordionTrigger>
-                                        <AccordionContent>
-                                            <div className="space-y-6 rounded-2xl border border-border/50 bg-muted/50 p-5">
-                                                <div className="space-y-1.5">
-                                                    <label htmlFor="account-email" className="text-xs font-semibold text-muted-foreground">Email</label>
-                                                    <Input
-                                                        id="account-email"
-                                                        type="email"
-                                                        value={profile?.email ?? user?.email ?? ""}
-                                                        disabled
-                                                        className="bg-muted/50 border-border/30 text-muted-foreground cursor-not-allowed select-none"
-                                                    />
-                                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                                                        <p className="text-[10px] text-muted-foreground">อีเมลประจำบัญชีไม่สามารถแก้ไขได้</p>
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={handleStartEmailChange}
-                                                            className="inline-flex items-center gap-2"
-                                                        >
-                                                            <Mail className="w-4 h-4" />
-                                                            เปลี่ยนอีเมล
-                                                        </Button>
-                                                    </div>
-                                                </div>
-
-                                                {showEmailFields && (
-                                                    <div className="space-y-4">
-                                                        <div className="space-y-1.5">
-                                                            <label htmlFor="new-email" className="text-xs font-semibold text-muted-foreground">อีเมลใหม่</label>
-                                                            <Input
-                                                                id="new-email"
-                                                                type="email"
-                                                                value={newEmail}
-                                                                onChange={(e) => setNewEmail(e.target.value)}
-                                                                placeholder="กรอกอีเมลใหม่"
-                                                                className="bg-muted/30 border-border/50 focus:border-primary"
-                                                            />
-                                                        </div>
-                                                        <div className="flex flex-col sm:flex-row gap-2">
-                                                            <Button
-                                                                type="button"
-                                                                onClick={handleSaveEmail}
-                                                            >
-                                                                บันทึกอีเมล
-                                                            </Button>
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={handleCancelEmailChange}
-                                                            >
-                                                                ยกเลิก
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                <div className="space-y-1.5">
-                                                    <label htmlFor="account-password" className="text-xs font-semibold text-muted-foreground">รหัสผ่าน</label>
-                                                    <Input
-                                                        id="account-password"
-                                                        type="password"
-                                                        value="password"
-                                                        disabled
-                                                        className="bg-muted/50 border-border/30 text-muted-foreground cursor-not-allowed select-none"
-                                                        placeholder="********"
-                                                    />
-                                                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                                                        <p className="text-[10px] text-muted-foreground">รหัสผ่านถูกล็อคและไม่สามารถแก้ไขโดยตรงได้</p>
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            size="sm"
-                                                            onClick={() => setShowPasswordFields(true)}
-                                                            disabled={showPasswordFields}
-                                                            className={cn("inline-flex items-center gap-2", !showPasswordFields && "self-start")}
-                                                        >
-                                                            <Lock className="w-4 h-4" />
-                                                            เปลี่ยนรหัสผ่าน
-                                                        </Button>
-                                                    </div>
-                                                </div>
-
-                                                {showPasswordFields && (
-                                                    <div className="space-y-4 rounded-2xl border border-border/50 bg-muted/30 p-4">
-                                                        <div className="space-y-4">
-                                                            <div className="space-y-1.5">
-                                                                <label htmlFor="current-password" className="text-[11px] font-semibold text-muted-foreground">รหัสผ่านปัจจุบัน</label>
-                                                                <div className="relative">
-                                                                    <Input
-                                                                        id="current-password"
-                                                                        type={showCurrentPassword ? "text" : "password"}
-                                                                        placeholder="••••••••"
-                                                                        value={currentPassword}
-                                                                        onChange={(e) => setCurrentPassword(e.target.value)}
-                                                                        className="bg-muted/30 border-border/50 focus:border-primary pr-10"
-                                                                    />
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setShowCurrentPassword((prev) => !prev)}
-                                                                        className="absolute inset-y-0 right-2 flex items-center text-muted-foreground"
-                                                                    >
-                                                                        {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                            <div className="space-y-1.5">
-                                                                <label htmlFor="new-password" className="text-[11px] font-semibold text-muted-foreground">รหัสผ่านใหม่</label>
-                                                                <div className="relative">
-                                                                    <Input
-                                                                        id="new-password"
-                                                                        type={showNewPassword ? "text" : "password"}
-                                                                        placeholder="••••••••"
-                                                                        value={newPassword}
-                                                                        onChange={(e) => setNewPassword(e.target.value)}
-                                                                        className="bg-muted/30 border-border/50 focus:border-primary pr-10"
-                                                                    />
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setShowNewPassword((prev) => !prev)}
-                                                                        className="absolute inset-y-0 right-2 flex items-center text-muted-foreground"
-                                                                    >
-                                                                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                            <div className="space-y-1.5">
-                                                                <label htmlFor="confirm-password" className="text-[11px] font-semibold text-muted-foreground">ยืนยันรหัสผ่านใหม่</label>
-                                                                <div className="relative">
-                                                                    <Input
-                                                                        id="confirm-password"
-                                                                        type={showConfirmPassword ? "text" : "password"}
-                                                                        placeholder="••••••••"
-                                                                        value={confirmPassword}
-                                                                        onChange={(e) => setConfirmPassword(e.target.value)}
-                                                                        className="bg-muted/30 border-border/50 focus:border-primary pr-10"
-                                                                    />
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setShowConfirmPassword((prev) => !prev)}
-                                                                        className="absolute inset-y-0 right-2 flex items-center text-muted-foreground"
-                                                                    >
-                                                                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                                                    </button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                        <div className="grid grid-cols-1 gap-2 text-xs mt-3">
-                                                            <PasswordCheck checked={passwordChecks.length} text="อย่างน้อย 8 ตัวอักษร" />
-                                                            <PasswordCheck checked={passwordChecks.uppercase} text="ตัวอักษรพิมพ์ใหญ่อย่างน้อย 1 ตัว" />
-                                                            <PasswordCheck checked={passwordChecks.lowercase} text="ตัวอักษรพิมพ์เล็กอย่างน้อย 1 ตัว" />
-                                                            <PasswordCheck checked={passwordChecks.number} text="ตัวเลขอย่างน้อย 1 ตัว" />
-                                                            <PasswordCheck checked={passwordChecks.special} text="อักขระพิเศษอย่างน้อย 1 ตัว" />
-                                                            <PasswordCheck checked={passwordChecks.match} text="รหัสผ่านใหม่ตรงกันทั้งสองช่อง" />
-                                                        </div>
-                                                        <div className="flex justify-end gap-2 pt-2 border-t border-border/30">
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                size="sm"
-                                                                onClick={() => {
-                                                                    setShowPasswordFields(false);
-                                                                    setCurrentPassword("");
-                                                                    setNewPassword("");
-                                                                    setConfirmPassword("");
-                                                                }}
-                                                            >
-                                                                ยกเลิก
-                                                            </Button>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                </Accordion>
-
+                                <AccountSecuritySection
+                                    profile={profile}
+                                    user={user}
+                                    showEmailFields={showEmailFields}
+                                    newEmail={newEmail}
+                                    setNewEmail={setNewEmail}
+                                    handleSaveEmail={handleSaveEmail}
+                                    handleCancelEmailChange={handleCancelEmailChange}
+                                    handleStartEmailChange={handleStartEmailChange}
+                                    showPasswordFields={showPasswordFields}
+                                    setShowPasswordFields={setShowPasswordFields}
+                                    currentPassword={currentPassword}
+                                    setCurrentPassword={setCurrentPassword}
+                                    showCurrentPassword={showCurrentPassword}
+                                    setShowCurrentPassword={setShowCurrentPassword}
+                                    newPassword={newPassword}
+                                    setNewPassword={setNewPassword}
+                                    showNewPassword={showNewPassword}
+                                    setShowNewPassword={setShowNewPassword}
+                                    confirmPassword={confirmPassword}
+                                    setConfirmPassword={setConfirmPassword}
+                                    showConfirmPassword={showConfirmPassword}
+                                    setShowConfirmPassword={setShowConfirmPassword}
+                                    passwordChecks={passwordChecks}
+                                />
                                 {/* Name Fields */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
@@ -904,30 +665,432 @@ export default function AccountPage() {
                         </div>
                     </div>
 
-                    {/* Delete Account Section - Danger Zone */}
-                    <div className="rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 p-6">
-                        <div className="flex flex-col gap-4">
-                            <div>
-                                <h3 className="text-base font-semibold text-foreground mb-2">ปิดบัญชี</h3>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    เมื่อคุณปิดบัญชี ข้อมูลทั้งหมดของคุณจะถูกลบอย่างถาวร รวมถึงประวัติการสั่งซื้อ ยอดคงเหลือ และข้อมูลส่วนตัว การกระทำนี้ไม่สามารถย้อนกลับได้
-                                </p>
-                            </div>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setShowDeleteModal(true)}
-                                className="border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 hover:border-red-300 dark:hover:border-red-700 w-full sm:w-auto"
-                            >
-                                ปิดบัญชีของฉัน
-                            </Button>
-                        </div>
+                    <DangerZoneSection
+                        showDeleteModal={showDeleteModal}
+                        setShowDeleteModal={setShowDeleteModal}
+                        deleteConfirmPhrase={deleteConfirmPhrase}
+                        setDeleteConfirmPhrase={setDeleteConfirmPhrase}
+                        deletePassword={deletePassword}
+                        setDeletePassword={setDeletePassword}
+                        isDeleting={isDeleting}
+                        handleDeleteAccount={handleDeleteAccount}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+
+
+interface VipStatusCardProps {
+    user: any;
+    profile: any;
+    firstName: string;
+    lastName: string;
+    tierInfo: any;
+    currentPoints: number;
+    progress: number;
+    expRemaining: number;
+    router: any;
+}
+
+function VipStatusCard({
+    user,
+    profile,
+    firstName,
+    lastName,
+    tierInfo,
+    currentPoints,
+    progress,
+    expRemaining,
+    router,
+}: VipStatusCardProps) {
+    return (
+        <div className="space-y-6">
+            <div
+                role="button"
+                tabIndex={0}
+                onClick={() => router.push("/vip-tier")}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        router.push("/vip-tier");
+                    }
+                }}
+                className="w-full text-left bg-card rounded-3xl border border-border/50 hover:border-primary/45 transition-all group overflow-hidden relative shadow-md hover:shadow-lg hover:-translate-y-0.5 duration-300 pb-8 cursor-pointer"
+            >
+                <div className="w-full h-32 bg-gradient-to-r from-cyan-500/20 via-[#0ea5e9]/20 to-fuchsia-500/20 relative" />
+
+                <div className="px-6 flex flex-col items-center text-center">
+                    <div className="w-28 h-28 rounded-full bg-gradient-to-br from-cyan-500 via-[#0ea5e9] to-fuchsia-500 flex items-center justify-center shadow-lg border-4 border-card -mt-14 z-10 select-none">
+                        <span className="text-3xl font-extrabold text-white">
+                            {firstName?.charAt(0).toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "U"}
+                        </span>
                     </div>
 
+                    <div className="mt-3">
+                        <div className="flex items-center justify-center gap-1.5 mb-1">
+                            <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-muted-foreground">โปรไฟล์</p>
+                        </div>
+                        <p className="text-xl font-black text-foreground truncate">
+                            {profile?.display_name || `${firstName} ${lastName}`.trim() || user?.email}
+                        </p>
+                        {user?.email && <p className="text-xs text-muted-foreground truncate mt-0.5">{user.email}</p>}
+                        {user?.id && (
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigator.clipboard.writeText(user.id);
+                                    toast.success("คัดลอก ID ผู้ใช้แล้ว!");
+                                }}
+                                className="mt-2 inline-flex items-center gap-1.5 text-[10px] font-mono text-muted-foreground/60 hover:text-foreground bg-muted/20 hover:bg-muted/40 transition-all px-2.5 py-0.5 rounded-full border border-border/30 cursor-pointer select-all"
+                                title="คลิกเพื่อคัดลอก ID"
+                            >
+                                ID: {user.id}
+                            </button>
+                        )}
+                    </div>
+
+                    <div className="flex items-center gap-2 mt-4">
+                        <div
+                            className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs border"
+                            style={{
+                                background: `${tierInfo.color}15`,
+                                borderColor: `${tierInfo.color}30`,
+                                color: tierInfo.color,
+                            }}
+                        >
+                            <Crown className="w-4 h-4 animate-pulse" style={{ color: tierInfo.color }} />
+                            <span className="font-extrabold tracking-wider">{tierInfo.name}</span>
+                        </div>
+
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                router.push("/vip-tier");
+                            }}
+                            className="p-1.5 rounded-full border border-border/60 hover:bg-muted text-muted-foreground hover:text-foreground transition-all cursor-pointer shadow-sm group/help relative"
+                            aria-label="VIP privileges"
+                        >
+                            <HelpCircle className="w-4 h-4" />
+                            <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-32 p-1.5 bg-[#18181b] text-white text-[9px] rounded-md border border-white/10 shadow-md opacity-0 pointer-events-none group-hover/help:opacity-100 transition-opacity z-50 text-center font-bold">
+                                ดูสิทธิพิเศษระดับ
+                            </span>
+                        </button>
+                    </div>
+
+                    <div className="w-full max-w-2xl mt-8 space-y-3 px-4">
+                        <div className="flex items-center justify-between text-sm">
+                            <div className="text-left">
+                                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">ความคืบหน้า</p>
+                                <p className="text-xs font-bold text-foreground">VIP Progress</p>
+                            </div>
+                            <span className="text-sm font-extrabold text-primary">{Math.round(progress)}%</span>
+                        </div>
+
+                        <div className="h-3 rounded-full bg-black/10 dark:bg-white/10 overflow-hidden p-0.5 border border-border/40">
+                            <div
+                                className="h-full rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-fuchsia-500 transition-all duration-1000 shadow-[0_0_12px_rgba(6,182,212,0.4)]"
+                                style={{ width: `${progress}%` }}
+                            />
+                        </div>
+
+                        <div className="flex justify-between text-xs text-muted-foreground font-semibold pt-1">
+                            <span>{currentPoints.toLocaleString()} EXP ปัจจุบัน</span>
+                            {expRemaining > 0 ? (
+                                <span className="text-foreground">ต้องการอีก {expRemaining.toLocaleString()} EXP เพื่อเลื่อนขั้น</span>
+                            ) : (
+                                <span className="text-primary font-bold">ถึงขั้นสูงสุดแล้ว</span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+interface AccountSecuritySectionProps {
+    profile: any;
+    user: any;
+    showEmailFields: boolean;
+    newEmail: string;
+    setNewEmail: (email: string) => void;
+    handleSaveEmail: () => void;
+    handleCancelEmailChange: () => void;
+    handleStartEmailChange: () => void;
+    showPasswordFields: boolean;
+    setShowPasswordFields: (show: boolean) => void;
+    currentPassword: string;
+    setCurrentPassword: (pw: string) => void;
+    showCurrentPassword: boolean;
+    setShowCurrentPassword: (show: boolean | ((p: boolean) => boolean)) => void;
+    newPassword: string;
+    setNewPassword: (pw: string) => void;
+    showNewPassword: boolean;
+    setShowNewPassword: (show: boolean | ((p: boolean) => boolean)) => void;
+    confirmPassword: string;
+    setConfirmPassword: (pw: string) => void;
+    showConfirmPassword: boolean;
+    setShowConfirmPassword: (show: boolean | ((p: boolean) => boolean)) => void;
+    passwordChecks: any;
+}
+
+function AccountSecuritySection({
+    profile,
+    user,
+    showEmailFields,
+    newEmail,
+    setNewEmail,
+    handleSaveEmail,
+    handleCancelEmailChange,
+    handleStartEmailChange,
+    showPasswordFields,
+    setShowPasswordFields,
+    currentPassword,
+    setCurrentPassword,
+    showCurrentPassword,
+    setShowCurrentPassword,
+    newPassword,
+    setNewPassword,
+    showNewPassword,
+    setShowNewPassword,
+    confirmPassword,
+    setConfirmPassword,
+    showConfirmPassword,
+    setShowConfirmPassword,
+    passwordChecks,
+}: AccountSecuritySectionProps) {
+    return (
+        <Accordion type="single" collapsible className="space-y-4">
+            <AccordionItem value="account-security">
+                <AccordionTrigger className="text-left text-sm text-foreground font-semibold">
+                    ข้อมูลล็อกอินและความปลอดภัย
+                </AccordionTrigger>
+                <AccordionContent>
+                    <div className="space-y-6 rounded-2xl border border-border/50 bg-muted/50 p-5">
+                        <div className="space-y-1.5">
+                            <label htmlFor="account-email" className="text-xs font-semibold text-muted-foreground">Email</label>
+                            <Input
+                                id="account-email"
+                                type="email"
+                                value={profile?.email ?? user?.email ?? ""}
+                                disabled
+                                className="bg-muted/50 border-border/30 text-muted-foreground cursor-not-allowed select-none"
+                            />
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <p className="text-[10px] text-muted-foreground">อีเมลประจำบัญชีไม่สามารถแก้ไขได้</p>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleStartEmailChange}
+                                    className="inline-flex items-center gap-2"
+                                >
+                                    <Mail className="w-4 h-4" />
+                                    เปลี่ยนอีเมล
+                                </Button>
+                            </div>
+                        </div>
+
+                        {showEmailFields && (
+                            <div className="space-y-4">
+                                <div className="space-y-1.5">
+                                    <label htmlFor="new-email" className="text-xs font-semibold text-muted-foreground">อีเมลใหม่</label>
+                                    <Input
+                                        id="new-email"
+                                        type="email"
+                                        value={newEmail}
+                                        onChange={(e) => setNewEmail(e.target.value)}
+                                        placeholder="กรอกอีเมลใหม่"
+                                        className="bg-muted/30 border-border/50 focus:border-primary"
+                                    />
+                                </div>
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                    <Button
+                                        type="button"
+                                        onClick={handleSaveEmail}
+                                    >
+                                        บันทึกอีเมล
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleCancelEmailChange}
+                                    >
+                                        ยกเลิก
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="space-y-1.5">
+                            <label htmlFor="account-password" className="text-xs font-semibold text-muted-foreground">รหัสผ่าน</label>
+                            <Input
+                                id="account-password"
+                                type="password"
+                                value="password"
+                                disabled
+                                className="bg-muted/50 border-border/30 text-muted-foreground cursor-not-allowed select-none"
+                                placeholder="********"
+                            />
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                                <p className="text-[10px] text-muted-foreground">รหัสผ่านถูกล็อคและไม่สามารถแก้ไขโดยตรงได้</p>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setShowPasswordFields(true)}
+                                    disabled={showPasswordFields}
+                                    className={cn("inline-flex items-center gap-2", !showPasswordFields && "self-start")}
+                                >
+                                    <Lock className="w-4 h-4" />
+                                    เปลี่ยนรหัสผ่าน
+                                </Button>
+                            </div>
+                        </div>
+
+                        {showPasswordFields && (
+                            <div className="space-y-4 rounded-2xl border border-border/50 bg-muted/30 p-4">
+                                <div className="space-y-4">
+                                    <div className="space-y-1.5">
+                                        <label htmlFor="current-password" className="text-[11px] font-semibold text-muted-foreground">รหัสผ่านปัจจุบัน</label>
+                                        <div className="relative">
+                                            <Input
+                                                id="current-password"
+                                                type={showCurrentPassword ? "text" : "password"}
+                                                placeholder="••••••••"
+                                                value={currentPassword}
+                                                onChange={(e) => setCurrentPassword(e.target.value)}
+                                                className="bg-muted/30 border-border/50 focus:border-primary pr-10"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowCurrentPassword((prev) => !prev)}
+                                                className="absolute inset-y-0 right-2 flex items-center text-muted-foreground"
+                                            >
+                                                {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label htmlFor="new-password" className="text-[11px] font-semibold text-muted-foreground">รหัสผ่านใหม่</label>
+                                        <div className="relative">
+                                            <Input
+                                                id="new-password"
+                                                type={showNewPassword ? "text" : "password"}
+                                                placeholder="••••••••"
+                                                value={newPassword}
+                                                onChange={(e) => setNewPassword(e.target.value)}
+                                                className="bg-muted/30 border-border/50 focus:border-primary pr-10"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowNewPassword((prev) => !prev)}
+                                                className="absolute inset-y-0 right-2 flex items-center text-muted-foreground"
+                                            >
+                                                {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label htmlFor="confirm-password" className="text-[11px] font-semibold text-muted-foreground">ยืนยันรหัสผ่านใหม่</label>
+                                        <div className="relative">
+                                            <Input
+                                                id="confirm-password"
+                                                type={showConfirmPassword ? "text" : "password"}
+                                                placeholder="••••••••"
+                                                value={confirmPassword}
+                                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                                className="bg-muted/30 border-border/50 focus:border-primary pr-10"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                                                className="absolute inset-y-0 right-2 flex items-center text-muted-foreground"
+                                            >
+                                                {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-1 gap-2 text-xs mt-3">
+                                    <PasswordCheck checked={passwordChecks.length} text="อย่างน้อย 8 ตัวอักษร" />
+                                    <PasswordCheck checked={passwordChecks.uppercase} text="ตัวอักษรพิมพ์ใหญ่อย่างน้อย 1 ตัว" />
+                                    <PasswordCheck checked={passwordChecks.lowercase} text="ตัวอักษรพิมพ์เล็กอย่างน้อย 1 ตัว" />
+                                    <PasswordCheck checked={passwordChecks.number} text="ตัวเลขอย่างน้อย 1 ตัว" />
+                                    <PasswordCheck checked={passwordChecks.special} text="อักขระพิเศษอย่างน้อย 1 ตัว" />
+                                    <PasswordCheck checked={passwordChecks.match} text="รหัสผ่านใหม่ตรงกันทั้งสองช่อง" />
+                                </div>
+                                <div className="flex justify-end gap-2 pt-2 border-t border-border/30">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => {
+                                            setShowPasswordFields(false);
+                                            setCurrentPassword("");
+                                            setNewPassword("");
+                                            setConfirmPassword("");
+                                        }}
+                                    >
+                                        ยกเลิก
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </AccordionContent>
+            </AccordionItem>
+        </Accordion>
+    );
+}
+
+interface DangerZoneSectionProps {
+    showDeleteModal: boolean;
+    setShowDeleteModal: (show: boolean) => void;
+    deleteConfirmPhrase: string;
+    setDeleteConfirmPhrase: (val: string) => void;
+    deletePassword: string;
+    setDeletePassword: (val: string) => void;
+    isDeleting: boolean;
+    handleDeleteAccount: () => void;
+}
+
+function DangerZoneSection({
+    showDeleteModal,
+    setShowDeleteModal,
+    deleteConfirmPhrase,
+    setDeleteConfirmPhrase,
+    deletePassword,
+    setDeletePassword,
+    isDeleting,
+    handleDeleteAccount,
+}: DangerZoneSectionProps) {
+    return (
+        <>
+            <div className="rounded-lg border border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950 p-6">
+                <div className="flex flex-col gap-4">
+                    <div>
+                        <h3 className="text-base font-semibold text-foreground mb-2">ปิดบัญชี</h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                            เมื่อคุณปิดบัญชี ข้อมูลทั้งหมดของคุณจะถูกลบอย่างถาวร รวมถึงประวัติการสั่งซื้อ ยอดคงเหลือ และข้อมูลส่วนตัว การกระทำนี้ไม่สามารถย้อนกลับได้
+                        </p>
+                    </div>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowDeleteModal(true)}
+                        className="border-red-200 dark:border-red-900 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900 hover:border-red-300 dark:hover:border-red-700 w-full sm:w-auto"
+                    >
+                        ปิดบัญชีของฉัน
+                    </Button>
                 </div>
             </div>
 
-            {/* Delete Account Confirmation Modal */}
             {showDeleteModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
                     <div className="bg-background rounded-lg w-full max-w-lg shadow-xl border border-border overflow-hidden">
@@ -935,9 +1098,7 @@ export default function AccountPage() {
                             <div className="flex items-start justify-between mb-4">
                                 <div>
                                     <h3 className="text-lg font-semibold text-foreground">ปิดบัญชีของคุณ?</h3>
-                                    <p className="text-sm text-muted-foreground mt-1">
-                                        การกระทำนี้ไม่สามารถย้อนกลับได้
-                                    </p>
+                                    <p className="text-sm text-muted-foreground mt-1">การกระทำนี้ไม่สามารถย้อนกลับได้</p>
                                 </div>
                                 <button
                                     onClick={() => {
@@ -1015,9 +1176,10 @@ export default function AccountPage() {
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 }
+
 
 function PasswordCheck({ checked, text }: { checked: boolean; text: string }) {
     return (

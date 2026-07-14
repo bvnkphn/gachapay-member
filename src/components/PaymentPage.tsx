@@ -203,11 +203,7 @@ export default function PaymentPage({
     };
 
     const handleChangePaymentMethod = () => {
-        setPaymentState((prev) => ({
-            ...prev,
-            step: 'method_selection',
-            selectedMethod: null,
-        }));
+        handleRetryPayment();
     };
 
     const handleGoHome = () => {

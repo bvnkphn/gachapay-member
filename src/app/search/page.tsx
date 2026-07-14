@@ -72,6 +72,9 @@ function SearchContent() {
         })
         .sort((a, b) => a.name.localeCompare(b.name, 'th'));
 
+    const searchPrefix = lang === "th" ? "ผลลัพธ์ของการค้นหา" : "Search results for";
+    const headingText = query ? `${searchPrefix}: ${query}` : (t.search || "ค้นหาเกม");
+
     return (
         <div className="min-h-screen pt-20 pb-24 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
             <div className="container mx-auto px-4 md:px-6">
@@ -86,7 +89,7 @@ function SearchContent() {
                         <ChevronLeft className="w-5 h-5 text-foreground" />
                     </Button>
                     <h1 className="text-2xl font-black tracking-tight text-foreground">
-                        {query ? `${lang === "th" ? "ผลลัพธ์ของการค้นหา" : "Search results for"}: ${query}` : (t.search || "ค้นหาเกม")}
+                        {headingText}
                     </h1>
                 </div>
 

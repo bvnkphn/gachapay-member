@@ -32,6 +32,680 @@ const PAGE_SIZE = 4;
 
 type PayStep = "qr" | "processing" | "success" | "failed" | "awaiting_review";
 
+function DevNav({
+    showAdminPanel,
+    setShowAdminPanel,
+    method,
+    txId,
+    bankDetails,
+    selectedFile,
+    step,
+    setStep,
+    setUploading,
+    onSuccess,
+}: {
+    showAdminPanel: boolean;
+    setShowAdminPanel: (val: boolean) => void;
+    method: any;
+    txId: string;
+    bankDetails: any;
+    selectedFile: File | null;
+    step: PayStep;
+    setStep: (step: PayStep) => void;
+    setUploading: (val: boolean) => void;
+    onSuccess?: () => void;
+}) {
+    const isBank = method.id === "bank_transfer";
+    return (
+        <div className="w-full mt-4">
+            <button
+                type="button"
+                onClick={() => setShowAdminPanel(!showAdminPanel)}
+                className="w-full py-2 rounded-xl border border-dashed border-yellow-500/30 hover:border-yellow-500/60 bg-yellow-500/5 hover:bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 font-bold text-[10px] flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
+            >
+                {showAdminPanel ? "🔒 ปิดแผงควบคุมจำลอง (Close Panel)" : "🛠️ เปิดแผงควบคุมจำลอง (Admin Panel)"}
+            </button>
+            {showAdminPanel && (
+                <div className="bg-muted/40 border border-border/45 rounded-2xl p-3.5 mt-3 animate-in slide-in-from-top-2 duration-300">
+                    <p className="text-[9px] font-extrabold text-yellow-600 dark:text-yellow-400 uppercase tracking-widest text-center mb-2 flex items-center justify-center gap-1.5 select-none">
+                        ⚙️ Admin Simulator Controller
+                    </p>
+                    <div className={cn("grid gap-1.5", isBank ? "grid-cols-3" : "grid-cols-2")}>
+                        {isBank && (
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    setUploading(true);
+                                    try {
+                                        if (selectedFile) {
+                                            const uploadResult = await api.uploadSlip(selectedFile);
+                                            await api.submitSlip(txId, uploadResult.url, bankDetails?.code);
+                                        }
+                                        setStep("awaiting_review");
+                                    } catch (err: any) {
+                                        toast.error("อัพโหลดสลิปจำลองล้มเหลว: " + err.message);
+                                    } finally {
+                                        setUploading(false);
+                                    }
+                                }}
+                                className={cn(
+                                    "text-[10px] py-1.5 rounded-lg font-bold transition-all cursor-pointer text-center",
+                                    step === "awaiting_review"
+                                        ? "bg-primary text-white shadow-[0_0_10px_rgba(108,99,255,0.4)]"
+                                        : "bg-muted/60 dark:bg-white/5 text-muted-foreground hover:bg-muted/80 dark:hover:bg-white/10"
+                                )}
+                            >
+                                ตรวจสลิป
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                setUploading(true);
+                                try {
+                                    if (isBank && selectedFile) {
+                                        const uploadResult = await api.uploadSlip(selectedFile);
+                                        await api.submitSlip(txId, uploadResult.url, bankDetails?.code);
+                                    }
+                                    await api.simulateTopupComplete(txId);
+                                    setStep("success");
+                                    onSuccess?.();
+                                } catch (err: any) {
+                                    toast.error("จำลองสถานะสำเร็จล้มเหลว: " + err.message);
+                                } finally {
+                                    setUploading(false);
+                                }
+                            }}
+                            className={cn(
+                                "text-[10px] py-1.5 rounded-lg font-bold transition-all cursor-pointer text-center",
+                                step === "success"
+                                    ? "bg-green-600 text-white shadow-[0_0_10px_rgba(22,163,74,0.4)]"
+                                    : "bg-green-500/10 dark:bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/20 dark:hover:bg-green-500/30"
+                            )}
+                        >
+                            สำเร็จ
+                        </button>
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                setUploading(true);
+                                try {
+                                    if (isBank && selectedFile) {
+                                        const uploadResult = await api.uploadSlip(selectedFile);
+                                        await api.submitSlip(txId, uploadResult.url, bankDetails?.code);
+                                    }
+                                    await api.simulateTopupCancel(txId);
+                                    setStep("failed");
+                                } catch (err: any) {
+                                    toast.error("จำลองสถานะล้มเหลวล้มเหลว: " + err.message);
+                                } finally {
+                                    setUploading(false);
+                                }
+                            }}
+                            className={cn(
+                                "text-[10px] py-1.5 rounded-lg font-bold transition-all cursor-pointer text-center",
+                                step === "failed"
+                                    ? "bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.4)]"
+                                    : "bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/20 dark:hover:bg-green-500/30"
+                            )}
+                        >
+                            ล้มเหลว
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function BankTransferStep({
+    amount, txId, copied, handleCopy, bankDetails, selectedFile, filePreviewUrl, uploading,
+    handleFileChange, handleDragOver, handleDrop, triggerFileSelect, removeSelectedFile, handleSubmitSlip,
+    onClose, router, showAdminPanel, setShowAdminPanel, method, onSuccess, setStep, setUploading,
+}: any) {
+    const overlay = "fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200";
+    const card = "bg-card border border-border/80 rounded-3xl w-full max-w-md p-4 sm:p-5 relative shadow-2xl text-foreground max-h-[85vh] overflow-y-auto custom-scrollbar flex flex-col";
+    return (
+        <div className={overlay}>
+            <div className={card}>
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted text-muted-foreground transition-all cursor-pointer z-30"
+                    aria-label="Close"
+                >
+                    <X className="w-4.5 h-4.5" />
+                </button>
+                <p className="text-center text-xs text-muted-foreground pb-1 pr-6 pt-1">
+                    กรุณาโอนเงินผ่านทางธนาคารและแนบหลักฐานการโอนเงิน (สลิป)
+                </p>
+                <div className="pb-2">
+                    <div className="flex items-center justify-between mb-4 p-3 rounded-xl bg-muted/40 border border-border/30 mt-3">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                                <Wallet className="w-4 h-4 text-white" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-extrabold text-foreground leading-none">CYBERPAY</p>
+                                <p className="text-[10px] text-muted-foreground">Game Top-up Platform</p>
+                            </div>
+                        </div>
+                        <div className="px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm" style={{ background: method.color }}>
+                            {method.name}
+                        </div>
+                    </div>
+                    <div className="space-y-2 mb-4 text-xs bg-muted/40 border border-border/30 rounded-xl p-3">
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">ยอดเงินโอน (ยอดรวม)</span>
+                            <span className="font-bold text-yellow-600 dark:text-yellow-400">฿{amount.toFixed(2)} THB</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">ธนาคารปลายทาง</span>
+                            <span className="text-foreground font-semibold">{bankDetails?.name ?? "ธนาคารกสิกรไทย (KBANK)"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">ชื่อบัญชี</span>
+                            <span className="text-foreground font-semibold">{bankDetails?.accName ?? "บจก. กาชาเพย์ (GachaPay Co., Ltd.)"}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">เลขบัญชี</span>
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-foreground font-mono text-[11px]">{bankDetails?.number ?? "123-4-56789-0"}</span>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText((bankDetails?.number ?? "1234567890").replace(/-/g, ""));
+                                        toast.success("คัดลอกเลขบัญชีแล้ว");
+                                    }}
+                                    className="px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                                >
+                                    คัดลอก
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex justify-between items-center border-t border-border/20 pt-2">
+                            <span className="text-muted-foreground">เลขที่อ้างอิง</span>
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-foreground font-mono text-[11px]">{txId}</span>
+                                <button
+                                    onClick={handleCopy}
+                                    className="px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
+                                >
+                                    {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                                    {copied ? "Copied" : "Copy"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {!selectedFile ? (
+                        <div
+                            onClick={triggerFileSelect}
+                            onDragOver={handleDragOver}
+                            onDrop={handleDrop}
+                            className="border border-dashed border-border hover:border-primary/50 rounded-2xl p-6 text-center text-foreground mb-4 cursor-pointer bg-muted/20 hover:bg-primary/5 transition-all duration-200 flex flex-col items-center justify-center gap-2 group animate-in fade-in duration-200"
+                        >
+                            <input
+                                id="slip-file-input"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleFileChange}
+                            />
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <FileText className="w-5 h-5 text-primary" />
+                            </div>
+                            <div className="space-y-1">
+                                <p className="text-xs font-bold text-foreground">อัปโหลดสลิปการโอนเงิน (สลิปโอนเงิน)</p>
+                                <p className="text-[10px] text-muted-foreground">ลากและวางรูปภาพสลิปที่นี่ หรือคลิกเพื่ออัปโหลด</p>
+                            </div>
+                            <p className="text-[9px] text-muted-foreground/60">รองรับไฟล์ PNG, JPG, JPEG (ขนาดไม่เกิน 5MB)</p>
+                        </div>
+                    ) : (
+                        <div className="border border-border/50 rounded-2xl p-4 bg-muted/20 mb-4 space-y-3 animate-in zoom-in-95 duration-200">
+                            <div className="relative aspect-[3/4] w-full max-w-[160px] mx-auto rounded-xl overflow-hidden border border-border bg-black/5 flex items-center justify-center">
+                                <img
+                                    src={filePreviewUrl || ""}
+                                    alt="Slip Preview"
+                                    className="object-contain w-full h-full"
+                                />
+                            </div>
+                            <div className="flex items-center justify-between gap-3 text-xs bg-muted/40 p-2.5 rounded-xl border border-border/30">
+                                <div className="min-w-0 flex-1 flex items-center gap-2">
+                                    <FileText className="w-4 h-4 text-primary shrink-0" />
+                                    <span className="truncate text-foreground font-medium text-[11px]">{selectedFile.name}</span>
+                                </div>
+                                <button
+                                    onClick={removeSelectedFile}
+                                    className="text-red-500 hover:text-red-400 font-bold shrink-0 text-[11px] cursor-pointer hover:underline border-none bg-transparent"
+                                >
+                                    ลบรูปภาพ
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    <button
+                        onClick={handleSubmitSlip}
+                        disabled={!selectedFile || uploading}
+                        className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 mb-3 transition-all cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {uploading ? (
+                            <>
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                กำลังอัปโหลดสลิป...
+                            </>
+                        ) : (
+                            "ยืนยันการโอนเงิน และอัปโหลดสลิป"
+                        )}
+                    </button>
+                </div>
+                <div className="border-t border-border/50 pt-4 text-center flex flex-col items-center gap-1.5">
+                    <p className="text-[11px] text-muted-foreground">
+                        มีปัญหาในการชำระเงิน?{" "}
+                        <button
+                            onClick={() => router.push("/support/create-ticket")}
+                            className="text-primary hover:underline font-bold border-none bg-transparent"
+                        >
+                            ติดต่อศูนย์บริการลูกค้า
+                        </button>
+                    </p>
+                    <DevNav
+                        showAdminPanel={showAdminPanel}
+                        setShowAdminPanel={setShowAdminPanel}
+                        method={method}
+                        txId={txId}
+                        bankDetails={bankDetails}
+                        selectedFile={selectedFile}
+                        step="qr"
+                        setStep={setStep}
+                        setUploading={setUploading}
+                        onSuccess={onSuccess}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function AwaitingReviewStep({
+    amount, txId, copied, handleCopy, method, bankDetails, dateStr, timeStr, verificationMessage, onClose, router,
+    showAdminPanel, setShowAdminPanel, onSuccess, setStep, setUploading,
+}: any) {
+    const overlay = "fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200";
+    const card = "bg-card border border-border/80 rounded-3xl w-full max-w-md p-4 sm:p-5 relative shadow-2xl text-foreground max-h-[85vh] overflow-y-auto custom-scrollbar flex flex-col";
+    return (
+        <div className={overlay}>
+            <div className={card}>
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted text-muted-foreground transition-all cursor-pointer z-30"
+                    aria-label="Close"
+                >
+                    <X className="w-4.5 h-4.5" />
+                </button>
+                <div className="flex flex-col items-center text-center py-6">
+                    <div className="relative w-20 h-20 mb-5">
+                        <div className="absolute inset-0 rounded-full bg-yellow-500/10 animate-ping" style={{ animationDuration: "2s" }} />
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-yellow-400/20 to-orange-500/20 flex items-center justify-center">
+                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center shadow-lg shadow-yellow-500/30">
+                                <FileText className="w-7 h-7 text-white" />
+                            </div>
+                        </div>
+                    </div>
+                    <h3 className="text-lg font-extrabold text-foreground mb-1">ส่งสลิปเรียบร้อยแล้ว!</h3>
+                    <p className="text-xs text-muted-foreground mb-5 max-w-[280px]">
+                        สลิปของท่านได้รับการส่งเรียบร้อยแล้ว กรุณารอทีมงานตรวจสอบ<br />
+                        ระบบจะเติม Coin ให้อัตโนมัติหลังอนุมัติ
+                    </p>
+                    <div className="w-full space-y-2 text-xs bg-muted/40 border border-border/30 rounded-xl p-3 mb-4">
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">สถานะ</span>
+                            <span className="px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 font-bold text-[10px]">
+                                ⏳ รอตรวจสอบ
+                            </span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">ยอดเงินโอน</span>
+                            <span className="font-bold text-foreground">฿{amount.toFixed(2)} THB</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">ธนาคาร</span>
+                            <span className="text-foreground font-semibold">{bankDetails?.name ?? "Bank Transfer"}</span>
+                        </div>
+                        <div className="flex justify-between items-center border-t border-border/20 pt-2">
+                            <span className="text-muted-foreground">เลขที่อ้างอิง</span>
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-foreground font-mono text-[11px]">{txId}</span>
+                                <button onClick={handleCopy} className="px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+                                    {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                                    {copied ? "Copied" : "Copy"}
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">วันที่ส่ง</span>
+                            <span className="text-foreground">{dateStr} {timeStr}</span>
+                        </div>
+                    </div>
+                    <div className="w-full flex items-start gap-2.5 p-3 rounded-xl bg-blue-500/5 border border-blue-500/20 mb-4">
+                        <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                        <div className="text-left">
+                            <p className="text-[11px] font-bold text-blue-600 dark:text-blue-400 mb-0.5">ขั้นตอนถัดไป</p>
+                            <p className="text-[10px] text-muted-foreground leading-relaxed">
+                                ทีมงานจะตรวจสอบสลิปภายใน 5-15 นาที หากข้อมูลถูกต้อง ระบบจะเติม Coin ให้อัตโนมัติ คุณสามารถตรวจสอบสถานะได้ที่หน้าประวัติการเติมเงิน
+                            </p>
+                        </div>
+                    </div>
+                    {verificationMessage && (
+                        <div className="w-full rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-700 mb-4">
+                            <p className="font-bold mb-2">Slip2Go ไม่ผ่าน</p>
+                            <p>{verificationMessage}</p>
+                        </div>
+                    )}
+                    <DevNav
+                        showAdminPanel={showAdminPanel}
+                        setShowAdminPanel={setShowAdminPanel}
+                        method={method}
+                        txId={txId}
+                        bankDetails={bankDetails}
+                        selectedFile={null}
+                        step="awaiting_review"
+                        setStep={setStep}
+                        setUploading={setUploading}
+                        onSuccess={onSuccess}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function QrStep({
+    amount, txId, copied, handleCopy, dateStr, countdown, mm, ss, method, t, onClose, router,
+    showAdminPanel, setShowAdminPanel, onSuccess, setStep, setUploading,
+}: any) {
+    const overlay = "fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200";
+    const card = "bg-card border border-border/80 rounded-3xl w-full max-w-md p-4 sm:p-5 relative shadow-2xl text-foreground max-h-[85vh] overflow-y-auto custom-scrollbar flex flex-col";
+    return (
+        <div className={overlay}>
+            <div className={card}>
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted text-muted-foreground transition-all cursor-pointer z-30"
+                    aria-label="Close"
+                >
+                    <X className="w-4.5 h-4.5" />
+                </button>
+                <p className="text-center text-xs text-muted-foreground pb-1 pr-6 pt-1">
+                    {t.qrScanInstruction(method.name)}
+                </p>
+                <div className="pb-2">
+                    <div className="flex items-center justify-between mb-4 p-3 rounded-xl bg-muted/40 border border-border/30 mt-3">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
+                                <Wallet className="w-4 h-4 text-white" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-extrabold text-foreground leading-none">CYBERPAY</p>
+                                <p className="text-[10px] text-muted-foreground">Game Top-up Platform</p>
+                            </div>
+                        </div>
+                        <div className="px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm" style={{ background: method.color }}>
+                            {method.name}
+                        </div>
+                    </div>
+                    <div className="space-y-2 mb-4 text-xs bg-muted/40 border border-border/30 rounded-xl p-3">
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">{t.qrAmount}</span>
+                            <span className="font-bold text-yellow-600 dark:text-yellow-400">฿{amount.toFixed(2)} THB</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">{t.qrExpiry}</span>
+                            <span className="text-foreground">{dateStr}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">{t.qrRef}</span>
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-foreground font-mono text-[11px]">{txId}</span>
+                                <button onClick={handleCopy} className="px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
+                                    {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                                    {copied ? "Copied" : "Copy"}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <p className="text-center text-[11px] text-muted-foreground mb-3">{t.qrScanHint}</p>
+                    <div className="bg-white rounded-2xl p-4 mx-auto w-fit mb-3 flex items-center justify-center border border-border/20 shadow-sm">
+                        <QRCode
+                            value={`cyberpay://topup?txId=${txId}&amount=${amount}&method=${method.id}`}
+                            size={120}
+                            bgColor="#ffffff"
+                            fgColor="#09090b"
+                        />
+                    </div>
+                    <button className="w-full py-2.5 rounded-xl border border-border/50 text-xs text-muted-foreground hover:bg-muted flex items-center justify-center gap-2 mb-3 transition-colors select-none">
+                        <Download className="w-3.5 h-3.5" /> {t.qrSaveBtn}
+                    </button>
+                    <p className="text-center text-[11px] text-muted-foreground/80 mb-3">{t.qrNote(method.name)}</p>
+                    <p className="text-center text-xs text-muted-foreground mb-2">{t.qrTimeLeft?.replace("3", String(Math.ceil(countdown / 60))) || ""}</p>
+                    <div className="text-center mb-4">
+                        <span className="font-mono font-black text-2xl tracking-widest text-foreground">
+                            {mm}:{ss}
+                        </span>
+                    </div>
+                </div>
+                <div className="border-t border-border/50 pt-4 text-center flex flex-col items-center gap-1.5">
+                    <p className="text-[11px] text-muted-foreground">
+                        มีปัญหาในการชำระเงิน?{" "}
+                        <button
+                            onClick={() => router.push("/support/create-ticket")}
+                            className="text-primary hover:underline font-bold border-none bg-transparent"
+                        >
+                            ติดต่อศูนย์บริการลูกค้า
+                        </button>
+                    </p>
+                    <DevNav
+                        showAdminPanel={showAdminPanel}
+                        setShowAdminPanel={setShowAdminPanel}
+                        method={method}
+                        txId={txId}
+                        bankDetails={null}
+                        selectedFile={null}
+                        step="qr"
+                        setStep={setStep}
+                        setUploading={setUploading}
+                        onSuccess={onSuccess}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function ProcessingStep({
+    txId, t, onClose, showAdminPanel, setShowAdminPanel, method, onSuccess, setStep, setUploading,
+}: any) {
+    const overlay = "fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200";
+    const card = "bg-card border border-border/80 rounded-3xl w-full max-w-md p-4 sm:p-5 relative shadow-2xl text-foreground max-h-[85vh] overflow-y-auto custom-scrollbar flex flex-col";
+    return (
+        <div className={overlay}>
+            <div className={card}>
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted text-muted-foreground transition-all cursor-pointer z-30"
+                    aria-label="Close"
+                >
+                    <X className="w-4.5 h-4.5" />
+                </button>
+                <div className="flex flex-col items-center text-center py-2 pr-6 pt-1">
+                    <div className="text-2xl font-extrabold text-white mb-0.5">GACHAPAY</div>
+                    <div className="text-xs text-white/40 mb-8">Game Top-up Platform</div>
+                    <div className="relative w-16 h-16 mb-6">
+                        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary border-l-yellow-400 animate-spin" />
+                        <div className="absolute inset-2 rounded-full border-4 border-transparent border-b-purple-400 animate-spin" style={{ animationDirection: "reverse", animationDuration: "0.8s" }} />
+                    </div>
+                    <p className="font-bold text-white mb-2">{t.processingTitle}</p>
+                    <p className="text-xs text-white/50 mb-6">{t.processingDesc}</p>
+                    <div className="w-full py-2.5 rounded-xl bg-yellow-500/20 border border-yellow-500/30 flex items-center justify-center gap-2 text-xs text-yellow-400 mb-4">
+                        <AlertTriangle className="w-3.5 h-3.5" /> {t.processingWarning}
+                    </div>
+                    <p className="text-xs text-white/30">{t.processingRefId}: {txId}</p>
+                    <DevNav
+                        showAdminPanel={showAdminPanel}
+                        setShowAdminPanel={setShowAdminPanel}
+                        method={method}
+                        txId={txId}
+                        bankDetails={null}
+                        selectedFile={null}
+                        step="processing"
+                        setStep={setStep}
+                        setUploading={setUploading}
+                        onSuccess={onSuccess}
+                    />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function SuccessStep({
+    amount, txId, copied, handleCopy, dateStr, timeStr, method, t, onClose, showAdminPanel, setShowAdminPanel, onSuccess, setStep, setUploading,
+}: any) {
+    const overlay = "fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200";
+    const card = "bg-card border border-border/80 rounded-3xl w-full max-w-md p-4 sm:p-5 relative shadow-2xl text-foreground max-h-[85vh] overflow-y-auto custom-scrollbar flex flex-col";
+    return (
+        <div className={overlay}>
+            <div className={card}>
+                <div className="absolute top-0 inset-x-0 h-1.5 rounded-t-3xl bg-green-400" />
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted text-muted-foreground transition-all cursor-pointer z-30"
+                    aria-label="Close"
+                >
+                    <X className="w-4.5 h-4.5" />
+                </button>
+                <div className="flex flex-col items-center text-center pt-2">
+                    <div className="w-14 h-14 rounded-full border-2 border-green-400 flex items-center justify-center mb-4">
+                        <Check className="w-7 h-7 text-green-400" />
+                    </div>
+                    <p className="font-bold text-green-400 text-lg mb-2">{t.paymentSuccessTitle}</p>
+                    <p className="text-xs text-muted-foreground mb-5 leading-relaxed">
+                        {t.paymentSuccessDesc}<br />
+                        <span className="text-foreground font-medium">{t.successEmailNote}</span> {t.successEmailNote2}
+                    </p>
+                    <div className="w-full space-y-2 text-xs mb-5 text-left bg-muted/40 border border-border/30 rounded-xl p-4">
+                        {[[t.txItem, "Top-up Balance"], [t.txChannel, method.name], [t.txTime, `${dateStr}, ${timeStr}`]].map(([k, v]) => (
+                            <div key={k} className="flex justify-between">
+                                <span className="text-muted-foreground">{k}</span>
+                                <span className="text-foreground font-semibold">{v}</span>
+                            </div>
+                        ))}
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">{t.txRefId}</span>
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-foreground font-mono text-[11px]">{txId}</span>
+                                <button onClick={handleCopy} className="px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 border-none bg-transparent">
+                                    {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />} Copy
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex justify-between border-t border-border/50 pt-2">
+                            <span className="text-muted-foreground">{t.txTotalPaid}</span>
+                            <span className="font-bold text-foreground">฿{amount.toFixed(2)} THB</span>
+                        </div>
+                    </div>
+                    <button onClick={onClose} className="w-full py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm mb-3 transition-colors cursor-pointer select-none border-none">
+                        {t.backToHome}
+                    </button>
+                </div>
+                <DevNav
+                    showAdminPanel={showAdminPanel}
+                    setShowAdminPanel={setShowAdminPanel}
+                    method={method}
+                    txId={txId}
+                    bankDetails={null}
+                    selectedFile={null}
+                    step="success"
+                    setStep={setStep}
+                    setUploading={setUploading}
+                    onSuccess={onSuccess}
+                />
+            </div>
+        </div>
+    );
+}
+
+function FailedStep({
+    amount, txId, copied, handleCopy, dateStr, timeStr, method, t, onClose, onRetry, router,
+    showAdminPanel, setShowAdminPanel, onSuccess, setStep, setUploading,
+}: any) {
+    const overlay = "fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200";
+    const card = "bg-card border border-border/80 rounded-3xl w-full max-w-md p-4 sm:p-5 relative shadow-2xl text-foreground max-h-[85vh] overflow-y-auto custom-scrollbar flex flex-col";
+    return (
+        <div className={overlay}>
+            <div className={card}>
+                <div className="absolute top-0 inset-x-0 h-1.5 rounded-t-3xl bg-red-500" />
+                <button
+                    onClick={onClose}
+                    className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted text-muted-foreground transition-all cursor-pointer z-30"
+                    aria-label="Close"
+                >
+                    <X className="w-4.5 h-4.5" />
+                </button>
+                <div className="flex flex-col items-center text-center pt-2">
+                    <div className="w-14 h-14 rounded-full border-2 border-red-500 flex items-center justify-center mb-4">
+                        <X className="w-7 h-7 text-red-500" />
+                    </div>
+                    <p className="font-bold text-red-400 text-lg mb-2">{t.failedTitle}</p>
+                    <p className="text-xs text-muted-foreground mb-5 leading-relaxed">{t.failedDesc}</p>
+                    <div className="w-full space-y-2 text-xs mb-5 text-left bg-muted/40 border border-border/30 rounded-xl p-4">
+                        {[[t.txItem, "Top-up Balance"], [t.txTime, `${dateStr}, ${timeStr}`]].map(([k, v]) => (
+                            <div key={k} className="flex justify-between">
+                                <span className="text-muted-foreground">{k}</span>
+                                <span className="text-foreground font-semibold">{v}</span>
+                            </div>
+                        ))}
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">{t.txRefId}</span>
+                            <div className="flex items-center gap-1.5">
+                                <span className="text-foreground font-mono text-[11px]">{txId}</span>
+                                <button onClick={handleCopy} className="px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 border-none bg-transparent">
+                                    {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />} Copy
+                                </button>
+                            </div>
+                        </div>
+                        <div className="flex justify-between border-t border-border/50 pt-2">
+                            <span className="text-muted-foreground">{t.txTotalDue}</span>
+                            <span className="font-bold text-foreground">฿{amount.toFixed(2)} THB</span>
+                        </div>
+                    </div>
+                    <button onClick={onRetry} className="w-full py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-sm mb-2 transition-colors flex items-center justify-center gap-2 cursor-pointer select-none border-none">
+                        <RefreshCw className="w-4 h-4" /> {t.retryPayment}
+                    </button>
+                </div>
+                <p className="text-center text-[11px] text-muted-foreground mt-4 mb-1">
+                    {t.haveIssue}{" "}
+                    <button
+                        onClick={() => router.push("/support/create-ticket")}
+                        className="text-primary hover:underline font-bold border-none bg-transparent"
+                    >
+                        {t.createTicket}
+                    </button>
+                </p>
+                <DevNav
+                    showAdminPanel={showAdminPanel}
+                    setShowAdminPanel={setShowAdminPanel}
+                    method={method}
+                    txId={txId}
+                    bankDetails={null}
+                    selectedFile={null}
+                    step="failed"
+                    setStep={setStep}
+                    setUploading={setUploading}
+                    onSuccess={onSuccess}
+                />
+            </div>
+        </div>
+    );
+}
+
 function PaymentFlowModal({
     method, amount, referenceId, expiredAt, onClose, onRetry, onSuccess, router, t, bankDetails,
 }: {
@@ -111,9 +785,7 @@ function PaymentFlowModal({
         setUploading(true);
         setVerificationMessage(null);
         try {
-            // Step 1: Upload the slip image
             const uploadResult = await api.uploadSlip(selectedFile);
-            // Step 2: Submit slip URL to link with the transaction
             const submitResult: any = await api.submitSlip(txId, uploadResult.url, bankDetails?.code);
             if (submitResult?.status === 'completed') {
                 setStep("success");
@@ -129,8 +801,6 @@ function PaymentFlowModal({
             setUploading(false);
         }
     };
-
-    // handleForceComplete removed — was unused
 
     useEffect(() => {
         return () => {
@@ -180,586 +850,34 @@ function PaymentFlowModal({
         navigator.clipboard.writeText(txId);
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
-    }, []);
+    }, [txId]);
 
     const mm = String(Math.floor(countdown / 60)).padStart(2, "0");
     const ss = String(countdown % 60).padStart(2, "0");
 
-    const overlay = "fixed inset-0 z-50 bg-black/60 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200";
-    const card = "bg-card border border-border/80 rounded-3xl w-full max-w-md p-4 sm:p-5 relative shadow-2xl text-foreground max-h-[85vh] overflow-y-auto custom-scrollbar flex flex-col";
-
-    const DevNav = () => {
-        // Show simulator for all methods so the user can test payment success/failure in sandbox mode
-        const isBank = method.id === "bank_transfer";
-
-        return (
-            <div className="w-full mt-4">
-                <button
-                    type="button"
-                    onClick={() => setShowAdminPanel(!showAdminPanel)}
-                    className="w-full py-2 rounded-xl border border-dashed border-yellow-500/30 hover:border-yellow-500/60 bg-yellow-500/5 hover:bg-yellow-500/10 text-yellow-600 dark:text-yellow-400 font-bold text-[10px] flex items-center justify-center gap-1.5 transition-all cursor-pointer select-none"
-                >
-                    {showAdminPanel ? "🔒 ปิดแผงควบคุมจำลอง (Close Panel)" : "🛠️ เปิดแผงควบคุมจำลอง (Admin Panel)"}
-                </button>
-                
-                {showAdminPanel && (
-                    <div className="bg-muted/40 border border-border/45 rounded-2xl p-3.5 mt-3 animate-in slide-in-from-top-2 duration-300">
-                        <p className="text-[9px] font-extrabold text-yellow-600 dark:text-yellow-400 uppercase tracking-widest text-center mb-2 flex items-center justify-center gap-1.5 select-none">
-                            ⚙️ Admin Simulator Controller
-                        </p>
-                        <div className={cn("grid gap-1.5", isBank ? "grid-cols-3" : "grid-cols-2")}>
-                            {isBank && (
-                                <button
-                                    type="button"
-                                    onClick={async () => {
-                                        setUploading(true);
-                                        try {
-                                            if (selectedFile) {
-                                                const uploadResult = await api.uploadSlip(selectedFile);
-                                                await api.submitSlip(txId, uploadResult.url, bankDetails?.code);
-                                            }
-                                            setStep("awaiting_review");
-                                        } catch (err: any) {
-                                            toast.error("อัพโหลดสลิปจำลองล้มเหลว: " + err.message);
-                                        } finally {
-                                            setUploading(false);
-                                        }
-                                    }}
-                                    className={cn(
-                                        "text-[10px] py-1.5 rounded-lg font-bold transition-all cursor-pointer text-center",
-                                        step === "awaiting_review" 
-                                            ? "bg-primary text-white shadow-[0_0_10px_rgba(108,99,255,0.4)]" 
-                                            : "bg-muted/60 dark:bg-white/5 text-muted-foreground hover:bg-muted/80 dark:hover:bg-white/10"
-                                    )}
-                                >
-                                    ตรวจสลิป
-                                </button>
-                            )}
-                            <button
-                                type="button"
-                                onClick={async () => {
-                                    setUploading(true);
-                                    try {
-                                        if (isBank && selectedFile) {
-                                            const uploadResult = await api.uploadSlip(selectedFile);
-                                            await api.submitSlip(txId, uploadResult.url, bankDetails?.code);
-                                        }
-                                        await api.simulateTopupComplete(txId);
-                                        setStep("success");
-                                        onSuccess?.();
-                                    } catch (err: any) {
-                                        toast.error("จำลองสถานะสำเร็จล้มเหลว: " + err.message);
-                                    } finally {
-                                        setUploading(false);
-                                    }
-                                }}
-                                className={cn(
-                                    "text-[10px] py-1.5 rounded-lg font-bold transition-all cursor-pointer text-center",
-                                    step === "success" 
-                                        ? "bg-green-600 text-white shadow-[0_0_10px_rgba(22,163,74,0.4)]" 
-                                        : "bg-green-500/10 dark:bg-green-500/20 text-green-600 dark:text-green-400 hover:bg-green-500/20 dark:hover:bg-green-500/30"
-                                )}
-                            >
-                                สำเร็จ
-                            </button>
-                            <button
-                                type="button"
-                                onClick={async () => {
-                                    setUploading(true);
-                                    try {
-                                        if (isBank && selectedFile) {
-                                            const uploadResult = await api.uploadSlip(selectedFile);
-                                            await api.submitSlip(txId, uploadResult.url, bankDetails?.code);
-                                        }
-                                        await api.simulateTopupCancel(txId);
-                                        setStep("failed");
-                                    } catch (err: any) {
-                                        toast.error("จำลองสถานะล้มเหลวล้มเหลว: " + err.message);
-                                    } finally {
-                                        setUploading(false);
-                                    }
-                                }}
-                                className={cn(
-                                    "text-[10px] py-1.5 rounded-lg font-bold transition-all cursor-pointer text-center",
-                                    step === "failed" 
-                                        ? "bg-red-600 text-white shadow-[0_0_10px_rgba(220,38,38,0.4)]" 
-                                        : "bg-red-500/10 dark:bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/20 dark:hover:bg-green-500/30"
-                                )}
-                            >
-                                ล้มเหลว
-                            </button>
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
+    const props = {
+        amount, txId, copied, handleCopy, bankDetails, selectedFile, filePreviewUrl, uploading,
+        handleFileChange, handleDragOver, handleDrop, triggerFileSelect, removeSelectedFile, handleSubmitSlip,
+        onClose, router, showAdminPanel, setShowAdminPanel, method, onSuccess, setStep, setUploading,
+        dateStr, timeStr, verificationMessage, countdown, mm, ss, t, onRetry
     };
 
-    if (step === "qr" && method.id === "bank_transfer") {
-        return (
-            <div className={overlay}>
-                <div className={card}>
-                    <button 
-                        onClick={onClose} 
-                        className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted text-muted-foreground transition-all cursor-pointer z-30"
-                        aria-label="Close"
-                    >
-                        <X className="w-4.5 h-4.5" />
-                    </button>
-                    
-                    <p className="text-center text-xs text-muted-foreground pb-1 pr-6 pt-1">
-                        กรุณาโอนเงินผ่านทางธนาคารและแนบหลักฐานการโอนเงิน (สลิป)
-                    </p>
-                    <div className="pb-2">
-                        <div className="flex items-center justify-between mb-4 p-3 rounded-xl bg-muted/40 border border-border/30 mt-3">
-                            <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                                    <Wallet className="w-4 h-4 text-white" />
-                                </div>
-                                <div>
-                                    <p className="text-xs font-extrabold text-foreground leading-none">CYBERPAY</p>
-                                    <p className="text-[10px] text-muted-foreground">Game Top-up Platform</p>
-                                </div>
-                            </div>
-                            <div className="px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm" style={{ background: method.color }}>
-                                {method.name}
-                            </div>
-                        </div>
-
-                        <div className="space-y-2 mb-4 text-xs bg-muted/40 border border-border/30 rounded-xl p-3">
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">ยอดเงินโอน (ยอดรวม)</span>
-                                <span className="font-bold text-yellow-600 dark:text-yellow-400">฿{amount.toFixed(2)} THB</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">ธนาคารปลายทาง</span>
-                                <span className="text-foreground font-semibold">{bankDetails?.name ?? "ธนาคารกสิกรไทย (KBANK)"}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">ชื่อบัญชี</span>
-                                <span className="text-foreground font-semibold">{bankDetails?.accName ?? "บจก. กาชาเพย์ (GachaPay Co., Ltd.)"}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">เลขบัญชี</span>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-foreground font-mono text-[11px]">{bankDetails?.number ?? "123-4-56789-0"}</span>
-                                    <button 
-                                        onClick={() => { 
-                                            navigator.clipboard.writeText((bankDetails?.number ?? "1234567890").replace(/-/g, "")); 
-                                            toast.success("คัดลอกเลขบัญชีแล้ว"); 
-                                        }} 
-                                        className="px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                                    >
-                                        คัดลอก
-                                    </button>
-                                </div>
-                            </div>
-                            <div className="flex justify-between items-center border-t border-border/20 pt-2">
-                                <span className="text-muted-foreground">เลขที่อ้างอิง</span>
-                                <div className="flex items-center gap-1.5">
-                                    <span className="text-foreground font-mono text-[11px]">{txId}</span>
-                                    <button 
-                                        onClick={handleCopy} 
-                                        className="px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                                    >
-                                        {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
-                                        {copied ? "Copied" : "Copy"}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* File Upload Section */}
-                        {!selectedFile ? (
-                            <div 
-                                onClick={triggerFileSelect}
-                                onDragOver={handleDragOver}
-                                onDrop={handleDrop}
-                                className="border border-dashed border-border hover:border-primary/50 rounded-2xl p-6 text-center text-foreground mb-4 cursor-pointer bg-muted/20 hover:bg-primary/5 transition-all duration-200 flex flex-col items-center justify-center gap-2 group"
-                            >
-                                <input 
-                                    id="slip-file-input"
-                                    type="file" 
-                                    accept="image/*" 
-                                    className="hidden" 
-                                    onChange={handleFileChange}
-                                />
-                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                    <FileText className="w-5 h-5 text-primary" />
-                                </div>
-                                <div className="space-y-1">
-                                    <p className="text-xs font-bold text-foreground">อัปโหลดสลิปการโอนเงิน (สลิปโอนเงิน)</p>
-                                    <p className="text-[10px] text-muted-foreground">ลากและวางรูปภาพสลิปที่นี่ หรือคลิกเพื่ออัปโหลด</p>
-                                </div>
-                                <p className="text-[9px] text-muted-foreground/60">รองรับไฟล์ PNG, JPG, JPEG (ขนาดไม่เกิน 5MB)</p>
-                            </div>
-                        ) : (
-                            <div className="border border-border/50 rounded-2xl p-4 bg-muted/20 mb-4 space-y-3">
-                                <div className="relative aspect-[3/4] w-full max-w-[160px] mx-auto rounded-xl overflow-hidden border border-border bg-black/5 flex items-center justify-center">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img 
-                                        src={filePreviewUrl || ""} 
-                                        alt="Slip Preview" 
-                                        className="object-contain w-full h-full"
-                                    />
-                                </div>
-                                <div className="flex items-center justify-between gap-3 text-xs bg-muted/40 p-2.5 rounded-xl border border-border/30">
-                                    <div className="min-w-0 flex-1 flex items-center gap-2">
-                                        <FileText className="w-4 h-4 text-primary shrink-0" />
-                                        <span className="truncate text-foreground font-medium text-[11px]">{selectedFile.name}</span>
-                                    </div>
-                                    <button 
-                                        onClick={removeSelectedFile}
-                                        className="text-red-500 hover:text-red-400 font-bold shrink-0 text-[11px] cursor-pointer hover:underline"
-                                    >
-                                        ลบรูปภาพ
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Confirmation Button */}
-                        <button 
-                            onClick={handleSubmitSlip}
-                            disabled={!selectedFile || uploading}
-                            className="w-full py-3 rounded-xl bg-primary hover:bg-primary/90 text-white font-bold text-xs flex items-center justify-center gap-2 mb-3 transition-all cursor-pointer shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {uploading ? (
-                                <>
-                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                                    กำลังอัปโหลดสลิป...
-                                </>
-                            ) : (
-                                "ยืนยันการโอนเงิน และอัปโหลดสลิป"
-                            )}
-                        </button>
-                    </div>
-
-                    <div className="border-t border-border/50 pt-4 text-center flex flex-col items-center gap-1.5">
-                        <p className="text-[11px] text-muted-foreground">
-                            มีปัญหาในการชำระเงิน?{" "}
-                            <button 
-                                onClick={() => router.push("/support/create-ticket")} 
-                                className="text-primary hover:underline font-bold"
-                            >
-                                ติดต่อศูนย์บริการลูกค้า
-                            </button>
-                        </p>
-                        <DevNav />
-                    </div>
-                </div>
-            </div>
-        );
+    switch (step) {
+        case "qr":
+            if (method.id === "bank_transfer") {
+                return <BankTransferStep {...props} />;
+            }
+            return <QrStep {...props} />;
+        case "awaiting_review":
+            return <AwaitingReviewStep {...props} />;
+        case "processing":
+            return <ProcessingStep {...props} />;
+        case "success":
+            return <SuccessStep {...props} />;
+        default:
+            return <FailedStep {...props} />;
     }
-
-    if (step === "awaiting_review") return (
-        <div className={overlay}>
-            <div className={card}>
-                <button 
-                    onClick={onClose} 
-                    className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted text-muted-foreground transition-all cursor-pointer z-30"
-                    aria-label="Close"
-                >
-                    <X className="w-4.5 h-4.5" />
-                </button>
-                
-                <div className="flex flex-col items-center text-center py-6">
-                    {/* Animated Review Icon */}
-                    <div className="relative w-20 h-20 mb-5">
-                        <div className="absolute inset-0 rounded-full bg-yellow-500/10 animate-ping" style={{ animationDuration: "2s" }} />
-                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-yellow-400/20 to-orange-500/20 flex items-center justify-center">
-                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center shadow-lg shadow-yellow-500/30">
-                                <FileText className="w-7 h-7 text-white" />
-                            </div>
-                        </div>
-                    </div>
-
-                    <h3 className="text-lg font-extrabold text-foreground mb-1">
-                        ส่งสลิปเรียบร้อยแล้ว!
-                    </h3>
-                    <p className="text-xs text-muted-foreground mb-5 max-w-[280px]">
-                        สลิปของท่านได้รับการส่งเรียบร้อยแล้ว กรุณารอทีมงานตรวจสอบ<br />
-                        ระบบจะเติม Coin ให้อัตโนมัติหลังอนุมัติ
-                    </p>
-
-                    {/* Transaction Details */}
-                    <div className="w-full space-y-2 text-xs bg-muted/40 border border-border/30 rounded-xl p-3 mb-4">
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">สถานะ</span>
-                            <span className="px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 font-bold text-[10px]">
-                                ⏳ รอตรวจสอบ
-                            </span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">ยอดเงินโอน</span>
-                            <span className="font-bold text-foreground">฿{amount.toFixed(2)} THB</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">ธนาคาร</span>
-                            <span className="text-foreground font-semibold">{bankDetails?.name ?? "Bank Transfer"}</span>
-                        </div>
-                        <div className="flex justify-between items-center border-t border-border/20 pt-2">
-                            <span className="text-muted-foreground">เลขที่อ้างอิง</span>
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-foreground font-mono text-[11px]">{txId}</span>
-                                <button onClick={handleCopy} className="px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
-                                    {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
-                                    {copied ? "Copied" : "Copy"}
-                                </button>
-                            </div>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">วันที่ส่ง</span>
-                            <span className="text-foreground">{dateStr} {timeStr}</span>
-                        </div>
-                    </div>
-
-                    {/* Info Box */}
-                    <div className="w-full flex items-start gap-2.5 p-3 rounded-xl bg-blue-500/5 border border-blue-500/20 mb-4">
-                        <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-                        <div className="text-left">
-                            <p className="text-[11px] font-bold text-blue-600 dark:text-blue-400 mb-0.5">ขั้นตอนถัดไป</p>
-                            <p className="text-[10px] text-muted-foreground leading-relaxed">
-                                ทีมงานจะตรวจสอบสลิปภายใน 5-15 นาที หากข้อมูลถูกต้อง ระบบจะเติม Coin ให้อัตโนมัติ คุณสามารถตรวจสอบสถานะได้ที่หน้าประวัติการเติมเงิน
-                            </p>
-                        </div>
-                    </div>
-
-                    {verificationMessage && (
-                        <div className="w-full rounded-2xl border border-rose-200 bg-rose-50 p-4 text-xs text-rose-700 mb-4">
-                            <p className="font-bold mb-2">Slip2Go ไม่ผ่าน</p>
-                            <p>{verificationMessage}</p>
-                        </div>
-                    )}
-
-                    {/* Buttons removed as requested */}
-                </div>
-            </div>
-        </div>
-    );
-
-    if (step === "qr") return (
-        <div className={overlay}>
-            <div className={card}>
-                <button 
-                    onClick={onClose} 
-                    className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted text-muted-foreground transition-all cursor-pointer z-30"
-                    aria-label="Close"
-                >
-                    <X className="w-4.5 h-4.5" />
-                </button>
-                
-                <p className="text-center text-xs text-muted-foreground pb-1 pr-6 pt-1">
-                    {t.qrScanInstruction(method.name)}
-                </p>
-                <div className="pb-2">
-                    <div className="flex items-center justify-between mb-4 p-3 rounded-xl bg-muted/40 border border-border/30 mt-3">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                                <Wallet className="w-4 h-4 text-white" />
-                            </div>
-                            <div>
-                                <p className="text-xs font-extrabold text-foreground leading-none">CYBERPAY</p>
-                                <p className="text-[10px] text-muted-foreground">Game Top-up Platform</p>
-                            </div>
-                        </div>
-                        <div className="px-3 py-1.5 rounded-lg text-xs font-bold text-white shadow-sm" style={{ background: method.color }}>
-                            {method.name}
-                        </div>
-                    </div>
-                    <div className="space-y-2 mb-4 text-xs bg-muted/40 border border-border/30 rounded-xl p-3">
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">{t.qrAmount}</span>
-                            <span className="font-bold text-yellow-600 dark:text-yellow-400">฿{amount.toFixed(2)} THB</span>
-                        </div>
-                        <div className="flex justify-between">
-                            <span className="text-muted-foreground">{t.qrExpiry}</span>
-                            <span className="text-foreground">{dateStr}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">{t.qrRef}</span>
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-foreground font-mono text-[11px]">{txId}</span>
-                                <button onClick={handleCopy} className="px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
-                                    {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
-                                    {copied ? "Copied" : "Copy"}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <p className="text-center text-[11px] text-muted-foreground mb-3">{t.qrScanHint}</p>
-                    <div className="bg-white rounded-2xl p-4 mx-auto w-fit mb-3 flex items-center justify-center border border-border/20 shadow-sm">
-                        <QRCode
-                            value={`cyberpay://topup?txId=${txId}&amount=${amount}&method=${method.id}`}
-                            size={120}
-                            bgColor="#ffffff"
-                            fgColor="#09090b"
-                        />
-                    </div>
-                    <button className="w-full py-2.5 rounded-xl border border-border/50 text-xs text-muted-foreground hover:bg-muted flex items-center justify-center gap-2 mb-3 transition-colors">
-                        <Download className="w-3.5 h-3.5" /> {t.qrSaveBtn}
-                    </button>
-                    <p className="text-center text-[11px] text-muted-foreground/80 mb-3">{t.qrNote(method.name)}</p>
-                    <p className="text-center text-xs text-muted-foreground mb-2">{t.qrTimeLeft?.replace("3", String(Math.ceil(countdown / 60))) || ""}</p>
-                    <div className="text-center mb-4">
-                        <span className="font-mono font-black text-2xl tracking-widest text-foreground">
-                            {mm}:{ss}
-                        </span>
-                    </div>
-                </div>
-                <div className="border-t border-border/50 pt-4 text-center flex flex-col items-center gap-1.5">
-                    <p className="text-[11px] text-muted-foreground">
-                        มีปัญหาในการชำระเงิน?{" "}
-                        <button 
-                            onClick={() => router.push("/support/create-ticket")} 
-                            className="text-primary hover:underline font-bold"
-                        >
-                            ติดต่อศูนย์บริการลูกค้า
-                        </button>
-                    </p>
-                    <DevNav />
-                </div>
-            </div>
-        </div>
-    );
-
-    if (step === "processing") return (
-        <div className={overlay}>
-            <div className={card}>
-                <button 
-                    onClick={onClose} 
-                    className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted text-muted-foreground transition-all cursor-pointer z-30"
-                    aria-label="Close"
-                >
-                    <X className="w-4.5 h-4.5" />
-                </button>
-                <div className="flex flex-col items-center text-center py-2 pr-6 pt-1">
-                    <div className="text-2xl font-extrabold text-white mb-0.5">GACHAPAY</div>
-                    <div className="text-xs text-white/40 mb-8">Game Top-up Platform</div>
-                    <div className="relative w-16 h-16 mb-6">
-                        <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary border-l-yellow-400 animate-spin" />
-                        <div className="absolute inset-2 rounded-full border-4 border-transparent border-b-purple-400 animate-spin" style={{ animationDirection: "reverse", animationDuration: "0.8s" }} />
-                    </div>
-                    <p className="font-bold text-white mb-2">{t.processingTitle}</p>
-                    <p className="text-xs text-white/50 mb-6">{t.processingDesc}</p>
-                    <div className="w-full py-2.5 rounded-xl bg-yellow-500/20 border border-yellow-500/30 flex items-center justify-center gap-2 text-xs text-yellow-400 mb-4">
-                        <AlertTriangle className="w-3.5 h-3.5" /> {t.processingWarning}
-                    </div>
-                    <p className="text-xs text-white/30">{t.processingRefId}: {txId}</p>
-                    <DevNav />
-                </div>
-            </div>
-        </div>
-    );
-
-    if (step === "success") return (
-        <div className={overlay}>
-            <div className={card}>
-                <div className="absolute top-0 inset-x-0 h-1.5 rounded-t-3xl bg-green-400" />
-                <button 
-                    onClick={onClose} 
-                    className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted text-muted-foreground transition-all cursor-pointer z-30"
-                    aria-label="Close"
-                >
-                    <X className="w-4.5 h-4.5" />
-                </button>
-                <div className="flex flex-col items-center text-center pt-2">
-                    <div className="w-14 h-14 rounded-full border-2 border-green-400 flex items-center justify-center mb-4">
-                        <Check className="w-7 h-7 text-green-400" />
-                    </div>
-                    <p className="font-bold text-green-400 text-lg mb-2">{t.paymentSuccessTitle}</p>
-                    <p className="text-xs text-muted-foreground mb-5 leading-relaxed">
-                        {t.paymentSuccessDesc}<br />
-                        <span className="text-foreground font-medium">{t.successEmailNote}</span> {t.successEmailNote2}
-                    </p>
-                    <div className="w-full space-y-2 text-xs mb-5 text-left bg-muted/40 border border-border/30 rounded-xl p-4">
-                        {[[t.txItem, "Top-up Balance"], [t.txChannel, method.name], [t.txTime, `${dateStr}, ${timeStr}`]].map(([k, v]) => (
-                            <div key={k} className="flex justify-between">
-                                <span className="text-muted-foreground">{k}</span>
-                                <span className="text-foreground font-semibold">{v}</span>
-                            </div>
-                        ))}
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">{t.txRefId}</span>
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-foreground font-mono text-[11px]">{txId}</span>
-                                <button onClick={handleCopy} className="px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1">
-                                    {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />} Copy
-                                </button>
-                            </div>
-                        </div>
-                        <div className="flex justify-between border-t border-border/50 pt-2">
-                            <span className="text-muted-foreground">{t.txTotalPaid}</span>
-                            <span className="font-bold text-foreground">฿{amount.toFixed(2)} THB</span>
-                        </div>
-                    </div>
-                    <button onClick={onClose} className="w-full py-3 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold text-sm mb-3 transition-colors">
-                        {t.backToHome}
-                    </button>
-                </div>
-                <DevNav />
-            </div>
-        </div>
-    );
-
-    return (
-        <div className={overlay}>
-            <div className={card}>
-                <div className="absolute top-0 inset-x-0 h-1.5 rounded-t-3xl bg-red-500" />
-                <button 
-                    onClick={onClose} 
-                    className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-muted text-muted-foreground transition-all cursor-pointer z-30"
-                    aria-label="Close"
-                >
-                    <X className="w-4.5 h-4.5" />
-                </button>
-                <div className="flex flex-col items-center text-center pt-2">
-                    <div className="w-14 h-14 rounded-full border-2 border-red-500 flex items-center justify-center mb-4">
-                        <X className="w-7 h-7 text-red-500" />
-                    </div>
-                    <p className="font-bold text-red-400 text-lg mb-2">{t.failedTitle}</p>
-                    <p className="text-xs text-muted-foreground mb-5 leading-relaxed">{t.failedDesc}</p>
-                    <div className="w-full space-y-2 text-xs mb-5 text-left bg-muted/40 border border-border/30 rounded-xl p-4">
-                        {[[t.txItem, "Top-up Balance"], [t.txTime, `${dateStr}, ${timeStr}`]].map(([k, v]) => (
-                            <div key={k} className="flex justify-between">
-                                <span className="text-muted-foreground">{k}</span>
-                                <span className="text-foreground font-semibold">{v}</span>
-                            </div>
-                        ))}
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">{t.txRefId}</span>
-                            <div className="flex items-center gap-1.5">
-                                <span className="text-foreground font-mono text-[11px]">{txId}</span>
-                                <button onClick={handleCopy} className="px-1.5 py-0.5 rounded bg-muted hover:bg-muted/80 text-[10px] text-muted-foreground hover:text-foreground flex items-center gap-1">
-                                    {copied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />} Copy
-                                </button>
-                            </div>
-                        </div>
-                        <div className="flex justify-between border-t border-border/50 pt-2">
-                            <span className="text-muted-foreground">{t.txTotalDue}</span>
-                            <span className="font-bold text-foreground">฿{amount.toFixed(2)} THB</span>
-                        </div>
-                    </div>
-                    <button onClick={onRetry} className="w-full py-3 rounded-xl bg-red-500 hover:bg-red-600 text-white font-bold text-sm mb-2 transition-colors flex items-center justify-center gap-2">
-                        <RefreshCw className="w-4 h-4" /> {t.retryPayment}
-                    </button>
-
-                </div>
-                <p className="text-center text-[11px] text-muted-foreground mt-4 mb-1">
-                    {t.haveIssue}{" "}
-                    <button 
-                        onClick={() => router.push("/support/create-ticket")} 
-                        className="text-primary hover:underline font-bold"
-                    >
-                        {t.createTicket}
-                    </button>
-                </p>
-                <DevNav />
-            </div>
-        </div>
-    );
 }
-
 
 function ReceiptModal({ tx, onClose }: { tx: any; onClose: () => void }) {
     const [copied, setCopied] = useState(false);

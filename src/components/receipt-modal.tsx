@@ -163,12 +163,14 @@ export default function ReceiptModal({ order, user, onClose }: ReceiptModalProps
     <>
       <style dangerouslySetInnerHTML={{ __html: PRINT_STYLE }} />
 
-      <div
-        className="receipt-print-root fixed inset-0 z-50 flex items-start justify-center p-4 sm:p-6 overflow-y-auto bg-black/75 backdrop-blur-xs"
-        onClick={(e) => e.target === e.currentTarget && onClose()}
-      >
+      <div className="receipt-print-root fixed inset-0 z-50 flex items-start justify-center p-4 sm:p-6 overflow-y-auto bg-black/75 backdrop-blur-xs">
         {/* Backdrop overlay */}
-        <div className="receipt-overlay fixed inset-0" />
+        <button
+          type="button"
+          className="receipt-overlay fixed inset-0 bg-transparent border-none w-full h-full p-0 cursor-default"
+          onClick={onClose}
+          aria-label="Close modal"
+        />
 
         {/* Content Container Box */}
         <div className="relative z-10 w-full max-w-[800px] my-2">

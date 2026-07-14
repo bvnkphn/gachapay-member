@@ -21,6 +21,9 @@ interface Game {
     startingPrice?: number;
 }
 
+const SHIMMER_IDS = ["shimmer-1", "shimmer-2", "shimmer-3", "shimmer-4", "shimmer-5", "shimmer-6", "shimmer-7", "shimmer-8"];
+const STAR_INDICES = [1, 2, 3, 4, 5];
+
 // ---- Flash Sale Countdown ----
 function useCountdown(target: number | null) {
     const calc = (t: number | null) => {
@@ -300,21 +303,12 @@ export default function Home() {
 
     // Calculate earliest active flash sale end timestamp dynamically from loaded games/packages
     const flashEndTimestamp = useMemo(() => {
-        let earliestTime = Infinity;
-        for (const game of games) {
-            if (!game.packages) continue;
-            for (const pkg of game.packages) {
-                if (pkg.flashSale?.isActive && pkg.flashSale.end) {
-                    const endTime = new Date(pkg.flashSale.end).getTime();
-                    if (endTime > Date.now()) {
-                        if (endTime < earliestTime) {
-                            earliestTime = endTime;
-                        }
-                    }
-                }
-            }
-        }
-        return earliestTime === Infinity ? null : earliestTime;
+        const endTimes = games
+            .flatMap(game => game.packages || [])
+            .map(pkg => pkg.flashSale?.isActive && pkg.flashSale.end ? new Date(pkg.flashSale.end).getTime() : 0)
+            .filter(endTime => endTime > Date.now());
+        
+        return endTimes.length > 0 ? Math.min(...endTimes) : null;
     }, [games]);
 
     const countdown = useCountdown(flashEndTimestamp);
@@ -398,18 +392,16 @@ export default function Home() {
                         behavior: "smooth",
                     });
                 }
+            } else if (scrollLeft + clientWidth >= scrollWidth - 10) {
+                container.scrollTo({
+                    left: 0,
+                    behavior: "smooth"
+                });
             } else {
-                if (scrollLeft + clientWidth >= scrollWidth - 10) {
-                    container.scrollTo({
-                        left: 0,
-                        behavior: "smooth"
-                    });
-                } else {
-                    container.scrollBy({
-                        left: scrollAmount,
-                        behavior: "smooth",
-                    });
-                }
+                container.scrollBy({
+                    left: scrollAmount,
+                    behavior: "smooth",
+                });
             }
         }
     };
@@ -523,8 +515,8 @@ export default function Home() {
                 {/* Game grid */}
                 {loadingGames ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {[...Array(8)].map((_, i) => (
-                            <div key={`shimmer-${i}`} className="glass-card rounded-xl h-44 shimmer" />
+                        {SHIMMER_IDS.map((shimmerId) => (
+                            <div key={shimmerId} className="glass-card rounded-xl h-44 shimmer" />
                         ))}
                     </div>
                 ) : filteredGames.length > 0 ? (
@@ -588,10 +580,10 @@ export default function Home() {
                         <div key={r.uniqueId} className="w-[calc(100vw-32px)] sm:w-[360px] flex-shrink-0 snap-start glass-card rounded-2xl p-5 hover-lift border border-border/40 hover:border-primary/40 transition-all duration-300 shadow-md hover:shadow-primary/5">
                             {/* Stars */}
                             <div className="flex gap-0.5 mb-3">
-                                {[...Array(5)].map((_, i) => (
+                                {STAR_INDICES.map((starNum) => (
                                     <Star
-                                        key={`star-${r.uniqueId}-${i}`}
-                                        className={`w-4 h-4 ${i < r.stars ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground"}`}
+                                        key={`star-${r.uniqueId}-${starNum}`}
+                                        className={`w-4 h-4 ${starNum <= r.stars ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground"}`}
                                     />
                                 ))}
                             </div>

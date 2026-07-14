@@ -13,6 +13,8 @@ import { api } from "@/lib/api";
 import { useTheme } from "next-themes";
 import { useLanguage } from "@/components/language-context";
 
+const OTP_FIELD_KEYS = ["otp-input-0", "otp-input-1", "otp-input-2", "otp-input-3", "otp-input-4", "otp-input-5"];
+
 function VerifyOtpContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -176,16 +178,16 @@ function VerifyOtpContent() {
                             <div className="space-y-2">
                                 <Label className="text-center block">รหัส OTP</Label>
                                 <div className="flex gap-2 justify-center">
-                                    {otp.map((digit, index) => (
+                                    {OTP_FIELD_KEYS.map((keyName, index) => (
                                         <Input
-                                            key={`otp-box-${index}`}
+                                            key={keyName}
                                             ref={(el) => {
                                                 inputRefs.current[index] = el;
                                             }}
                                             type="text"
                                             inputMode="numeric"
                                             maxLength={1}
-                                            value={digit}
+                                            value={otp[index]}
                                             onChange={(e) => handleOtpChange(index, e.target.value)}
                                             onKeyDown={(e) => handleKeyDown(index, e)}
                                             onPaste={handlePaste}

@@ -177,7 +177,6 @@ export default function TicketDetailPage() {
     const router = useRouter();
     const params = useParams();
     const { lang } = useLanguage();
-    
 
     const ticketId = params?.id as string;
     const [ticket, setTicket] = useState<SupportTicket | null>(
@@ -271,7 +270,6 @@ export default function TicketDetailPage() {
             minute: "2-digit",
         });
 
-    // Collect image attachments from messages for sidebar
     const imageAttachments = ticket.messages
         .filter((m) => m.attachmentUrl && !m.attachmentUrl.endsWith(".pdf"))
         .map((m) => m.attachmentUrl as string);
@@ -293,246 +291,331 @@ export default function TicketDetailPage() {
 
             <div className="min-h-screen pt-20 pb-24 bg-gradient-to-br from-primary/5 via-background to-secondary/5">
                 <div className="container mx-auto px-4 max-w-5xl">
-                        {/* Back */}
-                        <Button
-                            variant="ghost"
-                            onClick={() => router.push("/support/tickets")}
-                            className="mb-4 -ml-2"
-                        >
-                            <ArrowLeft className="w-4 h-4 mr-2" />
-                            {lang === "th" ? "กลับ" : "Back"}
-                        </Button>
+                    <Button
+                        variant="ghost"
+                        onClick={() => router.push("/support/tickets")}
+                        className="mb-4 -ml-2"
+                    >
+                        <ArrowLeft className="w-4 h-4 mr-2" />
+                        {lang === "th" ? "กลับ" : "Back"}
+                    </Button>
 
-                        <div className="flex gap-6">
-                            {/* Chat Panel */}
-                            <div className="flex-1 min-w-0 flex flex-col">
-                                {/* Ticket Header */}
-                                <div className="glass-card rounded-2xl p-4 mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-xs text-muted-foreground mb-0.5">
-                                            {ticket.id}
-                                        </p>
-                                        <h1 className="font-bold text-base tracking-wide truncate">
-                                            {ticket.subject}
-                                        </h1>
-                                    </div>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        <span className="text-xs text-muted-foreground font-medium">
-                                            {lang === "th" ? "สถานะ:" : "STATUS:"}
-                                        </span>
-                                        <span
-                                            className={cn(
-                                                "text-xs font-semibold px-2.5 py-1 rounded-full border",
-                                                status.color
-                                            )}
-                                        >
-                                            {lang === "th" ? status.label : status.labelEn}
-                                        </span>
-                                    </div>
-                                </div>
+                    <div className="flex gap-6">
+                        <div className="flex-1 min-w-0 flex flex-col">
+                            <TicketHeader ticket={ticket} status={status} lang={lang} />
 
-                                {/* Chat Window */}
-                                <div className="glass-card rounded-2xl flex-1 flex flex-col overflow-hidden">
-                                    <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[360px] max-h-[480px]">
-                                        {ticket.messages.map((msg) => {
-                                            const isUser = msg.sender === "user";
-                                            const isSystem = msg.senderName === "System";
-                                            if (isSystem) {
-                                                return (
-                                                    <div key={msg.id} className="flex justify-center">
-                                                        <div className="bg-muted/60 rounded-xl px-4 py-2 text-xs text-muted-foreground text-center max-w-xs">
-                                                            {msg.content}
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-                                            return (
-                                                <motion.div
-                                                    key={msg.id}
-                                                    initial={{ opacity: 0, y: 8 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    className={cn("flex gap-2", isUser ? "flex-row-reverse" : "flex-row")}
-                                                >
-                                                    {!isUser && (
-                                                        <div className="w-8 h-8 rounded-full bg-foreground flex items-center justify-center shrink-0 text-xs font-bold text-background">
-                                                            S
-                                                        </div>
-                                                    )}
-                                                    <div className={cn("max-w-[70%] space-y-1", isUser ? "items-end" : "items-start")}>
-                                                        {!isUser && (
-                                                            <p className="text-xs text-muted-foreground px-1">
-                                                                {msg.senderName ?? "Staff"}
-                                                            </p>
-                                                        )}
-                                                        <div
-                                                            className={cn(
-                                                                "rounded-2xl px-4 py-2.5 text-sm",
-                                                                isUser
-                                                                    ? "bg-primary text-primary-foreground rounded-tr-sm"
-                                                                    : "bg-muted text-foreground rounded-tl-sm"
-                                                            )}
-                                                        >
-                                                            {msg.content && <p>{msg.content}</p>}
-                                                            {msg.attachmentUrl && (
-                                                                <button
-                                                                    onClick={() => setLightboxSrc(msg.attachmentUrl!)}
-                                                                    className="mt-2 block"
-                                                                >
-                                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                                    <img
-                                                                        src={msg.attachmentUrl}
-                                                                        alt="attachment"
-                                                                        className="rounded-lg max-w-[200px] max-h-[150px] object-cover hover:opacity-80 transition-opacity"
-                                                                    />
-                                                                </button>
-                                                            )}
-                                                        </div>
-                                                        <p className={cn("text-[10px] text-muted-foreground px-1", isUser ? "text-right" : "text-left")}>
-                                                            {formatTime(msg.timestamp)}
-                                                        </p>
-                                                    </div>
-                                                </motion.div>
-                                            );
-                                        })}
-                                        <div ref={chatEndRef} />
-                                    </div>
+                            <div className="glass-card rounded-2xl flex-1 flex flex-col overflow-hidden">
+                                <ChatMessagesArea
+                                    messages={ticket.messages}
+                                    formatTime={formatTime}
+                                    setLightboxSrc={setLightboxSrc}
+                                    chatEndRef={chatEndRef}
+                                />
 
-                                    {/* Closed Banner */}
-                                    {isClosed && (
-                                        <div className="border-t border-border/50 p-4 text-center bg-muted/30">
-                                            <p className="text-sm font-medium text-muted-foreground">
-                                                {lang === "th" ? "ตั๋วนี้ถูกปิดแล้ว" : "This ticket has been closed"}
-                                            </p>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                {lang === "th"
-                                                    ? "หากต้องการสอบถามเพิ่มเติม กรุณาสร้างตั๋วใหม่"
-                                                    : "If you need further assistance, please create a new ticket"}
-                                            </p>
-                                             <Button
-                                                size="sm"
-                                                variant="outline"
-                                                className="mt-3 border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 hover:text-primary transition-all duration-200"
-                                                onClick={() => router.push("/support/create-ticket")}
-                                            >
-                                                {lang === "th" ? "สร้างตั๋วใหม่" : "Create New Ticket"}
-                                            </Button>
-                                        </div>
-                                    )}
-
-                                    {/* Input Area */}
-                                    {!isClosed && (
-                                        <div className="border-t border-border/50 p-3">
-                                            {/* Attach preview */}
-                                            {attachFile && (
-                                                <div className="flex items-center gap-2 mb-2 px-1">
-                                                    {attachPreview ? (
-                                                        // eslint-disable-next-line @next/next/no-img-element
-                                                        <img src={attachPreview} alt="preview" className="w-10 h-10 rounded-lg object-cover" />
-                                                    ) : (
-                                                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                                                            <FileText className="w-5 h-5 text-muted-foreground" />
-                                                        </div>
-                                                    )}
-                                                    <span className="text-xs text-muted-foreground flex-1 truncate">{attachFile.name}</span>
-                                                    <button onClick={() => { setAttachFile(null); setAttachPreview(null); }}>
-                                                        <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                                                    </button>
-                                                </div>
-                                            )}
-                                            {fileError && (
-                                                <p className="text-xs text-destructive mb-2 px-1">{fileError}</p>
-                                            )}
-                                            <div className="flex items-end gap-2">
-                                                <input
-                                                    ref={fileInputRef}
-                                                    type="file"
-                                                    className="hidden"
-                                                    accept=".jpg,.jpeg,.png,.pdf"
-                                                    onChange={handleFileChange}
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => { setFileError(null); fileInputRef.current?.click(); }}
-                                                    className="p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground shrink-0"
-                                                    title={lang === "th" ? "แนบไฟล์" : "Attach file"}
-                                                >
-                                                    <Paperclip className="w-5 h-5" />
-                                                </button>
-                                                <textarea
-                                                    value={message}
-                                                    onChange={(e) => setMessage(e.target.value)}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === "Enter" && !e.shiftKey) {
-                                                            e.preventDefault();
-                                                            handleSend();
-                                                        }
-                                                    }}
-                                                    placeholder={lang === "th" ? "พิมพ์ข้อความ..." : "Type a message..."}
-                                                    rows={1}
-                                                    className="flex-1 bg-muted/50 rounded-xl px-3 py-2 text-sm resize-none outline-none focus:ring-1 focus:ring-primary/50 min-h-[40px] max-h-[120px]"
-                                                />
-                                                <Button
-                                                    size="icon"
-                                                    onClick={handleSend}
-                                                    disabled={!message.trim() && !attachFile}
-                                                    className="bg-gradient-cyber shrink-0 rounded-xl w-10 h-10"
-                                                >
-                                                    <Send className="w-4 h-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
+                                <ChatInputArea
+                                    isClosed={isClosed}
+                                    attachFile={attachFile}
+                                    attachPreview={attachPreview}
+                                    fileError={fileError}
+                                    setAttachFile={setAttachFile}
+                                    setAttachPreview={setAttachPreview}
+                                    fileInputRef={fileInputRef}
+                                    handleFileChange={handleFileChange}
+                                    message={message}
+                                    setMessage={setMessage}
+                                    handleSend={handleSend}
+                                    lang={lang}
+                                    setFileError={setFileError}
+                                    router={router}
+                                />
                             </div>
+                        </div>
 
-                            {/* Right Sidebar (Desktop) */}
-                            <aside className="hidden lg:flex flex-col w-56 shrink-0 gap-4">
-                                {/* Actions */}
-                                {!isClosed && (
-                                    <div className="glass-card rounded-2xl p-4">
-                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                                            {lang === "th" ? "การดำเนินการ" : "Actions"}
-                                        </p>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="w-full text-xs border-destructive/40 text-destructive hover:bg-destructive/10"
-                                            onClick={() => setShowConfirm(true)}
-                                        >
-                                            {lang === "th" ? "ปิดตั๋ว (แก้ไขแล้ว)" : "Close Ticket (Solve)"}
-                                        </Button>
-                                    </div>
-                                )}
-
-                                {/* Attachments */}
-                                <div className="glass-card rounded-2xl p-4">
-                                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                                        <ImageIcon className="w-3.5 h-3.5" />
-                                        {lang === "th" ? "ไฟล์แนบ" : "Attachments"}
-                                    </p>
-                                    {imageAttachments.length === 0 ? (
-                                        <p className="text-xs text-muted-foreground">
-                                            {lang === "th" ? "ไม่มีไฟล์แนบ" : "No attachments"}
-                                        </p>
-                                    ) : (
-                                        <div className="grid grid-cols-2 gap-2">
-                                            {imageAttachments.map((src, i) => (
-                                                <button
-                                                    key={src}
-                                                    onClick={() => setLightboxSrc(src)}
-                                                    className="aspect-square rounded-lg overflow-hidden hover:opacity-80 transition-opacity"
-                                                >
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img src={src} alt={`attachment-${i}`} className="w-full h-full object-cover" />
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                            </aside>
+                        <RightSidebar
+                            isClosed={isClosed}
+                            setShowConfirm={setShowConfirm}
+                            imageAttachments={imageAttachments}
+                            setLightboxSrc={setLightboxSrc}
+                            lang={lang}
+                        />
                     </div>
                 </div>
             </div>
         </>
+    );
+}
+
+
+interface TicketHeaderProps {
+    ticket: SupportTicket;
+    status: any;
+    lang: string;
+}
+
+function TicketHeader({ ticket, status, lang }: TicketHeaderProps) {
+    return (
+        <div className="glass-card rounded-2xl p-4 mb-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground mb-0.5">{ticket.id}</p>
+                <h1 className="font-bold text-base tracking-wide truncate">{ticket.subject}</h1>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs text-muted-foreground font-medium">
+                    {lang === "th" ? "สถานะ:" : "STATUS:"}
+                </span>
+                <span className={cn("text-xs font-semibold px-2.5 py-1 rounded-full border", status.color)}>
+                    {lang === "th" ? status.label : status.labelEn}
+                </span>
+            </div>
+        </div>
+    );
+}
+
+interface ChatMessagesAreaProps {
+    messages: ChatMessage[];
+    formatTime: (date: Date) => string;
+    setLightboxSrc: (src: string) => void;
+    chatEndRef: React.RefObject<HTMLDivElement | null>;
+}
+
+function ChatMessagesArea({ messages, formatTime, setLightboxSrc, chatEndRef }: ChatMessagesAreaProps) {
+    return (
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[360px] max-h-[480px]">
+            {messages.map((msg) => {
+                const isUser = msg.sender === "user";
+                const isSystem = msg.senderName === "System";
+                if (isSystem) {
+                    return (
+                        <div key={msg.id} className="flex justify-center">
+                            <div className="bg-muted/60 rounded-xl px-4 py-2 text-xs text-muted-foreground text-center max-w-xs">
+                                {msg.content}
+                            </div>
+                        </div>
+                    );
+                }
+                return (
+                    <motion.div
+                        key={msg.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={cn("flex gap-2", isUser ? "flex-row-reverse" : "flex-row")}
+                    >
+                        {!isUser && (
+                            <div className="w-8 h-8 rounded-full bg-foreground flex items-center justify-center shrink-0 text-xs font-bold text-background">
+                                S
+                            </div>
+                        )}
+                        <div className={cn("max-w-[70%] space-y-1", isUser ? "items-end" : "items-start")}>
+                            {!isUser && (
+                                <p className="text-xs text-muted-foreground px-1">
+                                    {msg.senderName ?? "Staff"}
+                                </p>
+                            )}
+                            <div
+                                className={cn(
+                                    "rounded-2xl px-4 py-2.5 text-sm",
+                                    isUser
+                                        ? "bg-primary text-primary-foreground rounded-tr-sm"
+                                        : "bg-muted text-foreground rounded-tl-sm"
+                                )}
+                            >
+                                {msg.content && <p>{msg.content}</p>}
+                                {msg.attachmentUrl && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setLightboxSrc(msg.attachmentUrl!)}
+                                        className="mt-2 block"
+                                    >
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img
+                                            src={msg.attachmentUrl}
+                                            alt="attachment"
+                                            className="rounded-lg max-w-[200px] max-h-[150px] object-cover hover:opacity-80 transition-opacity"
+                                        />
+                                    </button>
+                                )}
+                            </div>
+                            <p className={cn("text-[10px] text-muted-foreground px-1", isUser ? "text-right" : "text-left")}>
+                                {formatTime(msg.timestamp)}
+                            </p>
+                        </div>
+                    </motion.div>
+                );
+            })}
+            <div ref={chatEndRef} />
+        </div>
+    );
+}
+
+interface ChatInputAreaProps {
+    isClosed: boolean;
+    attachFile: File | null;
+    attachPreview: string | null;
+    fileError: string | null;
+    setAttachFile: (file: File | null) => void;
+    setAttachPreview: (preview: string | null) => void;
+    fileInputRef: React.RefObject<HTMLInputElement | null>;
+    handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    message: string;
+    setMessage: (msg: string) => void;
+    handleSend: () => void;
+    lang: string;
+    setFileError: (err: string | null) => void;
+    router: any;
+}
+
+function ChatInputArea({
+    isClosed,
+    attachFile,
+    attachPreview,
+    fileError,
+    setAttachFile,
+    setAttachPreview,
+    fileInputRef,
+    handleFileChange,
+    message,
+    setMessage,
+    handleSend,
+    lang,
+    setFileError,
+    router,
+}: ChatInputAreaProps) {
+    if (isClosed) {
+        return (
+            <div className="border-t border-border/50 p-4 text-center bg-muted/30">
+                <p className="text-sm font-medium text-muted-foreground">
+                    {lang === "th" ? "ตั๋วนี้ถูกปิดแล้ว" : "This ticket has been closed"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                    {lang === "th"
+                        ? "หากต้องการสอบถามเพิ่มเติม กรุณาสร้างตั๋วใหม่"
+                        : "If you need further assistance, please create a new ticket"}
+                </p>
+                <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-3 border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 hover:text-primary transition-all duration-200"
+                    onClick={() => router.push("/support/create-ticket")}
+                >
+                    {lang === "th" ? "สร้างตั๋วใหม่" : "Create New Ticket"}
+                </Button>
+            </div>
+        );
+    }
+
+    return (
+        <div className="border-t border-border/50 p-3">
+            {attachFile && (
+                <div className="flex items-center gap-2 mb-2 px-1">
+                    {attachPreview ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={attachPreview} alt="preview" className="w-10 h-10 rounded-lg object-cover" />
+                    ) : (
+                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                            <FileText className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                    )}
+                    <span className="text-xs text-muted-foreground flex-1 truncate">{attachFile.name}</span>
+                    <button type="button" onClick={() => { setAttachFile(null); setAttachPreview(null); }}>
+                        <X className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                    </button>
+                </div>
+            )}
+            {fileError && <p className="text-xs text-destructive mb-2 px-1">{fileError}</p>}
+            <div className="flex items-end gap-2">
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    className="hidden"
+                    accept=".jpg,.jpeg,.png,.pdf"
+                    onChange={handleFileChange}
+                />
+                <button
+                    type="button"
+                    onClick={() => { setFileError(null); fileInputRef.current?.click(); }}
+                    className="p-2 rounded-xl hover:bg-muted transition-colors text-muted-foreground hover:text-foreground shrink-0 cursor-pointer"
+                    title={lang === "th" ? "แนบไฟล์" : "Attach file"}
+                >
+                    <Paperclip className="w-5 h-5" />
+                </button>
+                <textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSend();
+                        }
+                    }}
+                    placeholder={lang === "th" ? "พิมพ์ข้อความ..." : "Type a message..."}
+                    rows={1}
+                    className="flex-1 bg-muted/50 rounded-xl px-3 py-2 text-sm resize-none outline-none focus:ring-1 focus:ring-primary/50 min-h-[40px] max-h-[120px]"
+                />
+                <Button
+                    size="icon"
+                    onClick={handleSend}
+                    disabled={!message.trim() && !attachFile}
+                    className="bg-gradient-cyber shrink-0 rounded-xl w-10 h-10"
+                >
+                    <Send className="w-4 h-4" />
+                </Button>
+            </div>
+        </div>
+    );
+}
+
+interface RightSidebarProps {
+    isClosed: boolean;
+    setShowConfirm: (show: boolean) => void;
+    imageAttachments: string[];
+    setLightboxSrc: (src: string) => void;
+    lang: string;
+}
+
+function RightSidebar({ isClosed, setShowConfirm, imageAttachments, setLightboxSrc, lang }: RightSidebarProps) {
+    return (
+        <aside className="hidden lg:flex flex-col w-56 shrink-0 gap-4">
+            {!isClosed && (
+                <div className="glass-card rounded-2xl p-4">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                        {lang === "th" ? "การดำเนินการ" : "Actions"}
+                    </p>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-xs border-destructive/40 text-destructive hover:bg-destructive/10"
+                        onClick={() => setShowConfirm(true)}
+                    >
+                        {lang === "th" ? "ปิดตั๋ว (แก้ไขแล้ว)" : "Close Ticket (Solve)"}
+                    </Button>
+                </div>
+            )}
+
+            <div className="glass-card rounded-2xl p-4">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5" />
+                    {lang === "th" ? "ไฟล์แนบ" : "Attachments"}
+                </p>
+                {imageAttachments.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                        {lang === "th" ? "ไม่มีไฟล์แนบ" : "No attachments"}
+                    </p>
+                ) : (
+                    <div className="grid grid-cols-2 gap-2">
+                        {imageAttachments.map((src, i) => (
+                            <button
+                                type="button"
+                                key={src}
+                                onClick={() => setLightboxSrc(src)}
+                                className="aspect-square rounded-lg overflow-hidden hover:opacity-80 transition-opacity cursor-pointer"
+                            >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={src} alt={`attachment-${i}`} className="w-full h-full object-cover" />
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </aside>
     );
 }

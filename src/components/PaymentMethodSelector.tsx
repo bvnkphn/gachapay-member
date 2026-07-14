@@ -74,18 +74,21 @@ export default function PaymentMethodSelector({
                     const isSelected = selectedMethod === method.id;
                     const isDisabledOption = disabled || (method.id === 'gacha_wallet' && insufficientBalance);
 
+                    let buttonStyles = '';
+                    if (isSelected) {
+                        buttonStyles = 'border-primary bg-primary/10 shadow-lg';
+                    } else if (isDisabledOption) {
+                        buttonStyles = 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50';
+                    } else {
+                        buttonStyles = 'border-gray-200 bg-white hover:border-primary/50 hover:bg-gray-50';
+                    }
+
                     return (
                         <button
                             key={method.id}
                             onClick={() => !isDisabledOption && onMethodSelect(method.id)}
                             disabled={isDisabledOption}
-                            className={`relative p-4 rounded-xl border-2 transition-all ${
-                                isSelected
-                                    ? 'border-primary bg-primary/10 shadow-lg'
-                                    : isDisabledOption
-                                      ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-50'
-                                      : 'border-gray-200 bg-white hover:border-primary/50 hover:bg-gray-50'
-                            }`}
+                            className={`relative p-4 rounded-xl border-2 transition-all ${buttonStyles}`}
                         >
                             {/* Selection indicator */}
                             {isSelected && (

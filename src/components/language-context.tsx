@@ -869,39 +869,46 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+function evaluateRules(lowerMessage: string, lang: Lang, errorLogin: string): string | null {
+  if (lowerMessage.includes("credentials")) {
+    return errorLogin || (lang === "th" ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง" : "Incorrect email or password");
+  }
+  if (lowerMessage.includes("email already") || lowerMessage.includes("registered") || lowerMessage.includes("conflict")) {
+    return lang === "th" ? "อีเมลนี้ได้รับการลงทะเบียนแล้ว" : "Email already registered";
+  }
+  if (lowerMessage.includes("otp")) {
+    if (lowerMessage.includes("attempt") || lowerMessage.includes("limit") || lowerMessage.includes("too many")) {
+      return lang === "th" ? "ป้อนรหัส OTP ผิดเกินจำนวนครั้งที่กำหนด" : "Too many attempts. Please request a new OTP";
+    }
+    if (lowerMessage.includes("expired")) {
+      return lang === "th" ? "รหัส OTP หมดอายุแล้ว" : "OTP code has expired";
+    }
+    return lang === "th" ? "รหัส OTP ไม่ถูกต้อง" : "Invalid OTP";
+  }
+  if (lowerMessage.includes("expired") || lowerMessage.includes("token")) {
+    return lang === "th" ? "ลิงก์หรือโทเคนหมดอายุแล้ว" : "Link or token has expired";
+  }
+  if (lowerMessage.includes("not found")) {
+    return lang === "th" ? "ไม่พบข้อมูลที่ระบุ" : "Not found";
+  }
+  return null;
+}
+
 export function useLanguage() {
   const context = useContext(LanguageContext);
   
   const translateError = (errorMessage: string | undefined | null): string => {
     if (!errorMessage) return context.lang === "th" ? "เกิดข้อผิดพลาด" : "An error occurred";
     
-    // Check direct mapping
     const errorMap = (context.t as any).errorMap;
     if (errorMap && errorMap[errorMessage]) {
       return errorMap[errorMessage];
     }
     
     const lowerMessage = errorMessage.toLowerCase();
-    if (lowerMessage.includes("credentials")) {
-      return context.t.errorLogin || (context.lang === "th" ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง" : "Incorrect email or password");
-    }
-    if (lowerMessage.includes("email already") || lowerMessage.includes("registered") || lowerMessage.includes("conflict")) {
-      return context.lang === "th" ? "อีเมลนี้ได้รับการลงทะเบียนแล้ว" : "Email already registered";
-    }
-    if (lowerMessage.includes("otp")) {
-      if (lowerMessage.includes("attempt") || lowerMessage.includes("limit") || lowerMessage.includes("too many")) {
-        return context.lang === "th" ? "ป้อนรหัส OTP ผิดเกินจำนวนครั้งที่กำหนด" : "Too many attempts. Please request a new OTP";
-      }
-      if (lowerMessage.includes("expired")) {
-        return context.lang === "th" ? "รหัส OTP หมดอายุแล้ว" : "OTP code has expired";
-      }
-      return context.lang === "th" ? "รหัส OTP ไม่ถูกต้อง" : "Invalid OTP";
-    }
-    if (lowerMessage.includes("expired") || lowerMessage.includes("token")) {
-      return context.lang === "th" ? "ลิงก์หรือโทเคนหมดอายุแล้ว" : "Link or token has expired";
-    }
-    if (lowerMessage.includes("not found")) {
-      return context.lang === "th" ? "ไม่พบข้อมูลที่ระบุ" : "Not found";
+    const ruleMatch = evaluateRules(lowerMessage, context.lang, context.t.errorLogin);
+    if (ruleMatch !== null) {
+      return ruleMatch;
     }
     
     return errorMessage;
