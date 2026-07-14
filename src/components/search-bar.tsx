@@ -13,7 +13,8 @@ export function SearchBar() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        router.push(`/search${query ? `?q=${encodeURIComponent(query)}` : ""}`);
+        const url = query ? `/search?q=${encodeURIComponent(query)}` : '/search';
+        router.push(url);
     };
 
     return (

@@ -1,31 +1,66 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
+function getToken(): string | null {
+    if (typeof window === "undefined") return null;
+    const isAdminPage = window.location.pathname.startsWith("/admin");
+    const storageKey = isAdminPage ? "admin-auth-storage" : "auth-storage";
+    try {
+        const authData = localStorage.getItem(storageKey);
+        if (authData) {
+            const state = JSON.parse(authData);
+            return state?.state?.token || null;
+        }
+    } catch {}
+    return null;
+}
+
+async function handleMaintenanceError(response: Response) {
+    try {
+        const clone = response.clone();
+        const body = await clone.json();
+        if (body && body.maintenance) {
+            if (typeof window !== "undefined") {
+                const isAdminPage = window.location.pathname.startsWith("/admin");
+                if (!isAdminPage && window.location.pathname !== "/maintenance") {
+                    window.location.href = `/maintenance?msg=${encodeURIComponent(body.message || "")}`;
+                }
+            }
+        }
+    } catch {}
+}
+
+async function handleUnauthorized(response: Response, endpoint: string, errorMessage: string) {
+    if (endpoint.includes("/auth/login")) {
+        throw new Error(errorMessage || "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+    }
+    if (typeof window !== "undefined") {
+        const isAdminPage = window.location.pathname.startsWith("/admin");
+        if (isAdminPage) {
+            localStorage.removeItem("admin-auth-storage");
+        } else {
+            localStorage.removeItem("auth-storage");
+        }
+        window.location.href = `/login?expired=true&err=${encodeURIComponent(errorMessage)}&endpoint=${encodeURIComponent(endpoint)}`;
+    }
+    throw new Error(`เซสชันการใช้งานหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง (${endpoint} -> ${errorMessage})`);
+}
+
+async function parseResponseError(response: Response) {
+    let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+    try {
+        const error = await response.clone().json();
+        if (error && error.message) {
+            errorMessage = error.message;
+        }
+    } catch {}
+    return errorMessage;
+}
+
 export async function apiRequest(
     endpoint: string,
     options: RequestInit = {}
 ) {
-    // Use admin token for /admin pages, and user token for public/user pages to avoid cross-pollution
-    let parsedToken: string | null = null;
-    if (typeof window !== "undefined") {
-        const isAdminPage = window.location.pathname.startsWith("/admin");
-        if (isAdminPage) {
-            try {
-                const adminAuth = localStorage.getItem("admin-auth-storage");
-                if (adminAuth) {
-                    const adminState = JSON.parse(adminAuth);
-                    parsedToken = adminState?.state?.token || null;
-                }
-            } catch {}
-        } else {
-            try {
-                const userAuth = localStorage.getItem("auth-storage");
-                if (userAuth) {
-                    const userState = JSON.parse(userAuth);
-                    parsedToken = userState?.state?.token || null;
-                }
-            } catch {}
-        }
-    }
+    const parsedToken = getToken();
 
     const headers: Record<string, string> = {
         "Content-Type": "application/json",
@@ -43,43 +78,13 @@ export async function apiRequest(
 
     if (!response.ok) {
         if (response.status === 503) {
-            try {
-                const clone = response.clone();
-                const body = await clone.json();
-                if (body && body.maintenance) {
-                    if (typeof window !== "undefined") {
-                        const isAdminPage = window.location.pathname.startsWith("/admin");
-                        if (!isAdminPage && window.location.pathname !== "/maintenance") {
-                            window.location.href = `/maintenance?msg=${encodeURIComponent(body.message || "")}`;
-                            return null;
-                        }
-                    }
-                }
-            } catch {}
+            await handleMaintenanceError(response);
+            return null;
         }
-        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
-        try {
-            const error = await response.clone().json();
-            if (error && error.message) {
-                errorMessage = error.message;
-            }
-        } catch {}
+        const errorMessage = await parseResponseError(response);
 
         if (response.status === 401) {
-            // Do not intercept login attempts with session expiration redirects/messages
-            if (endpoint.includes("/auth/login")) {
-                throw new Error(errorMessage || "อีเมลหรือรหัสผ่านไม่ถูกต้อง");
-            }
-            if (typeof window !== "undefined") {
-                const isAdminPage = window.location.pathname.startsWith("/admin");
-                if (isAdminPage) {
-                    localStorage.removeItem("admin-auth-storage");
-                } else {
-                    localStorage.removeItem("auth-storage");
-                }
-                window.location.href = `/login?expired=true&err=${encodeURIComponent(errorMessage)}&endpoint=${encodeURIComponent(endpoint)}`;
-            }
-            throw new Error(`เซสชันการใช้งานหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง (${endpoint} -> ${errorMessage})`);
+            await handleUnauthorized(response, endpoint, errorMessage);
         }
         console.error('API Error Response:', { status: response.status, message: errorMessage });
         throw new Error(errorMessage);

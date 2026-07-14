@@ -99,6 +99,50 @@ export default function BannerSlider() {
     }
   };
 
+  const getActionButton = () => {
+    if (!selectedBanner) return null;
+    if (selectedBanner.uuid === 'mock-1') {
+      return (
+        <button
+          onClick={() => {
+            window.dispatchEvent(new Event("open-gacha-modal"));
+            setSelectedBanner(null);
+          }}
+          className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-semibold transition cursor-pointer shadow-lg shadow-cyan-500/20"
+        >
+          หมุนวงล้อนำโชค
+        </button>
+      );
+    }
+    if (selectedBanner.uuid === 'mock-2') {
+      return (
+        <button
+          onClick={() => {
+            navigator.clipboard.writeText("WELCOME");
+            toast.success("คัดลอกโค้ดส่วนลด WELCOME เรียบร้อยแล้ว!");
+            handleRedirect(selectedBanner.redirectUrl);
+          }}
+          className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-semibold transition cursor-pointer shadow-lg shadow-cyan-500/20"
+        >
+          คัดลอกโค้ดลด 15%
+        </button>
+      );
+    }
+    if (selectedBanner.redirectUrl) {
+      return (
+        <button
+          onClick={() => {
+            handleRedirect(selectedBanner.redirectUrl);
+          }}
+          className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-semibold transition cursor-pointer shadow-lg shadow-cyan-500/20"
+        >
+          เข้าร่วมกิจกรรม
+        </button>
+      );
+    }
+    return null;
+  };
+
   // Track responsive screen size
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768)
@@ -354,37 +398,7 @@ export default function BannerSlider() {
                 >
                   ปิด
                 </button>
-                {selectedBanner.uuid === 'mock-1' ? (
-                  <button
-                    onClick={() => {
-                      window.dispatchEvent(new Event("open-gacha-modal"));
-                      setSelectedBanner(null);
-                    }}
-                    className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-semibold transition cursor-pointer shadow-lg shadow-cyan-500/20"
-                  >
-                    หมุนวงล้อนำโชค
-                  </button>
-                ) : selectedBanner.uuid === 'mock-2' ? (
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText("WELCOME");
-                      toast.success("คัดลอกโค้ดส่วนลด WELCOME เรียบร้อยแล้ว!");
-                      handleRedirect(selectedBanner.redirectUrl);
-                    }}
-                    className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-semibold transition cursor-pointer shadow-lg shadow-cyan-500/20"
-                  >
-                    คัดลอกโค้ดลด 15%
-                  </button>
-                ) : selectedBanner.redirectUrl ? (
-                  <button
-                    onClick={() => {
-                      handleRedirect(selectedBanner.redirectUrl);
-                    }}
-                    className="flex-1 py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-xl font-semibold transition cursor-pointer shadow-lg shadow-cyan-500/20"
-                  >
-                    เข้าร่วมกิจกรรม
-                  </button>
-                ) : null}
+                {getActionButton()}
               </div>
             </div>
           </div>

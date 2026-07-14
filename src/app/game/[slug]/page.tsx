@@ -151,6 +151,31 @@ export default function GameTopupPage() {
     const vatAmount = useMemo(() => selectedPackage ? priceAfterDiscount * (vatRate / 100) : 0, [selectedPackage, priceAfterDiscount, vatRate]);
     const totalAmount = useMemo(() => selectedPackage ? priceAfterDiscount + vatAmount : 0, [selectedPackage, priceAfterDiscount, vatAmount]);
 
+    const buttonContent = useMemo(() => {
+        if (submitting) {
+            return (
+                <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    {t.processing}
+                </>
+            );
+        }
+        if (!isLoggedIn) {
+            return (
+                <>
+                    <LockIcon className="w-4.5 h-4.5 mr-2 text-muted-foreground/60" />
+                    สั่งซื้อ
+                </>
+            );
+        }
+        return (
+            <>
+                <ShoppingCart className="w-5 h-5 mr-2" />
+                สั่งซื้อ
+            </>
+        );
+    }, [submitting, isLoggedIn, t.processing]);
+
     // Auto select paymentMethod to free if totalAmount is 0
     useEffect(() => {
         if (selectedPackage && totalAmount <= 0) {
@@ -303,8 +328,111 @@ export default function GameTopupPage() {
         };
     }, [showQrPaymentModal, currentOrderId, router]);
 
+    const validateInputs = (
+        gameObj: Game,
+        formDataObj: any,
+        loggedIn: boolean,
+        selPkg: GamePackage | null,
+        methodCode: string,
+        amountVal: number,
+        balanceVal: number
+    ) => {
+        // Check all required fields
+        for (const field of gameObj.fields) {
+            if (field.required && !formDataObj[field.name]?.trim()) {
+                return { valid: false, error: `กรุณากรอกข้อมูลช่อง ${field.label} ให้เรียบร้อย` };
+            }
+        }
+
+        if (!selPkg) {
+            return { valid: false, error: "กรุณาเลือกแพ็กเกจที่ต้องการเติมเงิน" };
+        }
+
+        // Check email for guest checkout
+        if (!loggedIn && !formDataObj.email.trim()) {
+            return { valid: false, error: "กรุณากรอกอีเมลสำหรับรับใบเสร็จ" };
+        }
+
+        // Basic email validation
+        if (!loggedIn && !formDataObj.email.match(/^\S+@\S+\.\S+$/)) {
+            return { valid: false, error: "กรุณากรอกอีเมลให้ถูกต้องตามรูปแบบ" };
+        }
+
+        // Extract UID
+        const uidValue = gameObj.fields && gameObj.fields.length > 0 
+            ? formDataObj[gameObj.fields[0].name] || formDataObj.uid || formDataObj.id || ""
+            : "";
+
+        if (!uidValue.trim()) {
+            return { valid: false, error: "กรุณากรอกข้อมูล UID ของเกม" };
+        }
+
+        // Check balance for Coin payment
+        if (methodCode === "coin" && amountVal > 0) {
+            if (!loggedIn) {
+                return { valid: false, error: "กรุณาเข้าสู่ระบบเพื่อสั่งซื้อด้วยคอยน์สะสม" };
+            }
+            if (balanceVal < amountVal) {
+                return { valid: false, error: `ยอดเงินคอยน์สะสมไม่เพียงพอ\n(ต้องการ ฿${amountVal.toFixed(2)} แต่คุณมี ฿${balanceVal.toFixed(2)})\n\nกรุณาเติมเงินคอยน์ก่อนทำรายการ` };
+            }
+        }
+
+        return { valid: true, uidValue };
+    };
+
+    const handleOrderPayment = async (createdOrderId: string, methodCode: string, amountVal: number) => {
+        if (methodCode === "coin") {
+            const payResult = await api.processWalletPayment({
+                orderId: Number(createdOrderId),
+                amount: amountVal,
+                paymentMethod: "gacha_wallet"
+            });
+            if (payResult && payResult.success) {
+                setSuccess(true);
+                setOrderId(createdOrderId);
+                window.dispatchEvent(new Event("balance-changed"));
+                setTimeout(() => { router.push(`/history`); }, 2000);
+            } else {
+                throw new Error(payResult.message || "การชำระเงินด้วยคอยน์สะสมล้มเหลว");
+            }
+            return;
+        }
+
+        if (methodCode === "qr" || methodCode === "truemoney" || methodCode === "bank_transfer") {
+            const methodMap: Record<string, "promptpay" | "truemoney" | "bank_transfer"> = {
+                qr: "promptpay",
+                truemoney: "truemoney",
+                bank_transfer: "bank_transfer",
+            };
+            const methodKey = methodMap[methodCode];
+            const qrResult = await api.generateQRCode({
+                orderId: Number(createdOrderId),
+                amount: amountVal,
+                method: methodKey,
+            });
+            if (qrResult && qrResult.success) {
+                setQrCodeUrl(qrResult.data.qrCode);
+                setPaymentRef(qrResult.data.referenceNumber);
+                setShowQrPaymentModal(true);
+            } else {
+                throw new Error(qrResult.message || "ไม่สามารถสร้างรายการชำระเงินได้");
+            }
+            return;
+        }
+
+        if (methodCode === "free") {
+            setSuccess(true);
+            setOrderId(createdOrderId);
+            window.dispatchEvent(new Event("balance-changed"));
+            toast.success("สั่งซื้อสำเร็จ!");
+            setTimeout(() => { router.push(`/history`); }, 2000);
+            return;
+        }
+
+        throw new Error("ยังไม่เปิดระบบชำระเงินทางเลือกอื่น");
+    };
+
     const handleSubmit = async () => {
-        // Validation
         if (!game) return;
 
         if (!isLoggedIn) {
@@ -312,84 +440,30 @@ export default function GameTopupPage() {
             return;
         }
 
-        // Check all required fields
-        for (const field of game.fields) {
-            if (field.required && !formData[field.name]?.trim()) {
-                setWarningText(`กรุณากรอกข้อมูลช่อง ${field.label} ให้เรียบร้อย`);
-                setShowWarningModal(true);
-                return;
-            }
-        }
-
-        if (!selectedPackage) {
-            setWarningText("กรุณาเลือกแพ็กเกจที่ต้องการเติมเงิน");
+        const validation = validateInputs(game, formData, isLoggedIn, selectedPackage, paymentMethod, totalAmount, walletBalance);
+        if (!validation.valid) {
+            setWarningText(validation.error || "");
             setShowWarningModal(true);
             return;
         }
-
-        // Check email for guest checkout
-        if (!isLoggedIn && !formData.email.trim()) {
-            setWarningText("กรุณากรอกอีเมลสำหรับรับใบเสร็จ");
-            setShowWarningModal(true);
-            return;
-        }
-
-        // Basic email validation
-        if (!isLoggedIn && !formData.email.match(/^\S+@\S+\.\S+$/)) {
-            setWarningText("กรุณากรอกอีเมลให้ถูกต้องตามรูปแบบ");
-            setShowWarningModal(true);
-            return;
-        }
-
-        // Extract UID from form data - find the field with highest priority/first required field
-        const uidValue = game.fields && game.fields.length > 0 
-            ? formData[game.fields[0].name] || formData.uid || formData.id || ""
-            : "";
-
-        if (!uidValue.trim()) {
-            setWarningText("กรุณากรอกข้อมูล UID ของเกม");
-            setShowWarningModal(true);
-            return;
-        }
-
-        if (!selectedPackage) {
-            setWarningText("กรุณาเลือกแพ็กเกจที่ต้องการเติม");
-            setShowWarningModal(true);
-            return;
-        }
-
-        // totalAmount is already memoized above
-
-        // Check balance for Coin payment (skip for free checkout)
-        if (paymentMethod === "coin" && totalAmount > 0) {
-            if (!isLoggedIn) {
-                setWarningText("กรุณาเข้าสู่ระบบเพื่อสั่งซื้อด้วยคอยน์สะสม");
-                setShowWarningModal(true);
-                return;
-            }
-            if (walletBalance < totalAmount) {
-                setWarningText(`ยอดเงินคอยน์สะสมไม่เพียงพอ\n(ต้องการ ฿${totalAmount.toFixed(2)} แต่คุณมี ฿${walletBalance.toFixed(2)})\n\nกรุณาเติมเงินคอยน์ก่อนทำรายการ`);
-                setShowWarningModal(true);
-                return;
-            }
-        }
+        const uidValue = validation.uidValue;
 
         try {
             setSubmitting(true);
             setError(null);
 
-            // Map internal payment method code to backend payment method name
-            const resolvedPaymentMethod = paymentMethod === "coin" ? "gacha_wallet"
-                : paymentMethod === "qr" ? "promptpay"
-                : paymentMethod === "free" ? "free"
-                : paymentMethod; // truemoney, credit, etc.
+            const paymentMethodMap: Record<string, string> = {
+                coin: "gacha_wallet",
+                qr: "promptpay",
+                free: "free",
+            };
+            const resolvedPaymentMethod = paymentMethodMap[paymentMethod] || paymentMethod;
 
-            // Create order via backend API with correct structure
             const orderData = {
                 gameId: game.slug || String(game.id),
                 gameName: game.name,
-                packageId: selectedPackage.id,
-                packageName: selectedPackage.name,
+                packageId: selectedPackage!.id,
+                packageName: selectedPackage!.name,
                 packagePrice: selectedPackagePrice,
                 uid: uidValue,
                 email: isLoggedIn ? user?.email : formData.email,
@@ -398,7 +472,6 @@ export default function GameTopupPage() {
             };
 
             const response = await api.createOrder(orderData);
-            
             if (response && response.id) {
                 const createdOrderId = String(response.id);
                 setCurrentOrderId(createdOrderId);
@@ -414,83 +487,7 @@ export default function GameTopupPage() {
                     return;
                 }
 
-                if (paymentMethod === "coin") {
-                    // Pay with wallet balance
-                    const payResult = await api.processWalletPayment({
-                        orderId: Number(createdOrderId),
-                        amount: totalAmount,
-                        paymentMethod: "gacha_wallet"
-                    });
-
-                    if (payResult && payResult.success) {
-                        setSuccess(true);
-                        setOrderId(createdOrderId);
-                        window.dispatchEvent(new Event("balance-changed"));
-
-                        setTimeout(() => {
-                            router.push(`/history`);
-                        }, 2000);
-                    } else {
-                        throw new Error(payResult.message || "การชำระเงินด้วยคอยน์สะสมล้มเหลว");
-                    }
-                } else if (paymentMethod === "qr") {
-                    // Pay with QR Code
-                    const qrResult = await api.generateQRCode({
-                        orderId: Number(createdOrderId),
-                        amount: totalAmount,
-                        method: "promptpay"
-                    });
-
-                    if (qrResult && qrResult.success) {
-                        setQrCodeUrl(qrResult.data.qrCode);
-                        setPaymentRef(qrResult.data.referenceNumber);
-                        setShowQrPaymentModal(true);
-                    } else {
-                        throw new Error(qrResult.message || "ไม่สามารถสร้าง QR Code สแกนจ่ายได้");
-                    }
-                } else if (paymentMethod === "truemoney") {
-                    // Pay with TrueMoney Wallet (QR promptpay with method 'truemoney')
-                    const qrResult = await api.generateQRCode({
-                        orderId: Number(createdOrderId),
-                        amount: totalAmount,
-                        method: "truemoney"
-                    });
-
-                    if (qrResult && qrResult.success) {
-                        setQrCodeUrl(qrResult.data.qrCode);
-                        setPaymentRef(qrResult.data.referenceNumber);
-                        setShowQrPaymentModal(true);
-                    } else {
-                        throw new Error(qrResult.message || "ไม่สามารถสร้าง QR Code สแกนจ่ายได้");
-                    }
-                } else if (paymentMethod === "bank_transfer") {
-                    // Bank Transfer
-                    const qrResult = await api.generateQRCode({
-                        orderId: Number(createdOrderId),
-                        amount: totalAmount,
-                        method: "bank_transfer"
-                    });
-
-                    if (qrResult && qrResult.success) {
-                        setQrCodeUrl(qrResult.data.qrCode);
-                        setPaymentRef(qrResult.data.referenceNumber);
-                        setShowQrPaymentModal(true);
-                    } else {
-                        throw new Error(qrResult.message || "ไม่สามารถสร้างรายการโอนเงินได้");
-                    }
-                } else if (paymentMethod === "free") {
-                    // Free Checkout fallback
-                    setSuccess(true);
-                    setOrderId(createdOrderId);
-                    window.dispatchEvent(new Event("balance-changed"));
-                    toast.success("สั่งซื้อสำเร็จ!");
-                    setTimeout(() => {
-                        router.push(`/history`);
-                    }, 2000);
-                    return;
-                } else {
-                    throw new Error("ยังไม่เปิดระบบชำระเงินทางเลือกอื่น");
-                }
+                await handleOrderPayment(createdOrderId, paymentMethod, totalAmount);
             } else {
                 console.error("Unexpected response structure:", response);
                 throw new Error("Invalid response from server");
@@ -573,6 +570,31 @@ export default function GameTopupPage() {
 
 
 
+    const getBookmarkBtnClass = (mobile: boolean) => {
+        const base = mobile
+            ? "flex items-center justify-center w-9 h-9 rounded-xl border transition-all shrink-0 sm:hidden"
+            : "absolute top-4 right-4 z-10 w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md border shadow-lg transition-all duration-300";
+        
+        let stateClass = "bg-card border-border hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer hover:scale-105 active:scale-95";
+        if (!mobile) {
+            stateClass = "bg-black/40 border-white/20 text-white hover:bg-black/60 cursor-pointer hover:scale-110 active:scale-95";
+        }
+
+        if (!isLoggedIn) {
+            return cn(base, mobile 
+                ? "bg-card border-border/50 text-muted-foreground/30 opacity-60 cursor-not-allowed"
+                : "bg-black/40 border-white/10 text-white/40 cursor-not-allowed");
+        }
+        
+        if (isBookmarked) {
+            return cn(base, mobile
+                ? "bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20 cursor-pointer hover:scale-105 active:scale-95"
+                : "bg-red-500/20 border-red-500/40 text-red-500 hover:bg-red-500/30 cursor-pointer hover:scale-110 active:scale-95");
+        }
+        
+        return cn(base, stateClass);
+    };
+
     return (
         <div className="min-h-screen pb-20 bg-background text-foreground animate-in fade-in duration-300">
             {/* Main Content */}
@@ -591,14 +613,7 @@ export default function GameTopupPage() {
                     </div>
                     <button
                         onClick={isLoggedIn ? handleBookmarkToggle : undefined}
-                        className={cn(
-                            "flex items-center justify-center w-9 h-9 rounded-xl border transition-all shrink-0 sm:hidden",
-                            !isLoggedIn
-                                ? "bg-card border-border/50 text-muted-foreground/30 opacity-60 cursor-not-allowed"
-                                : isBookmarked 
-                                    ? "bg-red-500/10 border-red-500/30 text-red-500 hover:bg-red-500/20 cursor-pointer hover:scale-105 active:scale-95" 
-                                    : "bg-card border-border hover:bg-muted text-muted-foreground hover:text-foreground cursor-pointer hover:scale-105 active:scale-95"
-                        )}
+                        className={getBookmarkBtnClass(true)}
                         title={!isLoggedIn ? "กรุณาเข้าสู่ระบบเพื่อปักหมุด" : isBookmarked ? "ยกเลิกปักหมุด" : "ปักหมุดเกมนี้"}
                         disabled={!isLoggedIn}
                     >
@@ -639,14 +654,7 @@ export default function GameTopupPage() {
                         {/* Bookmark Button on Top-Right of Banner */}
                         <button
                             onClick={isLoggedIn ? handleBookmarkToggle : undefined}
-                            className={cn(
-                                "absolute top-4 right-4 z-10 w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md border shadow-lg transition-all duration-300",
-                                !isLoggedIn
-                                    ? "bg-black/40 border-white/10 text-white/40 cursor-not-allowed"
-                                    : isBookmarked
-                                        ? "bg-red-500/20 border-red-500/40 text-red-500 hover:bg-red-500/30 cursor-pointer hover:scale-110 active:scale-95"
-                                        : "bg-black/40 border-white/20 text-white hover:bg-black/60 cursor-pointer hover:scale-110 active:scale-95"
-                            )}
+                            className={getBookmarkBtnClass(false)}
                             title={!isLoggedIn ? "กรุณาเข้าสู่ระบบเพื่อปักหมุด" : isBookmarked ? "ยกเลิกปักหมุด" : "ปักหมุดเกมนี้"}
                             disabled={!isLoggedIn}
                         >
@@ -739,8 +747,16 @@ export default function GameTopupPage() {
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                     {game.packages.map((pkg) => {
                                         const selected = selectedPackage?.id === pkg.id;
+                                        let pkgClassName = "border-border/30 bg-muted/30 hover:border-primary/50 hover:bg-muted/40 cursor-pointer";
+                                        if (!isLoggedIn) {
+                                            pkgClassName = "border-border/20 bg-muted/10 opacity-50 cursor-not-allowed";
+                                        } else if (selected) {
+                                            pkgClassName = "border-primary/70 bg-primary/10 shadow-[0_0_25px_rgba(56,189,248,0.16)] cursor-pointer";
+                                        }
+
                                         return (
-                                            <div
+                                            <button
+                                                type="button"
                                                 key={pkg.id}
                                                 onClick={() => {
                                                     if (!isLoggedIn) {
@@ -751,12 +767,8 @@ export default function GameTopupPage() {
                                                     if (error) setError(null);
                                                 }}
                                                 className={cn(
-                                                    "h-full p-3 rounded-2xl transition-all duration-300 border select-none",
-                                                    !isLoggedIn
-                                                        ? "border-border/20 bg-muted/10 opacity-50 cursor-not-allowed"
-                                                        : selected 
-                                                            ? "border-primary/70 bg-primary/10 shadow-[0_0_25px_rgba(56,189,248,0.16)] cursor-pointer" 
-                                                            : "border-border/30 bg-muted/30 hover:border-primary/50 hover:bg-muted/40 cursor-pointer"
+                                                    "h-full w-full p-3 rounded-2xl transition-all duration-300 border select-none text-left flex flex-col justify-between",
+                                                    pkgClassName
                                                 )}
                                             >
                                                 <div className="mb-3">
@@ -765,7 +777,7 @@ export default function GameTopupPage() {
                                                         {pkg.count}
                                                     </p>
                                                 </div>
-                                                <div className="pt-3 border-t border-border/20">
+                                                <div className="pt-3 border-t border-border/20 w-full">
                                                     {pkg.flashSale?.isActive ? (
                                                         <div className="flex flex-col gap-0.5">
                                                             <div className="flex items-baseline gap-1.5">
@@ -786,7 +798,7 @@ export default function GameTopupPage() {
                                                         </p>
                                                     )}
                                                 </div>
-                                            </div>
+                                            </button>
                                         );
                                     })}
                                 </div>
@@ -839,6 +851,13 @@ export default function GameTopupPage() {
                                                     label = `Coin (฿${walletBalance.toFixed(2)})`;
                                                 }
 
+                                                let btnClass = "border-border/30 hover:border-primary/50 text-muted-foreground cursor-pointer";
+                                                if (!isLoggedIn) {
+                                                    btnClass = "opacity-50 cursor-not-allowed border-border/20 bg-muted/10 text-muted-foreground";
+                                                } else if (isSel) {
+                                                    btnClass = "border-primary bg-primary/10 text-primary font-bold cursor-pointer";
+                                                }
+
                                                 return (
                                                     <button
                                                         key={m.id}
@@ -853,11 +872,7 @@ export default function GameTopupPage() {
                                                         }}
                                                         className={cn(
                                                             "flex flex-col items-center justify-center p-3 rounded-xl border-2 transition-all select-none",
-                                                            !isLoggedIn
-                                                                ? "opacity-50 cursor-not-allowed border-border/20 bg-muted/10 text-muted-foreground"
-                                                                : isSel
-                                                                    ? "border-primary bg-primary/10 text-primary font-bold cursor-pointer"
-                                                                    : "border-border/30 hover:border-primary/50 text-muted-foreground cursor-pointer"
+                                                            btnClass
                                                         )}
                                                     >
                                                         {iconEl}
@@ -946,22 +961,7 @@ export default function GameTopupPage() {
                                         : "bg-primary hover:bg-primary/95 text-white cursor-pointer hover:shadow-lg"
                                 )}
                             >
-                                {submitting ? (
-                                    <>
-                                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                        {t.processing}
-                                    </>
-                                ) : !isLoggedIn ? (
-                                    <>
-                                        <LockIcon className="w-4.5 h-4.5 mr-2 text-muted-foreground/60" />
-                                        สั่งซื้อ
-                                    </>
-                                ) : (
-                                    <>
-                                        <ShoppingCart className="w-5 h-5 mr-2" />
-                                        สั่งซื้อ
-                                    </>
-                                )}
+                                {buttonContent}
                             </Button>
 
                             <p className="text-xs text-center text-muted-foreground mt-4">
